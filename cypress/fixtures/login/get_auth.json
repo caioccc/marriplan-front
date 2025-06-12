@@ -1,0 +1,19 @@
+{
+    "user": {
+        "id": 7,
+        "username": "fulano2",
+        "email": "ful@gmail.com"
+    },
+    "token": "c8ef7186bf6e3c908fa954d07b3e782a13f686885e5651b61bb1aeb9e526e3be",
+    "local_user": {
+        "id": 1,
+        "ip": "177.37.145.92",
+        "country_name": "Brazil",
+        "country_code": "BR",
+        "city": "Campina Grande",
+        "latitude": -7.230720043182373,
+        "longitude": -35.88167190551758,
+        "country_flag": "https://assets.ipstack.com/flags/br.svg",
+        "user": 7
+    }
+}
