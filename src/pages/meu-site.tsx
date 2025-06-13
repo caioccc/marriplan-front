@@ -11,6 +11,7 @@ import {
 } from '@/services/weddingSite';
 import { Badge, Box, Button, Card, Group, Modal, Switch, Text, Title } from '@mantine/core';
 import { IconEdit, IconEye, IconHome, IconShare } from '@tabler/icons-react';
+import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
 const templates = [
@@ -29,18 +30,25 @@ export default function MeuSitePage() {
   const [loading, setLoading] = useState(false);
   const [dataSite, setDataSite] = useState<any>({});
 
+  const [loadingSite, setLoadingSite] = useState(false);
+
   const { user } = useAuth();
+
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchSite() {
       setLoading(true);
+      setLoadingSite(true);
       const data = await getWeddingSite();
       if (!data) {
         setDataSite({});
         setLoading(false);
+        setLoadingSite(false);
         return;
       } else {
         setDataSite(data);
+        setLoadingSite(false);
       }
       setStatus(data?.status === 'published');
       setUltimaAtualizacao(data?.last_edited_at ? new Date(data.last_edited_at).toLocaleString() : '');
@@ -59,17 +67,26 @@ export default function MeuSitePage() {
   const handleSave = async (formData: any) => {
     setLoading(true);
     const site = await getWeddingSite();
+    let response = null;
     if (!site) {
-      await createWeddingSite(formData);
+      response = await createWeddingSite(formData);
+
     } else {
-      await updateWeddingSite(formData);
+      response = await updateWeddingSite(formData);
     }
+    setDataSite(response);
     setLoading(false);
   };
 
   const handlePublish = async () => {
     setLoading(true);
     await publishWeddingSite();
+    const updatedSite = await getWeddingSite();
+    setDataSite(updatedSite);
+    setUltimaAtualizacao(updatedSite?.last_edited_at ? new Date(updatedSite.last_edited_at).toLocaleString() : '');
+    setVisitas(updatedSite.visits || 0);
+    setTaxaRSVP(updatedSite.rsvp_conversion || 0);
+    setUltimaVisita(updatedSite.last_visitor ? `${updatedSite.last_visitor} (${updatedSite.last_visitor_at ? new Date(updatedSite.last_visitor_at).toLocaleDateString() : ''})` : '');
     setStatus(true);
     setLoading(false);
   };
@@ -77,6 +94,8 @@ export default function MeuSitePage() {
   const handleUnpublish = async () => {
     setLoading(true);
     await unpublishWeddingSite();
+    const updatedSite = await getWeddingSite();
+    setDataSite(updatedSite);
     setStatus(false);
     setLoading(false);
   };
@@ -93,31 +112,63 @@ export default function MeuSitePage() {
                 <div>
                   <Text fw={700} size="lg">Status do Site</Text>
                   <Text size="sm" c="dimmed">Última atualização: {ultimaAtualizacao}</Text>
+                  {
+                    dataSite.status === 'published' && (
+                      <Text size="sm" mt={4}>
+                        Endereço:{" "}
+                        <a
+                          href={`${window.location.origin}/site/${dataSite.url_slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "#228be6", textDecoration: "underline" }}
+                        >
+                          {`${window.location.origin}/site/${dataSite.url_slug}`}
+                        </a>
+                      </Text>
+                    )
+                  }
+
                 </div>
               </Group>
               <Switch checked={status} onChange={status ? handleUnpublish : handlePublish} color={status ? 'green' : 'red'} size="lg" label={status ? 'Ativo' : 'Inativo'} />
             </Group>
-            <Group mt="md" gap="xl">
-              <Badge color="blue" size="lg">Visitas: {visitas.toLocaleString()}</Badge>
-              <Badge color="teal" size="lg">RSVP: {taxaRSVP}%</Badge>
-              <Badge color="gray" size="lg">Última visita: {ultimaVisita}</Badge>
-            </Group>
-            <Group mt="md" gap="md">
-              <Button leftSection={<IconEye size={18} />} color="blue" onClick={() => setPreviewOpen(true)}>Visualizar Site</Button>
-              <Button leftSection={<IconShare size={18} />} color="green" variant="outline">Compartilhar</Button>
-            </Group>
+            {
+              dataSite.status === 'published' && (
+                <>
+                  <Group mt="md" gap="xl">
+                    <Badge color="blue" size="lg">Visitas: {visitas.toLocaleString()}</Badge>
+                    <Badge color="teal" size="lg">RSVP: {taxaRSVP}%</Badge>
+                    <Badge color="gray" size="lg">Última visita: {ultimaVisita}</Badge>
+                  </Group>
+                  <Group mt="md" gap="md">
+                    <Button leftSection={<IconEye size={18} />} color="blue" onClick={() => {
+                      router.push(`/site/${dataSite.url_slug}`);
+                    }}>Visualizar Site</Button>
+                    <Button leftSection={<IconShare size={18} />} color="green" variant="outline">Compartilhar</Button>
+                  </Group>
+                </>
+              )
+            }
+
           </Card>
         )}
 
-        <Card shadow="sm" p="lg" radius="md" withBorder mb="xl">
-          <Title order={4} mb="sm">Configuração do Site</Title>
-          <SiteConfigStepper
-            initialData={dataSite}
-            onSave={handleSave}
-            onPublish={handlePublish}
-            loading={loading}
-          />
-        </Card>
+        {
+          loadingSite ? (
+            <Text>Carregando site...</Text>
+          ) : (
+            <Card shadow="sm" p="lg" radius="md" withBorder mb="xl">
+              <Title order={4} mb="sm">Configuração do Site</Title>
+              <SiteConfigStepper
+                initialData={dataSite}
+                onSave={handleSave}
+                onPublish={handlePublish}
+                loading={loading}
+              />
+            </Card>
+          )
+        }
+
         <Modal opened={previewOpen} onClose={() => setPreviewOpen(false)} title="Prévia do Site" size="xl">
           <Box style={{ height: 500, background: '#f8f9fa', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Text c="dimmed">Aqui será exibida a prévia do site do casamento com o template selecionado.</Text>
