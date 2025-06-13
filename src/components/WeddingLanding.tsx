@@ -1,9 +1,10 @@
-import { ActionIcon, Box, Button, Card, Container, Divider, Group, Image, SimpleGrid, Text, Title } from '@mantine/core';
+import { ActionIcon, Box, Button, Card, Container, Divider, Group, Image, Overlay, SimpleGrid, Text, Title } from '@mantine/core';
 import { IconChevronDown, IconGift, IconHeart, IconMapPin, IconShare, IconUsers } from '@tabler/icons-react';
 import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/pt-br';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import { useEffect, useState } from 'react';
+import classes from './HeroContent.module.css';
 dayjs.extend(relativeTime);
 dayjs.locale('pt-br');
 
@@ -13,6 +14,7 @@ function Countdown({ date, time }: { date: string, time?: string }) {
   useEffect(() => {
     if (!date) return;
     let dateTime = date;
+    console.log('Date:', date, 'Time:', time);
     if (time) dateTime += 'T' + time;
     setTarget(new Date(dateTime));
   }, [date, time]);
@@ -39,6 +41,7 @@ function Countdown({ date, time }: { date: string, time?: string }) {
 }
 
 export default function WeddingLanding({ data }: { data: any }) {
+  console.log('Dados do site:', data);
   // Ajusta para ler dados do modelo WeddingSite (sem content)
   const theme = data.template || 'classico';
   const casal = `${data.groom_name || ''} & ${data.bride_name || ''}`;
@@ -85,14 +88,39 @@ export default function WeddingLanding({ data }: { data: any }) {
   return (
     <Box style={{ fontFamily: font || 'inherit', background: style.bg, minHeight: '100vh', transition: 'background 0.6s' }}>
       {/* HERO */}
-      <Container py={60} style={{ textAlign: 'center', position: 'relative' }}>
-        <Title order={1} size={48} c={style.titleColor} style={{ letterSpacing: 2, textShadow: '0 2px 16px #0001', textAlign: 'center' }}>{casal}</Title>
-        <Text size="lg" mt={8} style={{ textAlign: 'center' }}>{dayjs(dataCasamento).format('DD [de] MMMM [de] YYYY')}</Text>
-        <Text size="md" c="dimmed" style={{ textAlign: 'center' }}>{local}</Text>
-        <ActionIcon mt={24} size="xl" color={style.accent} variant="light" onClick={() => window.scrollTo({ top: 600, behavior: 'smooth' })} style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', bottom: -32, zIndex: 2 }}>
-          <IconChevronDown size={32} />
-        </ActionIcon>
-      </Container>
+      {
+        coverPhoto && (
+          <Box className={classes.hero}
+            style={{ backgroundImage: `url(${coverPhoto})`, position: 'relative', backgroundSize: 'cover', backgroundPosition: 'center' }}
+          >
+            <Overlay
+              gradient="linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, .65) 40%)"
+              opacity={1}
+              zIndex={0}
+            />
+            <Container className={classes.container} size="md">
+              <Title className={classes.title}>{casal}</Title>
+              <Text className={classes.description} size="xl" mt="xl">
+                {dayjs(dataCasamento).format('DD [de] MMMM [de] YYYY')}
+              </Text>
+            </Container>
+          </Box>
+        )
+      }
+      {
+        !coverPhoto && (
+          <Container py={60} style={{ textAlign: 'center', position: 'relative' }}>
+            <Title order={1} size={48} c={style.titleColor} style={{ letterSpacing: 2, textShadow: '0 2px 16px #0001', textAlign: 'center' }}>{casal}</Title>
+            <Text size="lg" mt={8} style={{ textAlign: 'center' }}>
+              {data.wedding_date ? dayjs(data.wedding_date).format('DD [de] MMMM [de] YYYY') : ''}
+            </Text>
+            <ActionIcon mb={16} mt={24} size="xl" color={style.accent} variant="light" onClick={() => window.scrollTo({ top: 600, behavior: 'smooth' })} style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', bottom: -32, zIndex: 2 }}>
+              <IconChevronDown size={32} />
+            </ActionIcon>
+          </Container>
+        )
+      }
+
       <Divider my={32} />
       {/* QUEM SOMOS */}
       {
@@ -148,7 +176,31 @@ export default function WeddingLanding({ data }: { data: any }) {
       {/* LOCAL DO EVENTO */}
       <Container size="sm" py={32} style={{ textAlign: 'center' }}>
         <Title order={2} size={32} mb={8} c={style.accent} style={{ textAlign: 'center' }}>Local do Evento</Title>
-        <Group style={{ justifyContent: 'center' }}><IconMapPin size={24} /><Text size="lg">{local}</Text></Group>
+        <Group style={{ justifyContent: 'center', marginBottom: 16 }}><IconMapPin size={24} /><Text size="lg">{local}</Text></Group>
+        {map && data.latitude && data.longitude && (
+          <>
+            <Box style={{ width: '100%', height: 300, margin: '0 auto', borderRadius: 12, overflow: 'hidden' }}>
+              <iframe
+                title="Mapa do Evento"
+                width="100%"
+                height="100%"
+                frameBorder="0"
+                style={{ border: 0 }}
+                src={`https://www.openstreetmap.org/export/embed.html?bbox=${data.longitude - 0.005}%2C${data.latitude - 0.003}%2C${data.longitude + 0.005}%2C${data.latitude + 0.003}&layer=mapnik&marker=${data.latitude}%2C${data.longitude}`}
+                allowFullScreen
+              ></iframe>
+            </Box>
+            <Text size="lg" style={{ textAlign: 'center', marginBottom: 8 }}>
+              {data.address}
+              {data.number ? `, ${data.number}` : ''}
+              {data.district ? ` - ${data.district}` : ''}
+              {data.city ? `, ${data.city}` : ''}
+              {data.state ? ` - ${data.state}` : ''}
+              {data.postalcode ? `, CEP: ${data.postalcode}` : ''}
+            </Text>
+          </>
+
+        )}
       </Container>
       <Divider my={32} />
       {/* RSVP */}
@@ -189,9 +241,9 @@ export default function WeddingLanding({ data }: { data: any }) {
             Site criado com marriplan.com
           </Text>
 
-          <Group gap={4} style={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-            <IconUsers size={16} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-            <Text size="sm" c="dimmed" style={{ flex: 1, textAlign: 'center' }}>
+          <Group gap={1} style={{ flex: 1, display: 'flex', alignItems: 'center' }} w="100%">
+            <IconUsers size={16} style={{ verticalAlign: 'middle', marginRight: 8 }} />
+            <Text size="sm" c="dimmed">
               {visits || 0} pessoas visitaram
             </Text>
           </Group>

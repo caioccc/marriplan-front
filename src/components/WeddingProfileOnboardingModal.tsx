@@ -16,6 +16,12 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { lastIndexOf } from 'lodash';
 
+import dayjs from 'dayjs';
+import 'dayjs/locale/pt-br';
+import relativeTime from 'dayjs/plugin/relativeTime';
+dayjs.extend(relativeTime);
+dayjs.locale('pt-br');
+
 export default function WeddingProfileOnboardingModal({ opened, onClose, onComplete }) {
   const { user, refreshUser } = useAuth();
   const initial = user?.wedding_profile ?? {};
@@ -203,14 +209,14 @@ export default function WeddingProfileOnboardingModal({ opened, onClose, onCompl
           <Stepper.Step label="Dados do noivo">
             <TextInput label="Nome do noivo" {...form.getInputProps('nome_noivo')} required mb="md" />
             <TextInput label="Email do noivo" {...form.getInputProps('email_noivo')} mb="md" type="email" />
-            <Textarea label="Descrição do noivo" {...form.getInputProps('descricao_noivo')} minRows={4} mb="md" placeholder="Idade, estilo musical, religião, time do coração, hobbies, profissão, formação, temperamento etc." />
+            <Textarea label="Descrição do noivo" {...form.getInputProps('descricao_noivo')} minRows={4} autosize mb="md" placeholder="Idade, estilo musical, religião, time do coração, hobbies, profissão, formação, temperamento etc." />
             <TextInput label="Facebook do noivo" {...form.getInputProps('facebook_noivo')} mb="md" placeholder="Link do Facebook" />
             <TextInput label="Instagram do noivo" {...form.getInputProps('instagram_noivo')} mb="md" placeholder="Link do Instagram" />
           </Stepper.Step>
           <Stepper.Step label="Dados da noiva">
             <TextInput label="Nome da noiva" {...form.getInputProps('nome_noiva')} required mb="md" />
             <TextInput label="Email da noiva" {...form.getInputProps('email_noiva')} mb="md" type="email" />
-            <Textarea label="Descrição da noiva" {...form.getInputProps('descricao_noiva')} minRows={4} mb="md" placeholder="Idade, estilo musical, religião, time do coração, hobbies, profissão, formação, temperamento etc." />
+            <Textarea label="Descrição da noiva" {...form.getInputProps('descricao_noiva')} minRows={4} autosize mb="md" placeholder="Idade, estilo musical, religião, time do coração, hobbies, profissão, formação, temperamento etc." />
             <TextInput label="Facebook da noiva" {...form.getInputProps('facebook_noiva')} mb="md" placeholder="Link do Facebook" />
             <TextInput label="Instagram da noiva" {...form.getInputProps('instagram_noiva')} mb="md" placeholder="Link do Instagram" />
           </Stepper.Step>
@@ -286,7 +292,7 @@ export default function WeddingProfileOnboardingModal({ opened, onClose, onCompl
                   />
                   <TimePicker
                     label="Hora do casamento"
-                    value={form.values.hora_casamento ? form.values.hora_casamento : null}
+                    value={form.values.hora_casamento}
                     onChange={value => form.setFieldValue('hora_casamento', value)}
                     ampm={false}
                     minutesStep={1}
@@ -313,7 +319,7 @@ export default function WeddingProfileOnboardingModal({ opened, onClose, onCompl
             </Group>
           </Stepper.Step>
           <Stepper.Step label="História">
-            <Textarea label="Conte um pouco sobre a história do casal" minRows={4} {...form.getInputProps('historia')} />
+            <Textarea label="Conte um pouco sobre a história do casal" minRows={2} autosize {...form.getInputProps('historia')} />
           </Stepper.Step>
         </Stepper>
         <Group justify="space-between" mt="xl">

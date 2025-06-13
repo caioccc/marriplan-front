@@ -12,7 +12,8 @@ import {
     IconAlertCircle,
     IconUserCheck,
     IconHome,
-    IconHome2
+    IconHome2,
+    IconWorldWww
 } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { ReactNode, useState } from 'react';
@@ -208,9 +209,9 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                 />
                 <NavLink
                     label="Meu Site"
-                    leftSection={<IconHome size={18}/>} // Ícone de casa
+                    leftSection={<IconWorldWww size={18}/>} // Ícone de casa
                 >
-                    <NavLink label="Gerar Site" onClick={() => router.push('/meu-site')} />
+                    <NavLink label="Configuração do Site" onClick={() => router.push('/meu-site')} />
                     <NavLink label="Histórico de Atualizações" onClick={() => router.push('/meu-site/historico')} />
                     <NavLink label="Domínio Personalizado" onClick={() => router.push('/meu-site/dominio')} disabled />
                 </NavLink>

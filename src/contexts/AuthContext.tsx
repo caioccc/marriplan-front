@@ -31,6 +31,7 @@ const unprotectedRoutes = [
     '/reset-password',
     '/reset-password/[token]',
     '/2fa',
+    '/site/[slug]',
 ]
 
 type AuthProviderProps = {

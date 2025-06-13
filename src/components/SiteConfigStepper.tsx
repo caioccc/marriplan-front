@@ -2,8 +2,35 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Box, Button, Card, FileInput, Group, Image, Loader, Select, Stepper, Switch, Text, TextInput, Textarea, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconCheck, IconChevronLeft, IconChevronRight, IconDeviceFloppy, IconFont, IconPalette, IconRocket, IconUpload } from '@tabler/icons-react';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import { IconCheck, IconChevronLeft, IconChevronRight, IconDeviceFloppy, IconRocket, IconUpload } from '@tabler/icons-react';
 import axios from 'axios';
+
+const CLOUDINARY_UPLOAD_URL = 'https://api.cloudinary.com/v1_1/freelancerinc/image/upload';
+const CLOUDINARY_UPLOAD_PRESET = 'unsigned-preset'; // Defina o nome do seu upload preset criado no painel do Cloudinary
+const MAX_IMAGE_SIZE_MB = 10;
+
+async function uploadImageToCloudinary(file: File, folder = 'wedding-site') {
+  if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
+    throw new Error('A imagem deve ter no máximo 10MB');
+  }
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+  formData.append('folder', folder);
+  // Opcional: definir largura/altura para hero e galeria
+  // formData.append('width', '1200');
+  // formData.append('height', '600');
+  const response = await axios.post(CLOUDINARY_UPLOAD_URL, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data.secure_url;
+}
+
+import ptBR from 'date-fns/locale/pt-BR';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
@@ -11,6 +38,11 @@ import { IMaskInput } from 'react-imask';
 import { MapContainer, Marker, TileLayer } from 'react-leaflet';
 import WeddingLanding from './WeddingLanding';
 
+import dayjs from 'dayjs';
+import 'dayjs/locale/pt-br';
+import relativeTime from 'dayjs/plugin/relativeTime';
+dayjs.extend(relativeTime);
+dayjs.locale('pt-br');
 
 const templates = [
   { value: 'classico', label: 'Clássico', img: '/templates/classico.png' },
@@ -162,6 +194,50 @@ export default function SiteConfigStepper({ initialData = {}, onSave, onPublish,
 
   function handleBack() { setActive(a => a - 1); }
 
+  const onSaveClick = async () => {
+    const dataToSend = {
+      ...form.values,
+      wedding_date: form.values.wedding_date
+        ? (typeof form.values.wedding_date === 'string'
+          ? form.values.wedding_date.slice(0, 10)
+          : form.values.wedding_date.toISOString().slice(0, 10))
+        : '',
+      wedding_time: form.values.wedding_time
+        ? (typeof form.values.wedding_time === 'string'
+          ? form.values.wedding_time.slice(0, 5)
+          : (form.values.wedding_time instanceof Date
+            ? form.values.wedding_time.toTimeString().slice(0, 5)
+            : ''))
+        : '',
+    };
+    if (onSave) {
+      await onSave(dataToSend);
+      toast({ title: 'Configurações salvas', description: 'Suas configurações foram salvas com sucesso.' });
+    }
+  }
+
+  const onPublishClick = async () => {
+    const dataToSend = {
+      ...form.values,
+      wedding_date: form.values.wedding_date
+        ? (typeof form.values.wedding_date === 'string'
+          ? form.values.wedding_date.slice(0, 10)
+          : form.values.wedding_date.toISOString().slice(0, 10))
+        : '',
+      wedding_time: form.values.wedding_time
+        ? (typeof form.values.wedding_time === 'string'
+          ? form.values.wedding_time.slice(0, 5)
+          : (form.values.wedding_time instanceof Date
+            ? form.values.wedding_time.toTimeString().slice(0, 5)
+            : ''))
+        : '',
+    };
+    if (onPublish) {
+      await onPublish(dataToSend);
+      toast({ title: 'Site publicado', description: 'Seu site do casamento foi publicado com sucesso.' });
+    }
+  }
+
   return (
     <Box>
       <Stepper active={active} onStepClick={setActive} breakpoint="sm">
@@ -181,12 +257,70 @@ export default function SiteConfigStepper({ initialData = {}, onSave, onPublish,
             <TextInput label="Nome do noivo" {...form.getInputProps('groom_name')} required error={form.errors.groom_name} />
             <TextInput label="Nome da noiva" {...form.getInputProps('bride_name')} required error={form.errors.bride_name} />
           </Group>
-          <Textarea label="Quem Somos" {...form.getInputProps('about_us')} minRows={3} mb="md" error={form.errors.about_us} />
+          <Textarea label="Quem Somos" {...form.getInputProps('about_us')} minRows={3} autosize mb="md" error={form.errors.about_us} />
         </Stepper.Step>
         <Stepper.Step label="Sobre o Evento">
-          <Group grow mt="md">
-            <TextInput label="Data do casamento" type="date" {...form.getInputProps('wedding_date')} required error={form.errors.wedding_date} />
-            <TextInput label="Horário" type="time" {...form.getInputProps('wedding_time')} required />
+          <Group grow>
+            <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
+              <Group
+                gap="md"
+                style={{
+                  alignItems: 'flex-end',
+                  flexWrap: 'nowrap',
+                  width: '100%',
+                  marginTop: 16,
+                  marginBottom: 16,
+                }}
+              >
+                <DatePicker
+                  label="Data do casamento"
+                  value={form.values.wedding_date ? new Date(form.values.wedding_date) : null}
+                  onChange={date => form.setFieldValue('wedding_date', date)}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      required: true,
+                      placeholder: 'Selecione a data',
+                      sx: {
+                        height: 36,
+                        minHeight: 36,
+                        '.MuiInputBase-input': {
+                          height: 36,
+                          minHeight: 36,
+                          padding: '0 12px'
+                        }
+                      },
+                      style: { flex: 1 }
+                    }
+                  }}
+                  format="dd/MM/yyyy"
+                />
+                <TimePicker
+                  label="Hora do casamento"
+                  value={form.values.wedding_time}
+                  onChange={value => form.setFieldValue('wedding_time', value)}
+                  ampm={false}
+                  minutesStep={1}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      required: true,
+                      placeholder: '00:00',
+                      sx: {
+                        height: 36,
+                        minHeight: 36,
+                        '.MuiInputBase-input': {
+                          height: 36,
+                          minHeight: 36,
+                          padding: '0 12px'
+                        }
+                      },
+                      style: { flex: 1 }
+                    }
+                  }}
+                />
+              </Group>
+            </LocalizationProvider>
           </Group>
           <TextInput label="Local onde será realizado" {...form.getInputProps('local')} required mt="md" />
           <div style={{ height: 260, width: '100%', marginBottom: 16, marginTop: 16, borderRadius: 8, overflow: 'hidden' }}>
@@ -222,18 +356,33 @@ export default function SiteConfigStepper({ initialData = {}, onSave, onPublish,
           </Group>
         </Stepper.Step>
         <Stepper.Step label="Galeria">
-          <Textarea label="Galeria de Fotos (URLs separadas por vírgula)"
-            value={Array.isArray(form.values.gallery) ? form.values.gallery.join(',') : form.values.gallery || ''}
-            onChange={e => form.setFieldValue('gallery', e.currentTarget.value.split(',').map(s => s.trim()).filter(Boolean))}
-            minRows={2} mb="md"
+          <FileInput
+            label="Adicionar imagens à galeria"
+            accept="image/*"
+            multiple
+            onChange={async (files: File[]) => {
+              if (files && files.length > 0) {
+                try {
+                  const urls = [];
+                  for (const file of files) {
+                    const url = await uploadImageToCloudinary(file, 'wedding-gallery');
+                    urls.push(url);
+                  }
+                  form.setFieldValue('gallery', [...(form.values.gallery || []), ...urls]);
+                  toast({ title: 'Upload realizado', description: 'Imagens enviadas com sucesso!' });
+                } catch (err: any) {
+                  toast({ title: 'Erro no upload', description: err.message || 'Falha ao enviar imagem.' });
+                }
+              }
+            }}
           />
           <Group mt={8}>
-            {(Array.isArray(form.values.gallery) ? form.values.gallery : (form.values.gallery || '').split(',')).filter(Boolean).map((url, i) => <Image key={i} src={url} alt={`Foto ${i + 1}`} height={60} radius="sm" />)}
+            {(form.values.gallery || []).map((url: string, i: number) => <Image key={i} src={url} alt={`Foto ${i + 1}`} height={60} radius="sm" />)}
           </Group>
         </Stepper.Step>
         <Stepper.Step label="Visual e Opções">
           <Select label="Paleta de Cores" data={palettes} {...form.getInputProps('palette')} mb="md" />
-          <Select label="Fonte" data={fonts} {...form.getInputProps('font')}  mb="md" />
+          <Select label="Fonte" data={fonts} {...form.getInputProps('font')} mb="md" />
           {
             form.values.wedding_date && form.values.wedding_time && (
               <Switch label="Contagem Regressiva" {...form.getInputProps('countdown', { type: 'checkbox' })} mb="md" />
@@ -246,14 +395,47 @@ export default function SiteConfigStepper({ initialData = {}, onSave, onPublish,
           }
           <Switch label="Botão de Compartilhamento" {...form.getInputProps('social', { type: 'checkbox' })} mb="md" />
 
-          <FileInput label="Foto de capa" accept="image/*" {...form.getInputProps('cover_photo')} error={form.errors.cover_photo} mt="md" icon={<IconUpload size={16} />} />
+          <FileInput
+            label="Foto de capa"
+            accept="image/*"
+            error={form.errors.cover_photo}
+            mt="md"
+            icon={<IconUpload size={16} />}
+            onChange={async (file) => {
+              if (file) {
+                try {
+                  const url = await uploadImageToCloudinary(file, 'wedding-hero');
+                  form.setFieldValue('cover_photo', url);
+                  toast({ title: 'Upload realizado', description: 'Imagem enviada com sucesso!' });
+                } catch (err: any) {
+                  toast({ title: 'Erro no upload', description: err.message || 'Falha ao enviar imagem.' });
+                }
+              }
+            }}
+          />
           {form.values.cover_photo && <Image src={form.values.cover_photo} alt="Capa" height={120} radius="md" mt={8} />}
         </Stepper.Step>
         <Stepper.Step label="Preview">
           <Box mb="md">
             <Title order={4} mb={8}>Prévia Dinâmica</Title>
             <Card shadow="sm" p="md" radius="md" withBorder>
-              <WeddingLanding data={form.values} />
+              <WeddingLanding data={
+                {
+                  ...form.values,
+                  wedding_date: form.values.wedding_date
+                    ? (typeof form.values.wedding_date === 'string'
+                      ? form.values.wedding_date.slice(0, 10)
+                      : form.values.wedding_date.toISOString().slice(0, 10))
+                    : '',
+                  wedding_time: form.values.wedding_time
+                    ? (typeof form.values.wedding_time === 'string'
+                      ? form.values.wedding_time.slice(0, 5)
+                      : (form.values.wedding_time instanceof Date
+                        ? form.values.wedding_time.toTimeString().slice(0, 5)
+                        : ''))
+                    : '',
+                }
+              } />
             </Card>
           </Box>
         </Stepper.Step>
@@ -264,8 +446,8 @@ export default function SiteConfigStepper({ initialData = {}, onSave, onPublish,
           <Button onClick={handleNext} rightSection={<IconChevronRight size={16} />}>Próximo</Button>
         ) : (
           <Group>
-            <Button color="indigo" leftSection={<IconDeviceFloppy size={16} />} onClick={() => onSave && onSave(form.values)} loading={loading}>Salvar como Rascunho</Button>
-            <Button color="green" leftSection={<IconRocket size={16} />} onClick={() => onPublish && onPublish()} loading={loading}>Publicar Agora</Button>
+            <Button color="indigo" leftSection={<IconDeviceFloppy size={16} />} onClick={onSaveClick} loading={loading}>Salvar como Rascunho</Button>
+            <Button color="green" leftSection={<IconRocket size={16} />} onClick={onPublishClick} loading={loading}>Publicar Agora</Button>
           </Group>
         )}
       </Group>

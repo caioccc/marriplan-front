@@ -78,9 +78,12 @@ export default function MeuSitePage() {
     setLoading(false);
   };
 
-  const handlePublish = async () => {
+  const handlePublish = async (formData: any) => {
     setLoading(true);
-    await publishWeddingSite();
+    await handleSave({
+      ...formData,
+      status: 'published'
+    });
     const updatedSite = await getWeddingSite();
     setDataSite(updatedSite);
     setUltimaAtualizacao(updatedSite?.last_edited_at ? new Date(updatedSite.last_edited_at).toLocaleString() : '');
@@ -142,9 +145,9 @@ export default function MeuSitePage() {
                   </Group>
                   <Group mt="md" gap="md">
                     <Button leftSection={<IconEye size={18} />} color="blue" onClick={() => {
-                      router.push(`/site/${dataSite.url_slug}`);
+                      window.open(`${window.location.origin}/site/${dataSite.url_slug}`, '_blank');
                     }}>Visualizar Site</Button>
-                    <Button leftSection={<IconShare size={18} />} color="green" variant="outline">Compartilhar</Button>
+                    {/* <Button leftSection={<IconShare size={18} />} color="green" variant="outline">Compartilhar</Button> */}
                   </Group>
                 </>
               )
