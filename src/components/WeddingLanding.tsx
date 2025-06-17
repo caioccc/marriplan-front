@@ -89,9 +89,9 @@ export default function WeddingLanding({ data }: { data: any }) {
     <Box style={{ fontFamily: font || 'inherit', background: style.bg, minHeight: '100vh', transition: 'background 0.6s' }}>
       {/* HERO */}
       {
-        coverPhoto && (
+        coverPhoto && coverPhoto.url && (
           <Box className={classes.hero}
-            style={{ backgroundImage: `url(${coverPhoto})`, position: 'relative', backgroundSize: 'cover', backgroundPosition: 'center' }}
+            style={{ backgroundImage: `url(${coverPhoto.url})`, position: 'relative', backgroundSize: 'cover', backgroundPosition: 'center' }}
           >
             <Overlay
               gradient="linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, .65) 40%)"
@@ -143,8 +143,8 @@ export default function WeddingLanding({ data }: { data: any }) {
             </Button>
             {showGallery && (
               <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
-                {gallery.map((url: string, i: number) => (
-                  <Image key={i} src={url} alt={`Foto ${i + 1}`} radius="md" height={160} fit="cover" style={{ boxShadow: '0 2px 16px #0002' }} />
+                {gallery.map((photo: any, i: number) => (
+                  <Image key={i} src={photo.url} alt={`Foto ${i + 1}`} radius="md" height={160} fit="cover" style={{ boxShadow: '0 2px 16px #0002' }} />
                 ))}
               </SimpleGrid>
             )}

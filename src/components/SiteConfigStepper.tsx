@@ -1,42 +1,24 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Box, Button, Card, FileInput, Group, Image, Loader, Select, Stepper, Switch, Text, TextInput, Textarea, Title } from '@mantine/core';
+import { Box, Button, Card, FileInput, Group, Image, Loader, Select, Stepper, Switch, Text, TextInput, Textarea, Title, ActionIcon, Skeleton } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { ptBR } from 'date-fns/locale';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { IconCheck, IconChevronLeft, IconChevronRight, IconDeviceFloppy, IconRocket, IconUpload } from '@tabler/icons-react';
+import { IconCheck, IconChevronLeft, IconChevronRight, IconDeviceFloppy, IconRocket, IconUpload, IconTrash } from '@tabler/icons-react';
 import axios from 'axios';
-
-const CLOUDINARY_UPLOAD_URL = 'https://api.cloudinary.com/v1_1/freelancerinc/image/upload';
-const CLOUDINARY_UPLOAD_PRESET = 'unsigned-preset'; // Defina o nome do seu upload preset criado no painel do Cloudinary
-const MAX_IMAGE_SIZE_MB = 10;
-
-async function uploadImageToCloudinary(file: File, folder = 'wedding-site') {
-  if (file.size > MAX_IMAGE_SIZE_MB * 1024 * 1024) {
-    throw new Error('A imagem deve ter no máximo 10MB');
-  }
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-  formData.append('folder', folder);
-  // Opcional: definir largura/altura para hero e galeria
-  // formData.append('width', '1200');
-  // formData.append('height', '600');
-  const response = await axios.post(CLOUDINARY_UPLOAD_URL, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
-  return response.data.secure_url;
-}
-
-import ptBR from 'date-fns/locale/pt-BR';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { useEffect, useState } from 'react';
+import { uploadWeddingImage, deleteWeddingImage } from '@/services/weddingImage';
+import { useDropzone } from 'react-dropzone';
+import { DndContext, closestCenter, useSensor, useSensors, PointerSensor, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { useState, useEffect, useRef } from 'react';
 import { IMaskInput } from 'react-imask';
 import { MapContainer, Marker, TileLayer } from 'react-leaflet';
 import WeddingLanding from './WeddingLanding';
+import { ImageDropzone } from './ImageUpload';
 
 import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br';
@@ -70,6 +52,128 @@ const palettes = [
   { value: 'laranja', label: 'Laranja Outonal' },
   { value: 'azul_claro', label: 'Azul Serenity' },
 ];
+
+// Componente de upload drag-drop com suporte a múltiplas imagens e reordenação
+function ImageDropzone({
+  multiple = false,
+  value = [],
+  onChange,
+  loading = false,
+  maxSizeMB = 10,
+  accept = 'image/*',
+  label = 'Adicionar Imagem',
+  title = '',
+}) {
+  const [error, setError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const onDrop = async (acceptedFiles: File[], rejectedFiles: any[]) => {
+    setError('');
+    const validFiles = acceptedFiles.filter(f => f.size <= maxSizeMB * 1024 * 1024 && !f.name.endsWith('.svg'));
+    if (validFiles.length !== acceptedFiles.length) {
+      setError('Apenas imagens (exceto SVG) até 10MB são permitidas.');
+    }
+    if (validFiles.length === 0) return;
+    setUploading(true);
+    if (multiple) {
+      await onChange([...(value || []), ...validFiles]);
+    } else {
+      await onChange(validFiles[0]);
+    }
+    setUploading(false);
+  };
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tiff', '.ico'],
+    },
+    maxSize: maxSizeMB * 1024 * 1024,
+    multiple,
+  });
+
+  // Drag and drop reordenação (apenas para múltiplo)
+  const sensors = useSensors(useSensor(PointerSensor));
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      const oldIndex = value.findIndex((img: any) => img.id_cloudinary || img.name || img.url === active.id);
+      const newIndex = value.findIndex((img: any) => img.id_cloudinary || img.name || img.url === over.id);
+      onChange(arrayMove(value, oldIndex, newIndex));
+    }
+  }
+  function SortableImage({ img, index }: { img: any, index: number }) {
+    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: img.id_cloudinary || img.name || img.url });
+    return (
+      <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, display: 'inline-block', marginRight: 8, marginBottom: 8 }} {...attributes} {...listeners}>
+        <Card shadow="sm" radius="md" withBorder style={{ width: 100, position: 'relative' }}>
+          <Image src={img.url || URL.createObjectURL(img)} alt={`Foto ${index + 1}`} height={60} radius="sm" />
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <Box>
+      {title && <Title order={6} mb={8}>{title}</Title>}
+      <Box {...getRootProps()} style={{ border: '2px dashed #228be6', borderRadius: 8, padding: 16, minHeight: 120, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, background: isDragActive ? '#e7f5ff' : '#f8f9fa', cursor: 'pointer', justifyContent: 'flex-start' }}>
+        <input {...getInputProps()} />
+        {/* Botão de adicionar */}
+        <Box
+          style={{
+            width: 80,
+            height: 80,
+            border: '1px solid #228be6',
+            borderRadius: 8,
+            background: '#fff',
+            marginRight: 8,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            position: 'relative',
+          }}
+          onClick={e => {
+            e.stopPropagation();
+            e.preventDefault();
+            document.querySelector('input[type=file]')?.click();
+          }}
+        >
+          <IconUpload size={32} style={{ marginBottom: 2, color: '#228be6' }} />
+          <Text size="10px" style={{ marginTop: 2, textAlign: 'center', color: '#228be6' }}>{label}</Text>
+        </Box>
+        {/* Ajuda se não houver imagens */}
+        {(!multiple && !(value && (value.url || value.name))) || (multiple && (!value || value.length === 0)) ? (
+          <Text size="xs" c="dimmed" style={{ marginLeft: 8 }}>
+            Clique no botão ou arraste {multiple ? 'imagens' : 'uma imagem'} para esta área.
+          </Text>
+        ) : null}
+        {/* Imagens carregadas */}
+        {multiple ? (
+          uploading ? (
+            <Skeleton height={60} width={100} radius="md" />
+          ) : (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={value.map((img: any) => img.id_cloudinary || img.name || img.url)} strategy={verticalListSortingStrategy}>
+                {value.map((img: any, i: number) => <SortableImage key={img.id_cloudinary || img.name || img.url} img={img} index={i} />)}
+              </SortableContext>
+            </DndContext>
+          )
+        ) : (
+          uploading ? (
+            <Skeleton height={60} width={100} radius="md" />
+          ) : (
+            value && (value.url || value.name) && (
+              <Card shadow="sm" radius="md" withBorder style={{ width: 100, display: 'inline-block', marginLeft: 8 }}>
+                <Image src={value.url || URL.createObjectURL(value)} alt="Foto" height={60} radius="sm" />
+              </Card>
+            )
+          )
+        )}
+        {error && <Text size="xs" color="red">{error}</Text>}
+      </Box>
+    </Box>
+  );
+}
 
 export default function SiteConfigStepper({ initialData = {}, onSave, onPublish, loading }) {
   const { toast } = useToast();
@@ -238,6 +342,37 @@ export default function SiteConfigStepper({ initialData = {}, onSave, onPublish,
     }
   }
 
+  // Componente de upload por botão
+  function UploadButton({ label, onFile, accept = 'image/*', loading = false, fileName = '' }) {
+    const inputRef = useRef<HTMLInputElement>(null);
+    return (
+      <Box>
+        <Button
+          leftSection={<IconUpload size={16} />}
+          loading={loading}
+          onClick={() => inputRef.current?.click()}
+          variant="outline"
+          color="blue"
+          mb={4}
+        >
+          {label}
+        </Button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept={accept}
+          style={{ display: 'none' }}
+          onChange={e => {
+            if (e.target.files && e.target.files[0]) {
+              onFile(e.target.files[0]);
+            }
+          }}
+        />
+        {fileName && <Text size="xs" c="dimmed">{fileName}</Text>}
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <Stepper active={active} onStepClick={setActive} breakpoint="sm">
@@ -245,7 +380,7 @@ export default function SiteConfigStepper({ initialData = {}, onSave, onPublish,
           <Group>
             {templates.map(t => (
               <Card key={t.value} shadow={form.values.template === t.value ? 'md' : 'xs'} withBorder p="xs" style={{ borderColor: form.values.template === t.value ? '#228be6' : undefined, cursor: 'pointer', width: 160 }} onClick={() => form.setFieldValue('template', t.value)}>
-                <Image src={t.img} alt={t.label} height={80} fit="cover" radius="md" mb={8} />
+                {/* <Image src={t.img} alt={t.label} height={80} fit="cover" radius="md" mb={8} /> */}
                 <Text align="center" fw={700} c={form.values.template === t.value ? 'blue' : undefined}>{t.label}</Text>
                 {form.values.template === t.value && <IconCheck size={18} color="#228be6" style={{ position: 'absolute', top: 8, right: 8 }} />}
               </Card>
@@ -356,29 +491,30 @@ export default function SiteConfigStepper({ initialData = {}, onSave, onPublish,
           </Group>
         </Stepper.Step>
         <Stepper.Step label="Galeria">
-          <FileInput
-            label="Adicionar imagens à galeria"
-            accept="image/*"
-            multiple
-            onChange={async (files: File[]) => {
-              if (files && files.length > 0) {
-                try {
-                  const urls = [];
-                  for (const file of files) {
-                    const url = await uploadImageToCloudinary(file, 'wedding-gallery');
-                    urls.push(url);
+           <ImageDropzone
+            multiple={true}
+            value={form.values.gallery || []}
+            onChange={async (filesOrImages: any[]) => {
+              // filesOrImages pode conter WeddingImage ou File
+              const newImages = [];
+              for (const item of filesOrImages) {
+                if (item && item instanceof File) {
+                  try {
+                    const img = await uploadWeddingImage(item, 'wedding-gallery');
+                    newImages.push(img);
+                  } catch (err: any) {
+                    toast({ title: 'Erro no upload', description: err.message || 'Falha ao enviar imagem.' });
                   }
-                  form.setFieldValue('gallery', [...(form.values.gallery || []), ...urls]);
-                  toast({ title: 'Upload realizado', description: 'Imagens enviadas com sucesso!' });
-                } catch (err: any) {
-                  toast({ title: 'Erro no upload', description: err.message || 'Falha ao enviar imagem.' });
+                } else if (item && item.url) {
+                  newImages.push(item);
                 }
               }
+              form.setFieldValue('gallery', newImages);
             }}
+            label="Adicionar imagens à galeria"
+            title="Adicionar imagens à galeria"
+            loading={loading}
           />
-          <Group mt={8}>
-            {(form.values.gallery || []).map((url: string, i: number) => <Image key={i} src={url} alt={`Foto ${i + 1}`} height={60} radius="sm" />)}
-          </Group>
         </Stepper.Step>
         <Stepper.Step label="Visual e Opções">
           <Select label="Paleta de Cores" data={palettes} {...form.getInputProps('palette')} mb="md" />
@@ -395,25 +531,28 @@ export default function SiteConfigStepper({ initialData = {}, onSave, onPublish,
           }
           <Switch label="Botão de Compartilhamento" {...form.getInputProps('social', { type: 'checkbox' })} mb="md" />
 
-          <FileInput
-            label="Foto de capa"
-            accept="image/*"
-            error={form.errors.cover_photo}
-            mt="md"
-            icon={<IconUpload size={16} />}
-            onChange={async (file) => {
+          {/* CAPA: Upload único */}
+          <ImageDropzone
+            multiple={false}
+            value={form.values.cover_photo}
+            onChange={async (file: File) => {
               if (file) {
                 try {
-                  const url = await uploadImageToCloudinary(file, 'wedding-hero');
-                  form.setFieldValue('cover_photo', url);
+                  if (form.values.cover_photo && form.values.cover_photo.id_cloudinary) {
+                    await deleteWeddingImage(form.values.cover_photo.id_cloudinary);
+                  }
+                  const imageObj = await uploadWeddingImage(file, 'wedding-hero');
+                  form.setFieldValue('cover_photo', imageObj);
                   toast({ title: 'Upload realizado', description: 'Imagem enviada com sucesso!' });
                 } catch (err: any) {
                   toast({ title: 'Erro no upload', description: err.message || 'Falha ao enviar imagem.' });
                 }
               }
             }}
+            label="Foto de capa"
+            title="Foto de Capa"
+            loading={loading}
           />
-          {form.values.cover_photo && <Image src={form.values.cover_photo} alt="Capa" height={120} radius="md" mt={8} />}
         </Stepper.Step>
         <Stepper.Step label="Preview">
           <Box mb="md">

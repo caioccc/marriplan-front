@@ -66,13 +66,33 @@ export default function MeuSitePage() {
 
   const handleSave = async (formData: any) => {
     setLoading(true);
+    // Remove campos com objetos/elementos não serializáveis (ex: arquivos, HTMLInputElement)
+    // cover_photo é um campo especial que pode conter uma imagm, ou seja, enviar apenas o id
+    if (formData.cover_photo && formData.cover_photo.id) {
+      formData.cover_photo = formData.cover_photo.id;
+    }
+
+    if (formData.gallery && Array.isArray(formData.gallery)) {
+      formData.gallery = formData.gallery.map((item: any) => item.id || item);
+    }
+
+    const cleanFormData = JSON.parse(JSON.stringify(formData, (key, value) => {
+      if (
+        value instanceof File ||
+        (typeof window !== 'undefined' && value instanceof window.File) ||
+        (value && typeof value === 'object' && value.nodeType === 1)
+      ) {
+        return undefined;
+      }
+      return value;
+    }));
     const site = await getWeddingSite();
     let response = null;
     if (!site) {
-      response = await createWeddingSite(formData);
+      response = await createWeddingSite(cleanFormData);
 
     } else {
-      response = await updateWeddingSite(formData);
+      response = await updateWeddingSite(cleanFormData);
     }
     setDataSite(response);
     setLoading(false);
