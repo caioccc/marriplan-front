@@ -1,24 +1,20 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Box, Button, Card, FileInput, Group, Image, Loader, Select, Stepper, Switch, Text, TextInput, Textarea, Title, ActionIcon, Skeleton } from '@mantine/core';
+import { deleteWeddingImage, uploadWeddingImage } from '@/services/weddingImage';
+import { Box, Button, Card, Group, Loader, Select, Stepper, Switch, Text, TextInput, Textarea, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { ptBR } from 'date-fns/locale';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { IconCheck, IconChevronLeft, IconChevronRight, IconDeviceFloppy, IconRocket, IconUpload, IconTrash } from '@tabler/icons-react';
+import { IconCheck, IconChevronLeft, IconChevronRight, IconDeviceFloppy, IconRocket, IconUpload } from '@tabler/icons-react';
 import axios from 'axios';
-import { uploadWeddingImage, deleteWeddingImage } from '@/services/weddingImage';
-import { useDropzone } from 'react-dropzone';
-import { DndContext, closestCenter, useSensor, useSensors, PointerSensor, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { useState, useEffect, useRef } from 'react';
+import { ptBR } from 'date-fns/locale';
+import { useEffect, useRef, useState } from 'react';
 import { IMaskInput } from 'react-imask';
 import { MapContainer, Marker, TileLayer } from 'react-leaflet';
-import WeddingLanding from './WeddingLanding';
 import { ImageDropzone } from './ImageUpload';
+import WeddingLanding from './WeddingLanding';
 
 import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br';
@@ -52,128 +48,6 @@ const palettes = [
   { value: 'laranja', label: 'Laranja Outonal' },
   { value: 'azul_claro', label: 'Azul Serenity' },
 ];
-
-// Componente de upload drag-drop com suporte a múltiplas imagens e reordenação
-function ImageDropzone({
-  multiple = false,
-  value = [],
-  onChange,
-  loading = false,
-  maxSizeMB = 10,
-  accept = 'image/*',
-  label = 'Adicionar Imagem',
-  title = '',
-}) {
-  const [error, setError] = useState('');
-  const [uploading, setUploading] = useState(false);
-  const onDrop = async (acceptedFiles: File[], rejectedFiles: any[]) => {
-    setError('');
-    const validFiles = acceptedFiles.filter(f => f.size <= maxSizeMB * 1024 * 1024 && !f.name.endsWith('.svg'));
-    if (validFiles.length !== acceptedFiles.length) {
-      setError('Apenas imagens (exceto SVG) até 10MB são permitidas.');
-    }
-    if (validFiles.length === 0) return;
-    setUploading(true);
-    if (multiple) {
-      await onChange([...(value || []), ...validFiles]);
-    } else {
-      await onChange(validFiles[0]);
-    }
-    setUploading(false);
-  };
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: {
-      'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tiff', '.ico'],
-    },
-    maxSize: maxSizeMB * 1024 * 1024,
-    multiple,
-  });
-
-  // Drag and drop reordenação (apenas para múltiplo)
-  const sensors = useSensors(useSensor(PointerSensor));
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (active.id !== over?.id) {
-      const oldIndex = value.findIndex((img: any) => img.id_cloudinary || img.name || img.url === active.id);
-      const newIndex = value.findIndex((img: any) => img.id_cloudinary || img.name || img.url === over.id);
-      onChange(arrayMove(value, oldIndex, newIndex));
-    }
-  }
-  function SortableImage({ img, index }: { img: any, index: number }) {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: img.id_cloudinary || img.name || img.url });
-    return (
-      <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, display: 'inline-block', marginRight: 8, marginBottom: 8 }} {...attributes} {...listeners}>
-        <Card shadow="sm" radius="md" withBorder style={{ width: 100, position: 'relative' }}>
-          <Image src={img.url || URL.createObjectURL(img)} alt={`Foto ${index + 1}`} height={60} radius="sm" />
-        </Card>
-      </div>
-    );
-  }
-
-  return (
-    <Box>
-      {title && <Title order={6} mb={8}>{title}</Title>}
-      <Box {...getRootProps()} style={{ border: '2px dashed #228be6', borderRadius: 8, padding: 16, minHeight: 120, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8, background: isDragActive ? '#e7f5ff' : '#f8f9fa', cursor: 'pointer', justifyContent: 'flex-start' }}>
-        <input {...getInputProps()} />
-        {/* Botão de adicionar */}
-        <Box
-          style={{
-            width: 80,
-            height: 80,
-            border: '1px solid #228be6',
-            borderRadius: 8,
-            background: '#fff',
-            marginRight: 8,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            position: 'relative',
-          }}
-          onClick={e => {
-            e.stopPropagation();
-            e.preventDefault();
-            document.querySelector('input[type=file]')?.click();
-          }}
-        >
-          <IconUpload size={32} style={{ marginBottom: 2, color: '#228be6' }} />
-          <Text size="10px" style={{ marginTop: 2, textAlign: 'center', color: '#228be6' }}>{label}</Text>
-        </Box>
-        {/* Ajuda se não houver imagens */}
-        {(!multiple && !(value && (value.url || value.name))) || (multiple && (!value || value.length === 0)) ? (
-          <Text size="xs" c="dimmed" style={{ marginLeft: 8 }}>
-            Clique no botão ou arraste {multiple ? 'imagens' : 'uma imagem'} para esta área.
-          </Text>
-        ) : null}
-        {/* Imagens carregadas */}
-        {multiple ? (
-          uploading ? (
-            <Skeleton height={60} width={100} radius="md" />
-          ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={value.map((img: any) => img.id_cloudinary || img.name || img.url)} strategy={verticalListSortingStrategy}>
-                {value.map((img: any, i: number) => <SortableImage key={img.id_cloudinary || img.name || img.url} img={img} index={i} />)}
-              </SortableContext>
-            </DndContext>
-          )
-        ) : (
-          uploading ? (
-            <Skeleton height={60} width={100} radius="md" />
-          ) : (
-            value && (value.url || value.name) && (
-              <Card shadow="sm" radius="md" withBorder style={{ width: 100, display: 'inline-block', marginLeft: 8 }}>
-                <Image src={value.url || URL.createObjectURL(value)} alt="Foto" height={60} radius="sm" />
-              </Card>
-            )
-          )
-        )}
-        {error && <Text size="xs" color="red">{error}</Text>}
-      </Box>
-    </Box>
-  );
-}
 
 export default function SiteConfigStepper({ initialData = {}, onSave, onPublish, loading }) {
   const { toast } = useToast();
@@ -491,9 +365,22 @@ export default function SiteConfigStepper({ initialData = {}, onSave, onPublish,
           </Group>
         </Stepper.Step>
         <Stepper.Step label="Galeria">
-           <ImageDropzone
+          <ImageDropzone
             multiple={true}
             value={form.values.gallery || []}
+            onRemove={async (img: any) => {
+              if (img.id_cloudinary) {
+                console.log('Removendo imagem:', img.id_cloudinary);
+                try {
+                  await deleteWeddingImage(img.id_cloudinary);
+                  const newGallery = form.values.gallery.filter((i: any) => i.id_cloudinary !== img.id_cloudinary);
+                  form.setFieldValue('gallery', newGallery);
+                  toast({ title: 'Imagem removida', description: 'A imagem foi removida com sucesso.' });
+                } catch (err: any) {
+                  toast({ title: 'Erro ao remover imagem', description: err.message || 'Falha ao remover a imagem.' });
+                }
+              }
+            }}
             onChange={async (filesOrImages: any[]) => {
               // filesOrImages pode conter WeddingImage ou File
               const newImages = [];
@@ -552,6 +439,19 @@ export default function SiteConfigStepper({ initialData = {}, onSave, onPublish,
             label="Foto de capa"
             title="Foto de Capa"
             loading={loading}
+            onRemove={
+              async (img: any) => {
+                if (img.id_cloudinary) {
+                  try {
+                    await deleteWeddingImage(img.id_cloudinary);
+                    form.setFieldValue('cover_photo', '');
+                    toast({ title: 'Imagem removida', description: 'A imagem de capa foi removida com sucesso.' });
+                  } catch (err: any) {
+                    toast({ title: 'Erro ao remover imagem', description: err.message || 'Falha ao remover a imagem.' });
+                  }
+                }
+              }
+            }
           />
         </Stepper.Step>
         <Stepper.Step label="Preview">

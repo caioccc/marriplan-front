@@ -74,6 +74,17 @@ export default function WeddingProfileOnboardingModal({ opened, onClose, onCompl
     if (opened) setActive(0);
   }, [opened]);
 
+  // Inicializa o mapa com a latitude/longitude salvas, mas só atualiza se o usuário manipular o endereço/cep
+  useEffect(() => {
+    if (opened) {
+      if (form.values.latitude && form.values.longitude) {
+        setMapPosition([form.values.latitude, form.values.longitude]);
+      } else {
+        setMapPosition(null);
+      }
+    }
+  }, [opened]);
+
   const handleSave = async () => {
     setLoading(true);
     try {
@@ -152,7 +163,7 @@ export default function WeddingProfileOnboardingModal({ opened, onClose, onCompl
     return data.address || {};
   }
 
-  // Atualiza o mapa ao preencher o CEP
+  // Atualiza o mapa ao preencher o CEP ou endereço
   useEffect(() => {
     if (form.values.cep && form.values.endereco && form.values.cidade) {
       const fullAddress = `${form.values.endereco}, ${form.values.numero || ''}, ${form.values.bairro || ''}, ${form.values.cidade}, ${form.values.estado || ''}`;

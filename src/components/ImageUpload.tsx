@@ -1,25 +1,22 @@
 import { useDropzone } from 'react-dropzone';
-import { DndContext, closestCenter, useSensor, useSensors, PointerSensor, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import { ActionIcon, Box, Button, Card, Image, Skeleton, Text, Title } from '@mantine/core';
 import { IconTrash, IconUpload } from '@tabler/icons-react';
 import { useState } from 'react';
-import { deleteWeddingImage } from '@/services/weddingImage';
 
 export function ImageDropzone({
   multiple = false,
   value = [],
   onChange,
+  onRemove,
   loading = false,
   maxSizeMB = 10,
   accept = 'image/*',
   label = 'Adicionar Imagem',
   title = '',
-  onRemove,
 }) {
   const [error, setError] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const onDrop = async (acceptedFiles, rejectedFiles) => {
     setError('');
     const validFiles = acceptedFiles.filter(f => f.size <= maxSizeMB * 1024 * 1024 && !f.name.endsWith('.svg'));
@@ -43,32 +40,27 @@ export function ImageDropzone({
     maxSize: maxSizeMB * 1024 * 1024,
     multiple,
   });
-  const sensors = useSensors(useSensor(PointerSensor));
-  function handleDragEnd(event) {
-    const { active, over } = event;
-    if (active.id !== over?.id) {
-      const oldIndex = value.findIndex(img => img.id_cloudinary || img.name || img.url === active.id);
-      const newIndex = value.findIndex(img => img.id_cloudinary || img.name || img.url === over.id);
-      onChange(arrayMove(value, oldIndex, newIndex));
-    }
-  }
-  function SortableImage({ img, index }) {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: img.id_cloudinary || img.name || img.url });
+  // Corrige o clique do botão de remover para não acionar o input file do dropzone
+  function GalleryImage({ img, index, onRemove, removing }) {
     return (
-      <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, display: 'inline-block', marginRight: 8, marginBottom: 8, position: 'relative' }} {...attributes} {...listeners}>
-        <Card shadow="sm" radius="md" withBorder style={{ width: 100, position: 'relative' }}>
+      <div style={{ display: 'inline-block', marginRight: 8, marginBottom: 8, position: 'relative' }}>
+        <Card shadow="sm" radius="md" withBorder style={{ width: 100, position: 'relative', opacity: removing ? 0.5 : 1 }}>
           <Image src={img.url || URL.createObjectURL(img)} alt={`Foto ${index + 1}`} height={60} radius="sm" />
           {img.id_cloudinary && (
             <ActionIcon
               color="red"
               variant="filled"
               size="sm"
-              style={{ position: 'absolute', top: 4, right: 4, zIndex: 2 }}
+              style={{ position: 'absolute', top: 4, right: 4, zIndex: 3 }}
+              tabIndex={-1}
+              onMouseDown={e => { e.stopPropagation(); e.preventDefault(); }}
               onClick={async (e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 await onRemove(img);
               }}
               aria-label="Remover imagem"
+              loading={removing}
             >
               <IconTrash size={14} />
             </ActionIcon>
@@ -76,6 +68,12 @@ export function ImageDropzone({
         </Card>
       </div>
     );
+  }
+  // Altere o onRemove para controlar loading
+  async function handleRemove(img) {
+    setRemovingId(img.id_cloudinary || img.name || img.url);
+    await onRemove(img);
+    setRemovingId(null);
   }
   return (
     <Box>
@@ -93,22 +91,43 @@ export function ImageDropzone({
           </Text>
         ) : null}
         {multiple ? (
-          uploading ? (
-            <Skeleton height={60} width={100} radius="md" />
-          ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={value.map(img => img.id_cloudinary || img.name || img.url)} strategy={verticalListSortingStrategy}>
-                {value.map((img, i) => <SortableImage key={img.id_cloudinary || img.name || img.url} img={img} index={i} onRemove={onRemove} />)}
-              </SortableContext>
-            </DndContext>
-          )
+          <Box style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {value.map((img, i) => (
+              <GalleryImage
+                key={img.id_cloudinary || img.name || img.url}
+                img={img}
+                index={i}
+                onRemove={handleRemove}
+                removing={removingId === (img.id_cloudinary || img.name || img.url)}
+              />
+            ))}
+            {uploading && (
+              <Skeleton height={60} width={100} radius="md" />
+            )}
+          </Box>
         ) : (
           uploading ? (
             <Skeleton height={60} width={100} radius="md" />
           ) : (
             value && (value.url || value.name) && (
-              <Card shadow="sm" radius="md" withBorder style={{ width: 100, display: 'inline-block', marginLeft: 8 }}>
+              <Card shadow="sm" radius="md" withBorder style={{ width: 100, display: 'inline-block', marginLeft: 8 }} >
                 <Image src={value.url || URL.createObjectURL(value)} alt="Foto" height={60} radius="sm" />
+                {value.id_cloudinary && (
+                  <ActionIcon
+                    color="red"
+                    variant="filled"
+                    size="sm"
+                    style={{ position: 'absolute', top: 4, right: 4, zIndex: 2 }}
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      await handleRemove(value);
+                    }}
+                    aria-label="Remover imagem"
+                    loading={removingId === (value.id_cloudinary || value.name || value.url)}
+                  >
+                    <IconTrash size={14} />
+                  </ActionIcon>
+                )}
               </Card>
             )
           )
