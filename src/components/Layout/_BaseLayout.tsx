@@ -13,7 +13,8 @@ import {
     IconUserCheck,
     IconHome,
     IconHome2,
-    IconWorldWww
+    IconWorldWww,
+    IconChecklist
 } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { ReactNode, useState } from 'react';
@@ -188,6 +189,12 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                     leftSection={<IconHome2 size={18} />} // Ícone de dashboard
                     active={router.pathname === '/dashboard'}
                     onClick={() => router.push('/dashboard')}
+                />
+                <NavLink
+                    label="Checklist de Casamento"
+                    leftSection={<IconChecklist size={18} />} // Ícone de checklist
+                    active={router.pathname === '/checklist'}
+                    onClick={() => router.push('/checklist')}
                 />
                 <NavLink
                     label="Chat"

@@ -28,7 +28,7 @@ export function GoogleLoginButton() {
                         title: 'Login realizado com sucesso!',
                         description: 'Você está autenticado com Google.',
                     })
-                    router.push('/chat');
+                    router.push('/dashboard');
                 } else {
                     toast({
                         title: 'Erro ao autenticar',
