@@ -223,6 +223,12 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                     <NavLink label="Domínio Personalizado" onClick={() => router.push('/meu-site/dominio')} disabled />
                 </NavLink>
                 <NavLink
+                    label="Convidados"
+                    leftSection={<IconUser size={18} />} // Ícone de usuário
+                    active={router.pathname === '/guests'}
+                    onClick={() => router.push('/guests')}
+                />
+                <NavLink
                     label="Sair"
                     leftSection={<IconLogout size={18} />}
                     color="red"
