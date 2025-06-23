@@ -197,23 +197,18 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                     onClick={() => router.push('/checklist')}
                 />
                 <NavLink
+                    label="Convidados"
+                    leftSection={<IconUser size={18} />} // Ícone de usuário
+                    active={router.pathname === '/guests'}
+                    onClick={() => router.push('/guests')}
+                />
+                <NavLink
                     label="Chat"
                     leftSection={<IconMessageCircle size={18} />} // Ícone de chat
                     active={router.pathname === '/chat'}
                     onClick={() => router.push('/chat')}
                 />
-                <NavLink
-                    label="Relatórios"
-                    leftSection={<IconReportAnalytics size={18} />}
-                    active={router.pathname === '/reports'}
-                    onClick={() => router.push('/reports')}
-                />
-                <NavLink
-                    label="Notificações"
-                    leftSection={<IconBell size={18} />}
-                    active={router.pathname === '/notifications'}
-                    onClick={() => router.push('/notifications')}
-                />
+
                 <NavLink
                     label="Meu Site"
                     leftSection={<IconWorldWww size={18}/>} // Ícone de casa
@@ -222,12 +217,20 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                     <NavLink label="Histórico de Atualizações" onClick={() => router.push('/meu-site/historico')} />
                     <NavLink label="Domínio Personalizado" onClick={() => router.push('/meu-site/dominio')} disabled />
                 </NavLink>
-                <NavLink
-                    label="Convidados"
-                    leftSection={<IconUser size={18} />} // Ícone de usuário
-                    active={router.pathname === '/guests'}
-                    onClick={() => router.push('/guests')}
+
+                 <NavLink
+                    label="Notificações"
+                    leftSection={<IconBell size={18} />}
+                    active={router.pathname === '/notifications'}
+                    onClick={() => router.push('/notifications')}
                 />
+                <NavLink
+                    label="Relatórios"
+                    leftSection={<IconReportAnalytics size={18} />}
+                    active={router.pathname === '/reports'}
+                    onClick={() => router.push('/reports')}
+                />
+
                 <NavLink
                     label="Sair"
                     leftSection={<IconLogout size={18} />}

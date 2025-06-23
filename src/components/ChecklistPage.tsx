@@ -19,6 +19,7 @@ import {
 } from 'chart.js';
 import BaseLayout from './Layout/_BaseLayout';
 import dayjs from 'dayjs';
+import { useMediaQuery } from '@mantine/hooks';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTitle, Tooltip, Legend);
 
@@ -32,6 +33,7 @@ export default function ChecklistPage() {
   const [filterPriority, setFilterPriority] = useState<string | null>(null);
   const [loadingTaskId, setLoadingTaskId] = useState<number | null>(null);
   const pendingBadgeRef = useRef<{ [key: number]: HTMLDivElement | null }>({});
+  const isMobile = useMediaQuery('(max-width: 600px)');
 
   useEffect(() => {
     setLoading(true);
@@ -74,7 +76,7 @@ export default function ChecklistPage() {
     tasks: filteredTasks.filter(period.test)
   }));
 
-  // Gráfico de barras
+  // Gráfico de barras: mostrar apenas meses
   const chartData = {
     labels: MONTHS,
     datasets: [{
@@ -159,7 +161,15 @@ export default function ChecklistPage() {
             clearable
             w={120}
           />
-          <Button leftSection={<IconFileDownload size={18} />} variant="light" onClick={() => window.print()}>
+          <Button leftSection={<IconFileDownload size={18} />} variant="light" onClick={() => {
+            const list = document.querySelector('.mantine-SimpleGrid-root');
+            if (list) {
+              const printWindow = window.open('', '', 'width=800,height=600');
+              printWindow!.document.write('<html><head><title>Checklist</title></head><body>' + list.innerHTML + '</body></html>');
+              printWindow!.document.close();
+              printWindow!.print();
+            }
+          }}>
             Exportar PDF
           </Button>
         </Group>
@@ -167,13 +177,13 @@ export default function ChecklistPage() {
           <Bar data={chartData} options={{ plugins: { legend: { display: true } }, responsive: true, maintainAspectRatio: false, height: 200 }} />
         </Box>
         {loading ? <Loader /> : (
-          <SimpleGrid cols={2} spacing="md" verticalSpacing="md">
+          <SimpleGrid cols={isMobile ? 1 : 2} spacing="md" verticalSpacing="md">
             {tasksByPeriod.map(({ label, tasks }) => (
               <Card key={label} shadow="xs" mb={8}>
                 <Group position="apart" mb={8}>
                   <Title order={4}>{label}</Title>
-                  <Progress value={getMonthProgress(tasks)} w={120} />
-                  <Button leftSection={<IconPlus size={16} />} size="xs" variant="light" onClick={() => handleAddTask(tasks[0]?.month || 0)}>
+                  <Progress value={getMonthProgress(tasks)} w={isMobile ? 80 : 120} size={isMobile ? 'sm' : 'md'} />
+                  <Button leftSection={<IconPlus size={14} />} size="xs" variant="light" onClick={() => handleAddTask(tasks[0]?.month || 0)}>
                     Adicionar tarefa
                   </Button>
                 </Group>
@@ -184,16 +194,17 @@ export default function ChecklistPage() {
                     {tasks.map(task => (
                       <Group key={task.id} position="apart" style={{ borderBottom: '1px solid #eee', padding: 4 }}>
                         <Group>
-                          <Checkbox checked={task.status === 'done'} onChange={() => handleToggleDone(task)} disabled={loadingTaskId === task.id} />
+                          <Checkbox checked={task.status === 'done'} onChange={() => handleToggleDone(task)} disabled={loadingTaskId === task.id} size="xs" />
                           <Text size="sm" style={{ textDecoration: task.status === 'done' ? 'line-through' : undefined }}>{task.description}</Text>
-                          {!task.is_template && <TooltipMantine label="Editar"><ActionIcon onClick={() => handleEditTask(task)} disabled={loadingTaskId === task.id}><IconEdit size={16} /></ActionIcon></TooltipMantine>}
-                          {!task.is_template && <TooltipMantine label="Excluir"><ActionIcon color="red" onClick={() => handleDeleteTask(task.id)} disabled={loadingTaskId === task.id}><IconTrash size={16} /></ActionIcon></TooltipMantine>}
+                          {!task.is_template && <TooltipMantine label="Editar"><ActionIcon onClick={() => handleEditTask(task)} disabled={loadingTaskId === task.id} size="xs"><IconEdit size={14} /></ActionIcon></TooltipMantine>}
+                          {!task.is_template && <TooltipMantine label="Excluir"><ActionIcon color="red" onClick={() => handleDeleteTask(task.id)} disabled={loadingTaskId === task.id} size="xs"><IconTrash size={14} /></ActionIcon></TooltipMantine>}
                         </Group>
                         <div ref={el => (pendingBadgeRef.current[task.id] = el)}>
                           {loadingTaskId === task.id ? (
-                            <Loader size={18} />
+                            <Loader size={14} />
                           ) : (
                             <Badge
+                              size="xs"
                               color={task.status === 'done' ? 'green' : task.status === 'in_progress' ? 'blue' : 'yellow'}
                               variant={task.status === 'pending' ? 'filled' : 'light'}
                               style={task.status === 'pending' ? { animation: 'target-badge 1s infinite alternate' } : {}}

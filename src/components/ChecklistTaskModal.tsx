@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, TextInput, Button, Group, Select, DateInput, FileInput, Textarea } from '@mantine/core';
 import { ChecklistTask, ChecklistTaskPriority, ChecklistTaskStatus } from '@/types/checklist';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -32,6 +32,16 @@ export default function ChecklistTaskModal({ opened, onClose, onSave, initial }:
   const [status, setStatus] = useState<ChecklistTaskStatus>(initial?.status || 'pending');
   const [file, setFile] = useState<File | null>(null);
   const [notes, setNotes] = useState(initial?.notes || '');
+
+  useEffect(() => {
+    setDescription(initial?.description || '');
+    setStartDate(initial?.start_date ? new Date(initial.start_date) : null);
+    setDueDate(initial?.due_date ? new Date(initial.due_date) : null);
+    setPriority(initial?.priority || 'medium');
+    setStatus(initial?.status || 'pending');
+    setFile(null);
+    setNotes(initial?.notes || '');
+  }, [initial, opened]);
 
   function handleSave() {
     onSave({
