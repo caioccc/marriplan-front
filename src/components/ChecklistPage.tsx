@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { fetchChecklistTasks } from '@/services/checklist';
 import { ChecklistTask, MONTHS } from '@/types/checklist';
 import { Group, Title, Progress, Card, Button, Select, Text, Stack, Loader, Box, SimpleGrid, Badge } from '@mantine/core';
-import { IconPlus } from '@tabler/icons-react';
+import { IconChecklist, IconPlus } from '@tabler/icons-react';
 import ChecklistTaskModal from './ChecklistTaskModal';
 import { IconCheck, IconEdit, IconTrash, IconFileDownload, IconSearch } from '@tabler/icons-react';
 import { createChecklistTask, updateChecklistTask, deleteChecklistTask } from '@/services/checklist';
@@ -142,7 +142,9 @@ export default function ChecklistPage() {
   return (
     <BaseLayout title="Checklist do Casamento">
       <Box>
-        <Title order={2} mb={16}>Checklist de Casamento</Title>
+        <Group mb="md" align="center">
+          <Title order={2}>Checklist de Casamento</Title>
+        </Group>
         <Group mb={16}>
           <TextInput leftSection={<IconSearch size={16} />} placeholder="Buscar tarefa..." value={search} onChange={e => setSearch(e.currentTarget.value)} w={220} />
           <Select

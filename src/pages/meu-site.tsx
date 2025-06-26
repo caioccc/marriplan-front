@@ -10,7 +10,7 @@ import {
   updateWeddingSite
 } from '@/services/weddingSite';
 import { Badge, Box, Button, Card, Group, Modal, Switch, Text, Title } from '@mantine/core';
-import { IconEdit, IconEye, IconHome, IconShare } from '@tabler/icons-react';
+import { IconEdit, IconEye, IconHome, IconShare, IconWorldWww } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
@@ -124,9 +124,12 @@ export default function MeuSitePage() {
   };
 
   return (
-    <BaseLayout title="Meu Site do Casamento">
+    <BaseLayout>
       <Box p="md">
-        <Title order={2} mb="md">Meu Site do Casamento</Title>
+        <Group mb="md" align="center">
+          <IconWorldWww size={28} style={{ marginRight: 8 }} />
+          <Title order={2}>Meu Site de Casamento</Title>
+        </Group>
         {user?.wedding_profile && user?.wedding_site && (
           <Card shadow="md" p="lg" radius="md" withBorder mb="xl">
             <Group justify="space-between" align="center">

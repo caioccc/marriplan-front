@@ -1,9 +1,9 @@
 import {useEffect, useState} from 'react';
 import {DataTable} from 'mantine-datatable';
-import {Button, Group, Box, Text} from '@mantine/core';
+import {Button, Group, Box, Text, Title} from '@mantine/core';
 import BaseLayout from "@/components/Layout/_BaseLayout";
 import {AnimatedTargetDot} from "@/components/AnimatedTargetDot";
-import {IconEye, IconEyeOff, IconTrash} from '@tabler/icons-react';
+import {IconBell, IconEye, IconEyeOff, IconTrash} from '@tabler/icons-react';
 import {
     fetchNotifications,
     markAsRead,
@@ -84,7 +84,11 @@ export default function NotificationsPage() {
     }, [page, pageSize]);
 
     return (
-        <BaseLayout title={'Notificações'}>
+        <BaseLayout>
+            <Group mb="md" align="center">
+                <IconBell size={28} style={{marginRight: 8}}/>
+                <Title order={2}>Notificações</Title>
+            </Group>
             <Box style={{display: 'flex', flexDirection: 'column', padding: '1rem', width: '100%'}}>
                 <Group mb="md">
                     <Button leftSection={<IconEye size={16}/>} onClick={handleMarkAllAsRead}>

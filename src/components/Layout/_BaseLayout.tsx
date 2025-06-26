@@ -14,7 +14,8 @@ import {
     IconHome,
     IconHome2,
     IconWorldWww,
-    IconChecklist
+    IconChecklist,
+    IconGift
 } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { ReactNode, useState } from 'react';
@@ -185,7 +186,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
 
             <AppShell.Navbar withBorder p="xs" style={{ width: 250, overflowY: 'auto' }}>
                 <NavLink
-                    label="Dashboard"
+                    label="Início"
                     leftSection={<IconHome2 size={18} />} // Ícone de dashboard
                     active={router.pathname === '/dashboard'}
                     onClick={() => router.push('/dashboard')}
@@ -197,10 +198,16 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                     onClick={() => router.push('/checklist')}
                 />
                 <NavLink
-                    label="Convidados"
+                    label="Meus Convidados"
                     leftSection={<IconUser size={18} />} // Ícone de usuário
                     active={router.pathname === '/guests'}
                     onClick={() => router.push('/guests')}
+                />
+                  <NavLink
+                    label="Lista de Presentes"
+                    leftSection={<IconGift size={18} />} // Ícone de presente
+                    active={router.pathname === '/gifts'}
+                    onClick={() => router.push('/gifts')}
                 />
                 <NavLink
                     label="Chat"

@@ -9,18 +9,28 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import axios from 'axios';
 import ptBR from 'date-fns/locale/pt-BR';
+import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { IMaskInput } from 'react-imask';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { lastIndexOf } from 'lodash';
 
 import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br';
 import relativeTime from 'dayjs/plugin/relativeTime';
 dayjs.extend(relativeTime);
 dayjs.locale('pt-br');
+
+// Importar dinamicamente os componentes do mapa apenas no client-side
+const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false });
+const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { ssr: false });
+const useMapEvents = dynamic(() => import('react-leaflet').then(mod => mod.useMapEvents), { ssr: false });
+
+// Importar L apenas no client-side
+let L: any = null;
+if (typeof window !== 'undefined') {
+  L = require('leaflet');
+  require('leaflet/dist/leaflet.css');
+}
 
 export default function WeddingProfileOnboardingModal({ opened, onClose, onComplete }) {
   const { user, refreshUser } = useAuth();
@@ -175,7 +185,9 @@ export default function WeddingProfileOnboardingModal({ opened, onClose, onCompl
 
   // Componente para manipular o clique no mapa
   function LocationMarker() {
-    useMapEvents({
+    // Só renderiza no client
+    if (typeof window === 'undefined' || !useMapEvents) return null;
+    const mapEvents = useMapEvents({
       click(e) {
         setMapPosition([e.latlng.lat, e.latlng.lng]);
         reverseGeocode(e.latlng.lat, e.latlng.lng).then(addr => {
@@ -192,7 +204,9 @@ export default function WeddingProfileOnboardingModal({ opened, onClose, onCompl
         });
       }
     });
-    return mapPosition ? <Marker position={mapPosition} icon={L.icon({iconUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png', iconSize: [25, 41], iconAnchor: [12, 41]})} /> : null;
+    return mapPosition && L ? (
+      <Marker position={mapPosition} icon={L.icon({iconUrl: 'https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png', iconSize: [25, 41], iconAnchor: [12, 41]})} />
+    ) : null;
   }
 
   // Função para checar se os campos obrigatórios do step atual estão preenchidos
@@ -233,12 +247,14 @@ export default function WeddingProfileOnboardingModal({ opened, onClose, onCompl
           </Stepper.Step>
           <Stepper.Step label="Evento">
             <TextInput label="Local onde será realizado" {...form.getInputProps('local')} required mt="md" />
-            <div style={{ height: 260, width: '100%', marginBottom: 16, marginTop:16,  borderRadius: 8, overflow: 'hidden' }}>
+           { mapPosition &&
+             <div style={{ height: 260, width: '100%', marginBottom: 16, marginTop:16,  borderRadius: 8, overflow: 'hidden' }}>
               <MapContainer center={mapPosition || [-14.235, -51.9253]} zoom={mapPosition ? 16 : 4} style={{ height: '100%', width: '100%' }} scrollWheelZoom={true}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <LocationMarker />
               </MapContainer>
             </div>
+           }
             <TextInput
               label="CEP"
               component={IMaskInput}

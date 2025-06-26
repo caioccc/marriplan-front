@@ -40,7 +40,10 @@ export default function WeddingSiteHistoryList() {
 
   return (
     <Stack>
-      <Title order={3}>Histórico de Alterações</Title>
+      <Group mb="md" align="center">
+        <IconEdit size={28} style={{ marginRight: 8 }} />
+        <Title order={2}>Histórico de Alterações do Site</Title>
+      </Group>
       <Group>
         <Select
           label="Período"
