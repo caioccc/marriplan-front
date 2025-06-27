@@ -1,23 +1,30 @@
-import { useState, useEffect, useRef } from 'react';
-import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
+import { ListView } from '@/components/ListView';
+import { GalleryView } from '@/components/GalleryView';
+import ImportGuestsModal from '@/components/ImportGuestsModal';
+import { guests_create, guests_delete, guests_download_model, guests_export, guests_import, guests_list, guests_update } from '@/services/guests';
 import {
+  ActionIcon,
   Button,
-  Modal,
-  TextInput,
   Checkbox,
   Group,
-  Stack,
-  ActionIcon,
-  useMantineTheme,
-  rem,
-  Title,
   Menu,
+  Modal,
+  rem,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+  useMantineTheme,
+  Tooltip,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconEdit, IconTrash, IconPlus, IconBrandWhatsapp, IconMail, IconGiftFilled, IconDotsVertical } from '@tabler/icons-react';
-import { guests_list, guests_create, guests_update, guests_delete, guests_download_model, guests_import, guests_export } from '@/services/guests';
 import { notifications } from '@mantine/notifications';
-import { IconDownload, IconUpload, IconFileTypeCsv, IconFileTypeXls, IconFileTypePdf } from '@tabler/icons-react';
+import { IconBrandWhatsapp, IconCards, IconDotsVertical, IconDownload, IconEdit, IconFileTypePdf, IconLayoutGrid, IconList, IconMail, IconPlus, IconTrash, IconUpload, IconUser } from '@tabler/icons-react';
+import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
+import { useEffect, useRef, useState } from 'react';
+
+import { Pagination, SegmentedControl } from '@mantine/core';
+
 
 interface Guest {
   id: number;
@@ -40,14 +47,14 @@ export default function GuestTable() {
   const [editing, setEditing] = useState<Guest | null>(null);
   const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState<'csv' | 'xlsx' | 'pdf' | null>(null);
-  const [errorDetails, setErrorDetails] = useState<{ row: number; error: string | object }[]>([]);
   const [page, setPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({ columnAccessor: 'name', direction: 'asc' });
   const [search, setSearch] = useState('');
   const [totalRecords, setTotalRecords] = useState(0);
   const [loading, setLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [viewMode, setViewMode] = useState('table');
+  const [importModalOpen, setImportModalOpen] = useState(false);
   const theme = useMantineTheme();
 
   const form = useForm({
@@ -140,52 +147,6 @@ export default function GuestTable() {
     setGuests(guests => guests.filter(g => g.id !== id));
   }
 
-  // Download modelo CSV
-  async function handleDownloadModel() {
-    try {
-      const res = await guests_download_model();
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'modelo_convidados.csv');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      notifications.show({ color: 'green', message: 'Modelo CSV baixado com sucesso!' });
-    } catch {
-      notifications.show({ color: 'red', message: 'Erro ao baixar modelo.' });
-    }
-  }
-
-  // Importar convidados
-  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImporting(true);
-    setErrorDetails([]);
-    try {
-      const res = await guests_import(file);
-      if (res.status === 207 && res.data.errors) {
-        setErrorDetails(res.data.errors);
-        notifications.show({ color: 'yellow', message: res.data.detail || 'Importação parcial. Veja detalhes.' });
-      } else {
-        notifications.show({ color: 'green', message: res.data.detail || 'Convidados importados com sucesso!' });
-        // Atualiza lista após importação
-        const data = await guests_list();
-        setGuests(Array.isArray(data) ? data : []);
-      }
-    } catch (err: unknown) {
-      let msg = 'Erro ao importar convidados.';
-      if (err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'detail' in err.response.data) {
-        msg = err.response.data.detail;
-      }
-      notifications.show({ color: 'red', message: msg });
-    } finally {
-      setImporting(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  }
-
   // Exportar convidados
   async function handleExport(format: 'csv' | 'xlsx' | 'pdf') {
     setExporting(format);
@@ -232,14 +193,13 @@ export default function GuestTable() {
             <Menu.Dropdown>
               <Menu.Item
                 leftSection={<IconDownload size={18} />}
-                onClick={handleDownloadModel}
+                onClick={() => setImportModalOpen(true)}
               >
                 Baixar modelo de planilha
               </Menu.Item>
               <Menu.Item
                 leftSection={<IconUpload size={18} />}
-                onClick={() => fileInputRef.current?.click()}
-                disabled={importing}
+                onClick={() => setImportModalOpen(true)}
               >
                 Importar convidados
               </Menu.Item>
@@ -252,14 +212,6 @@ export default function GuestTable() {
               </Menu.Item>
             </Menu.Dropdown>
           </Menu>
-          <input
-            type="file"
-            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            style={{ display: 'none' }}
-            onChange={handleImport}
-            ref={fileInputRef}
-            disabled={importing}
-          />
         </Group>
       </Group>
       {/* Busca global */}
@@ -270,91 +222,210 @@ export default function GuestTable() {
         mb={-8}
         style={{ maxWidth: 320 }}
       />
-      {/* Feedback de erros detalhados na importação */}
-      {errorDetails.length > 0 && (
-        <div style={{ background: '#fffbe6', border: '1px solid #ffe58f', padding: 12, borderRadius: 6, marginBottom: 8 }}>
-          <b>Alguns convidados não foram importados:</b>
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
-            {errorDetails.map((err, i) => (
-              <li key={i} style={{ color: '#ad6800' }}>
-                Linha {err.row}: {typeof err.error === 'string' ? err.error : JSON.stringify(err.error)}
-              </li>
-            ))}
-          </ul>
-        </div>
+      <Group justify="flex-end">
+        <SegmentedControl
+          value={viewMode}
+          onChange={setViewMode}
+          data={[
+            { value: 'table', label: <IconList size={16} /> },
+            { value: 'cards', label: <IconCards size={16} /> },
+            { value: 'gallery', label: <IconLayoutGrid size={16} /> },
+          ]}
+        />
+      </Group>
+      {viewMode === 'table' && (
+        <DataTable
+          withBorder
+          borderRadius="md"
+          highlightOnHover
+          verticalSpacing="sm"
+          horizontalSpacing="md"
+          minHeight={200}
+          noRecordsText="Nenhum convidado cadastrado."
+          columns={[
+            { accessor: 'name', title: 'Nome', width: 140, sortable: true },
+            { accessor: 'phone', title: 'Telefone', width: 110, sortable: true },
+            { accessor: 'whatsapp', title: 'WhatsApp', width: 110, render: g => g.whatsapp ? g.whatsapp : '-', textAlign: 'center', sortable: true },
+            { accessor: 'email', title: 'Email', width: 160, sortable: true },
+            { accessor: 'acompanhantes', title: 'Acompanhantes', width: 80, render: g => g.acompanhantes ?? '-', sortable: true },
+            {
+              accessor: 'actions',
+              title: '',
+              width: 130,
+              render: (g: Guest) => (
+                <Group gap={4}>
+                  {g.whatsapp && (
+                    <ActionIcon
+                      variant="subtle"
+                      color="green"
+                      component="a"
+                      href={`https://wa.me/55${g.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('🎉 Olá! Você está convidado para nosso casamento 💍. Por favor, confirme sua presença (RSVP) pelo site ou respondendo esta mensagem. Esperamos você! 🥂')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Enviar RSVP por WhatsApp"
+                    >
+                      <IconBrandWhatsapp size={18} />
+                    </ActionIcon>
+                  )}
+                  {g.email && (
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      component="a"
+                      href={`mailto:${g.email}?subject=${encodeURIComponent('Convite de Casamento - RSVP')}&body=${encodeURIComponent('🎉 Olá! Você está convidado para nosso casamento 💍. Por favor, confirme sua presença (RSVP) pelo site ou respondendo este e-mail. Esperamos você! 🥂')}`}
+                      title="Enviar RSVP por Email"
+                    >
+                      <IconMail size={18} />
+                    </ActionIcon>
+                  )}
+                  <ActionIcon variant="subtle" color="blue" onClick={() => handleEdit(g)}>
+                    <IconEdit size={18} />
+                  </ActionIcon>
+                  <ActionIcon variant="subtle" color="red" onClick={() => handleDelete(g.id)}>
+                    <IconTrash size={18} />
+                  </ActionIcon>
+                </Group>
+              ),
+            },
+          ]}
+          records={guests}
+          totalRecords={totalRecords}
+          page={page}
+          onPageChange={setPage}
+          recordsPerPage={recordsPerPage}
+          onRecordsPerPageChange={setRecordsPerPage}
+          sortStatus={sortStatus}
+          onSortStatusChange={setSortStatus}
+          rowStyle={() => ({ background: theme.colorScheme === 'dark' ? theme.colors.dark[7] : '#f8f9fa' })}
+          styles={{
+            table: { fontSize: rem(15) },
+          }}
+          striped
+          responsive
+          fetching={loading}
+          paginationText={({ from, to, totalRecords }) => `${from}–${to} de ${totalRecords}`}
+          paginationActiveTextColor="blue"
+        />
       )}
-      <DataTable
-        withBorder
-        borderRadius="md"
-        highlightOnHover
-        verticalSpacing="sm"
-        horizontalSpacing="md"
-        minHeight={200}
-        noRecordsText="Nenhum convidado cadastrado."
-        columns={[
-          { accessor: 'name', title: 'Nome', width: 140, sortable: true },
-          { accessor: 'phone', title: 'Telefone', width: 110, sortable: true },
-          { accessor: 'whatsapp', title: 'WhatsApp', width: 110, render: g => g.whatsapp ? g.whatsapp : '-', textAlign: 'center', sortable: true },
-          { accessor: 'email', title: 'Email', width: 160, sortable: true },
-          { accessor: 'acompanhantes', title: 'Acompanhantes', width: 80, render: g => g.acompanhantes ?? '-', sortable: true },
-          {
-            accessor: 'actions',
-            title: '',
-            width: 130,
-            render: (g: Guest) => (
-              <Group gap={4}>
-                {g.whatsapp && (
-                  <ActionIcon
-                    variant="subtle"
-                    color="green"
+      {viewMode === 'cards' && (
+        <ListView
+          items={guests}
+          getItemId={(g) => g.id}
+          getImageUrl={(g) => undefined} // Convidados não têm imagem, então é undefined
+          fallbackIcon={<IconUser size={48} color="var(--mantine-color-gray-5)" />}
+          renderContent={(g) => (
+            <>
+              <Text fw={500} lineClamp={2}>{g.name}</Text>
+              <Text size="sm" c="dimmed">Telefone: {g.phone}</Text>
+              {g.whatsapp && <Text size="sm" c="dimmed">WhatsApp: {g.whatsapp}</Text>}
+              {g.email && <Text size="sm" c="dimmed">Email: {g.email}</Text>}
+              {g.acompanhantes !== undefined && <Text size="sm" c="dimmed">Acompanhantes: {g.acompanhantes}</Text>}
+              {g.alergias && <Text size="sm" c="dimmed">Alergias: {g.alergias}</Text>}
+              {g.observacoes && <Text size="sm" c="dimmed">Observações: {g.observacoes}</Text>}
+            </>
+          )}
+          renderActions={(g) => (
+            <>
+              {g.whatsapp && (
+                <Tooltip label="Enviar RSVP por WhatsApp" position="right">
+                  <Menu.Item
+                    leftSection={<IconBrandWhatsapp size={14} />}
                     component="a"
                     href={`https://wa.me/55${g.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('🎉 Olá! Você está convidado para nosso casamento 💍. Por favor, confirme sua presença (RSVP) pelo site ou respondendo esta mensagem. Esperamos você! 🥂')}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    title="Enviar RSVP por WhatsApp"
                   >
-                    <IconBrandWhatsapp size={18} />
-                  </ActionIcon>
-                )}
-                {g.email && (
-                  <ActionIcon
-                    variant="subtle"
-                    color="gray"
+                    WhatsApp
+                  </Menu.Item>
+                </Tooltip>
+              )}
+              {g.email && (
+                <Tooltip label="Enviar RSVP por Email" position="right">
+                  <Menu.Item
+                    leftSection={<IconMail size={14} />}
                     component="a"
                     href={`mailto:${g.email}?subject=${encodeURIComponent('Convite de Casamento - RSVP')}&body=${encodeURIComponent('🎉 Olá! Você está convidado para nosso casamento 💍. Por favor, confirme sua presença (RSVP) pelo site ou respondendo este e-mail. Esperamos você! 🥂')}`}
-                    title="Enviar RSVP por Email"
                   >
-                    <IconMail size={18} />
-                  </ActionIcon>
-                )}
-                <ActionIcon variant="subtle" color="blue" onClick={() => handleEdit(g)}>
-                  <IconEdit size={18} />
-                </ActionIcon>
-                <ActionIcon variant="subtle" color="red" onClick={() => handleDelete(g.id)}>
-                  <IconTrash size={18} />
-                </ActionIcon>
-              </Group>
-            ),
-          },
-        ]}
-        records={guests}
-        totalRecords={totalRecords}
-        page={page}
-        onPageChange={setPage}
-        recordsPerPage={recordsPerPage}
-        onRecordsPerPageChange={setRecordsPerPage}
-        sortStatus={sortStatus}
-        onSortStatusChange={setSortStatus}
-        rowStyle={() => ({ background: theme.colorScheme === 'dark' ? theme.colors.dark[7] : '#f8f9fa' })}
-        styles={{
-          table: { fontSize: rem(15) },
-        }}
-        striped
-        responsive
-        fetching={loading}
-        paginationText={({ from, to, totalRecords }) => `${from}–${to} de ${totalRecords}`}
-        paginationActiveTextColor="blue"
-      />
+                    Email
+                  </Menu.Item>
+                </Tooltip>
+              )}
+              <Tooltip label="Editar convidado" position="right">
+                <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => handleEdit(g)}>
+                  Editar
+                </Menu.Item>
+              </Tooltip>
+              <Tooltip label="Excluir convidado" position="right">
+                <Menu.Item leftSection={<IconTrash size={14} />} onClick={() => handleDelete(g.id)} color="red">
+                  Excluir
+                </Menu.Item>
+              </Tooltip>
+            </>
+          )}
+        />
+      )}
+      {viewMode === 'gallery' && (
+        <GalleryView
+          items={guests}
+          getItemId={(g) => g.id}
+          getImageUrl={(g) => undefined} // Convidados não têm imagem, então é undefined
+          fallbackIcon={<IconUser size={48} color="var(--mantine-color-gray-5)" />}
+          renderContent={(g) => (
+            <Stack gap="xs">
+              <Text fw={500} lineClamp={2}>{g.name}</Text>
+              <Text size="sm" c="dimmed">Telefone: {g.phone}</Text>
+              {g.whatsapp && <Text size="sm" c="dimmed">WhatsApp: {g.whatsapp}</Text>}
+              {g.email && <Text size="sm" c="dimmed">Email: {g.email}</Text>}
+              {g.acompanhantes !== undefined && <Text size="sm" c="dimmed">Acompanhantes: {g.acompanhantes}</Text>}
+              {g.alergias && <Text size="sm" c="dimmed">Alergias: {g.alergias}</Text>}
+              {g.observacoes && <Text size="sm" c="dimmed">Observações: {g.observacoes}</Text>}
+            </Stack>
+          )}
+          renderActions={(g) => (
+            <>
+              {g.whatsapp && (
+                <Tooltip label="Enviar RSVP por WhatsApp" position="right">
+                  <Menu.Item
+                    leftSection={<IconBrandWhatsapp size={14} />}
+                    component="a"
+                    href={`https://wa.me/55${g.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('🎉 Olá! Você está convidado para nosso casamento 💍. Por favor, confirme sua presença (RSVP) pelo site ou respondendo esta mensagem. Esperamos você! 🥂')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    WhatsApp
+                  </Menu.Item>
+                </Tooltip>
+              )}
+              {g.email && (
+                <Tooltip label="Enviar RSVP por Email" position="right">
+                  <Menu.Item
+                    leftSection={<IconMail size={14} />}
+                    component="a"
+                    href={`mailto:${g.email}?subject=${encodeURIComponent('Convite de Casamento - RSVP')}&body=${encodeURIComponent('🎉 Olá! Você está convidado para nosso casamento 💍. Por favor, confirme sua presença (RSVP) pelo site ou respondendo este e-mail. Esperamos você! 🥂')}`}
+                  >
+                    Email
+                  </Menu.Item>
+                </Tooltip>
+              )}
+              <Tooltip label="Editar convidado" position="right">
+                <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => handleEdit(g)}>
+                  Editar
+                </Menu.Item>
+              </Tooltip>
+              <Tooltip label="Excluir convidado" position="right">
+                <Menu.Item leftSection={<IconTrash size={14} />} onClick={() => handleDelete(g.id)} color="red">
+                  Excluir
+                </Menu.Item>
+              </Tooltip>
+            </>
+          )}
+        />
+      )}
+      {(viewMode === 'cards' || viewMode === 'gallery') && (
+        <Group justify="center" mt="md">
+          <Pagination total={Math.ceil(totalRecords / recordsPerPage)} value={page} onChange={setPage} />
+        </Group>
+      )}
       <Modal
         opened={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -448,13 +519,26 @@ export default function GuestTable() {
           </Stack>
         </form>
       </Modal>
+      <ImportGuestsModal
+        opened={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        onSuccess={() => {
+          setImportModalOpen(false);
+          // Refresh guests list after successful import
+          guests_list({ page, page_size: recordsPerPage, search, ordering: sortStatus.columnAccessor ? `${sortStatus.direction === 'desc' ? '-' : ''}${sortStatus.columnAccessor}` : '' })
+            .then(data => {
+              setGuests(data.results || []);
+              setTotalRecords(data.count || 0);
+            });
+        }}
+      />
       {/* Responsividade customizada para mobile */}
       <style>{`
         @media (max-width: 600px) {
           .mantine-DataTable-table {
             font-size: 13px;
           }
-          .mantine-DataTable-table th, .mantine-DataTable-table td {
+          .mantine-DataTable-table th, .mantine-DataTable-table-td {
             padding: 8px 4px;
           }
         }

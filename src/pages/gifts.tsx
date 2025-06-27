@@ -1,10 +1,12 @@
+import { ListView } from '@/components/ListView';
+import { GalleryView } from '@/components/GalleryView';
 import { GiftFormModal } from '@/components/GiftFormModal';
 import BaseLayout from '@/components/Layout/_BaseLayout';
 import { giftsService } from '@/services/giftsService';
 import { guests_list } from '@/services/guests';
 import { Gift } from '@/types/gift';
-import { Box, Button, Group, Modal, SegmentedControl, Select, Text, TextInput, Title, Menu } from '@mantine/core';
-import { IconBrandFacebook, IconBrandWhatsapp, IconCopy, IconGift, IconSearch, IconShare, IconCheck, IconEye, IconEdit, IconRefresh, IconShoppingCart, IconStatusChange, IconDotsVertical, IconDownload, IconUpload, IconFileTypePdf, IconGiftFilled } from '@tabler/icons-react';
+import { Box, Button, Group, Modal, SegmentedControl, Select, Text, TextInput, Title, Menu, Pagination, Flex } from '@mantine/core';
+import { IconBrandFacebook, IconBrandWhatsapp, IconCopy, IconGift, IconSearch, IconShare, IconCheck, IconEye, IconEdit, IconRefresh, IconShoppingCart, IconStatusChange, IconDotsVertical, IconDownload, IconUpload, IconFileTypePdf, IconGiftFilled, IconLayoutGrid, IconCards, IconList } from '@tabler/icons-react';
 import { DataTable } from 'mantine-datatable';
 import { NextPage } from 'next';
 import { useEffect, useRef, useState } from 'react';
@@ -54,6 +56,7 @@ const GiftsPage: NextPage = () => {
   const [importPreview, setImportPreview] = useState<any[]>([]);
   const [importColumns, setImportColumns] = useState<string[]>([]);
   const [importMapping, setImportMapping] = useState<Record<string, string>>({});
+  const [viewMode, setViewMode] = useState('table');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -278,49 +281,157 @@ const GiftsPage: NextPage = () => {
             onChange={setStatus}
           />
         </Group>
-        <DataTable
-          records={gifts}
-          columns={[
-            { accessor: 'name', title: 'Nome' },
-            { accessor: 'value', title: 'Valor', render: (g) => `R$ ${g.value}` },
-            { accessor: 'category', title: 'Categoria', render: (g) => categoryOptions.find(c => c.value === g.category)?.label || g.category },
-            { accessor: 'status', title: 'Status', render: (g) => <Badge color={statusLabels[g.status]?.color}>{statusLabels[g.status]?.label}</Badge> },
-            {
-              accessor: 'actions',
-              title: 'Ações',
-              render: (g) => (
-                <Group gap={4}>
-                  {g.status === 'available' && (
-                    <Tooltip label="Marcar como comprado">
-                      <ActionIcon color="green" onClick={() => handleMarkAsPurchased(g)}><IconCheck size={18} /></ActionIcon>
+        <Group justify="flex-end" mb="md">
+          <SegmentedControl
+            value={viewMode}
+            onChange={setViewMode}
+            data={[
+              { value: 'table', label: <IconList size={16} /> },
+              { value: 'cards', label: <IconCards size={16} /> },
+              { value: 'gallery', label: <IconLayoutGrid size={16} /> },
+            ]}
+          />
+        </Group>
+        {viewMode === 'table' && (
+          <DataTable
+            records={gifts}
+            columns={[
+              { accessor: 'name', title: 'Nome' },
+              { accessor: 'value', title: 'Valor', render: (g) => `R$ ${g.value}` },
+              { accessor: 'category', title: 'Categoria', render: (g) => categoryOptions.find(c => c.value === g.category)?.label || g.category },
+              { accessor: 'status', title: 'Status', render: (g) => <Badge color={statusLabels[g.status]?.color}>{statusLabels[g.status]?.label}</Badge> },
+              {
+                accessor: 'actions',
+                title: 'Ações',
+                render: (g) => (
+                  <Group gap={4}>
+                    {g.status === 'available' && (
+                      <Tooltip label="Marcar como comprado">
+                        <ActionIcon color="green" onClick={() => handleMarkAsPurchased(g)}><IconCheck size={18} /></ActionIcon>
+                      </Tooltip>
+                    )}
+                    {(g.status === 'purchased' || g.status === 'reserved') && (
+                      <Tooltip label="Marcar como disponível">
+                        <ActionIcon color="gray" onClick={() => handleMarkAsAvailable(g)}><IconStatusChange size={18} /></ActionIcon>
+                      </Tooltip>
+                    )}
+                    {g.link && (
+                      <Tooltip label="Ver presente">
+                        <ActionIcon color="blue" onClick={() => window.open(g.link, '_blank')}><IconEye size={18} /></ActionIcon>
+                      </Tooltip>
+                    )}
+                    <Tooltip label="Editar">
+                      <ActionIcon color="orange" onClick={() => { setEditingGift(g); setModalOpen(true); }}><IconEdit size={18} /></ActionIcon>
                     </Tooltip>
-                  )}
-                  {(g.status === 'purchased' || g.status === 'reserved') && (
-                    <Tooltip label="Marcar como disponível">
-                      <ActionIcon color="gray" onClick={() => handleMarkAsAvailable(g)}><IconStatusChange size={18} /></ActionIcon>
-                    </Tooltip>
-                  )}
-                  {g.link && (
-                    <Tooltip label="Ver presente">
-                      <ActionIcon color="blue" onClick={() => window.open(g.link, '_blank')}><IconEye size={18} /></ActionIcon>
-                    </Tooltip>
-                  )}
-                  <Tooltip label="Editar">
-                    <ActionIcon color="orange" onClick={() => { setEditingGift(g); setModalOpen(true); }}><IconEdit size={18} /></ActionIcon>
-                  </Tooltip>
-                </Group>
-              )
-            },
-          ]}
-          fetching={loading}
-          totalRecords={total}
-          page={page}
-          onPageChange={setPage}
-          recordsPerPage={10}
-          minHeight={300}
-          highlightOnHover
-          withBorder
-        />
+                  </Group>
+                )
+              },
+            ]}
+            fetching={loading}
+            totalRecords={total}
+            page={page}
+            onPageChange={setPage}
+            recordsPerPage={10}
+            minHeight={300}
+            highlightOnHover
+            withBorder
+          />
+        )}
+        {viewMode === 'cards' &&
+          <ListView
+            items={gifts}
+            getItemId={(g) => g.id}
+            getImageUrl={(g) => g.image}
+            fallbackIcon={<IconGift size={48} color="var(--mantine-color-gray-5)" />}
+            renderContent={(g) => (
+              <>
+                <Text fw={500} lineClamp={2}>{g.name}</Text>
+                <Text size="sm" c="dimmed">
+                  Valor: R$ {g.value}
+                </Text>
+                <Text size="sm" c="dimmed">
+                  Categoria: {categoryOptions.find(c => c.value === g.category)?.label || g.category}
+                </Text>
+                {g.link && (
+                  <Text size="sm" c="blue" style={{ cursor: 'pointer' }} onClick={() => window.open(g.link, '_blank')}>
+                    Ver link
+                  </Text>
+                )}
+              </>
+            )}
+            renderStatus={(g) => (
+              <Badge color={statusLabels[g.status]?.color}>{statusLabels[g.status]?.label}</Badge>
+            )}
+            renderActions={(g) => (
+              <>
+                {g.status === 'available' && (
+                  <Menu.Item leftSection={<IconCheck size={14} />} onClick={() => handleMarkAsPurchased(g)}>
+                    Marcar como comprado
+                  </Menu.Item>
+                )}
+                {(g.status === 'purchased' || g.status === 'reserved') && (
+                  <Menu.Item leftSection={<IconStatusChange size={14} />} onClick={() => handleMarkAsAvailable(g)}>
+                    Marcar como disponível
+                  </Menu.Item>
+                )}
+                {g.link && (
+                  <Menu.Item leftSection={<IconEye size={14} />} onClick={() => window.open(g.link, '_blank')}>
+                    Ver presente
+                  </Menu.Item>
+                )}
+                <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => { setEditingGift(g); setModalOpen(true); }}>
+                  Editar
+                </Menu.Item>
+              </>
+            )}
+          />
+        }
+        {viewMode === 'gallery' &&
+          <GalleryView
+            items={gifts}
+            getItemId={(g) => g.id}
+            getImageUrl={(g) => g.image}
+            fallbackIcon={<IconGift size={48} color="var(--mantine-color-gray-5)" />}
+            renderContent={(g) => (
+              <Flex direction="column" gap="xs">
+                <Text fw={500} lineClamp={2}>{g.name}</Text>
+                <Badge color={statusLabels[g.status]?.color} fullWidth>
+                  {statusLabels[g.status]?.label}
+                </Badge>
+                <Text size="sm" c="dimmed">
+                  Valor: R$ {g.value}
+                </Text>
+              </Flex>
+            )}
+            renderActions={(g) => (
+              <>
+                {g.status === 'available' && (
+                  <Menu.Item leftSection={<IconCheck size={14} />} onClick={() => handleMarkAsPurchased(g)}>
+                    Marcar como comprado
+                  </Menu.Item>
+                )}
+                {(g.status === 'purchased' || g.status === 'reserved') && (
+                  <Menu.Item leftSection={<IconStatusChange size={14} />} onClick={() => handleMarkAsAvailable(g)}>
+                    Marcar como disponível
+                  </Menu.Item>
+                )}
+                {g.link && (
+                  <Menu.Item leftSection={<IconEye size={14} />} onClick={() => window.open(g.link, '_blank')}>
+                    Ver presente
+                  </Menu.Item>
+                )}
+                <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => { setEditingGift(g); setModalOpen(true); }}>
+                  Editar
+                </Menu.Item>
+              </>
+            )}
+          />
+        }
+        {(viewMode === 'cards' || viewMode === 'gallery') && (
+          <Group justify="center" mt="md">
+            <Pagination total={Math.ceil(total / 10)} value={page} onChange={setPage} />
+          </Group>
+        )}
         <GiftFormModal
           opened={modalOpen}
           onClose={() => setModalOpen(false)}
