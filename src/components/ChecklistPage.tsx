@@ -175,8 +175,8 @@ export default function ChecklistPage() {
             Exportar PDF
           </Button>
         </Group>
-        <Box mb={24} style={{ maxWidth: 600 }}>
-          <Bar data={chartData} options={{ plugins: { legend: { display: true } }, responsive: true, maintainAspectRatio: false, height: 200 }} />
+        <Box mb={24} style={{ maxWidth: '90%'}}>
+          <Bar data={chartData} options={{ plugins: { legend: { display: true } }, responsive: true, maintainAspectRatio: false, height: 300 }} />
         </Box>
         {loading ? <Loader /> : (
           <SimpleGrid cols={isMobile ? 1 : 2} spacing="md" verticalSpacing="md">

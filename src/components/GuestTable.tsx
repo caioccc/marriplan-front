@@ -11,9 +11,10 @@ import {
   useMantineTheme,
   rem,
   Title,
+  Menu,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { IconEdit, IconTrash, IconPlus, IconBrandWhatsapp, IconMail } from '@tabler/icons-react';
+import { IconEdit, IconTrash, IconPlus, IconBrandWhatsapp, IconMail, IconGiftFilled, IconDotsVertical } from '@tabler/icons-react';
 import { guests_list, guests_create, guests_update, guests_delete, guests_download_model, guests_import, guests_export } from '@/services/guests';
 import { notifications } from '@mantine/notifications';
 import { IconDownload, IconUpload, IconFileTypeCsv, IconFileTypeXls, IconFileTypePdf } from '@tabler/icons-react';
@@ -214,11 +215,52 @@ export default function GuestTable() {
 
   return (
     <Stack spacing="md">
-      <Group justify="space-between" mb="xs">
+      <Group justify="space-between" mb="md">
         <Title order={2}>Meus Convidados</Title>
-        <Button leftSection={<IconPlus size={18} />} onClick={handleAdd} variant="light">
-          Adicionar convidado
-        </Button>
+      </Group>
+      <Group mb="md" align="end" justify="end">
+        <Group>
+          <Button leftSection={<IconPlus size={18} />} onClick={handleAdd} variant="filled" color="blue">
+            Adicionar convidado
+          </Button>
+          <Menu shadow="md" width={220} position="bottom-end">
+            <Menu.Target>
+              <Button variant="light" px={8} style={{ minWidth: 44 }}>
+                <IconDotsVertical size={22} />
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                leftSection={<IconDownload size={18} />}
+                onClick={handleDownloadModel}
+              >
+                Baixar modelo de planilha
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconUpload size={18} />}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={importing}
+              >
+                Importar convidados
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconFileTypePdf size={18} />}
+                onClick={() => handleExport('pdf')}
+                loading={exporting === 'pdf'}
+              >
+                Exportar PDF
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+          <input
+            type="file"
+            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            style={{ display: 'none' }}
+            onChange={handleImport}
+            ref={fileInputRef}
+            disabled={importing}
+          />
+        </Group>
       </Group>
       {/* Busca global */}
       <TextInput
@@ -228,54 +270,6 @@ export default function GuestTable() {
         mb={-8}
         style={{ maxWidth: 320 }}
       />
-      {/* Botões de importação/exportação/modelo */}
-      <Group mb="xs" gap="sm">
-        <Button leftSection={<IconDownload size={16} />} variant="outline" onClick={handleDownloadModel}>
-          Baixar modelo CSV
-        </Button>
-        <Button
-          leftSection={<IconUpload size={16} />}
-          variant="outline"
-          component="label"
-          loading={importing}
-        >
-          Importar convidados
-          <input
-            type="file"
-            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            style={{ display: 'none' }}
-            onChange={handleImport}
-            ref={fileInputRef}
-            disabled={importing}
-          />
-        </Button>
-        <Button.Group>
-          {/* <Button
-            leftSection={<IconFileTypeCsv size={16} />}
-            variant="outline"
-            loading={exporting === 'csv'}
-            onClick={() => handleExport('csv')}
-          >
-            Exportar CSV
-          </Button> */}
-          {/* <Button
-            leftSection={<IconFileTypeXls size={16} />}
-            variant="outline"
-            loading={exporting === 'xlsx'}
-            onClick={() => handleExport('xlsx')}
-          >
-            Exportar Excel
-          </Button> */}
-          <Button
-            leftSection={<IconFileTypePdf size={16} />}
-            variant="outline"
-            loading={exporting === 'pdf'}
-            onClick={() => handleExport('pdf')}
-          >
-            Exportar PDF
-          </Button>
-        </Button.Group>
-      </Group>
       {/* Feedback de erros detalhados na importação */}
       {errorDetails.length > 0 && (
         <div style={{ background: '#fffbe6', border: '1px solid #ffe58f', padding: 12, borderRadius: 6, marginBottom: 8 }}>

@@ -3,13 +3,15 @@ import BaseLayout from '@/components/Layout/_BaseLayout';
 import { giftsService } from '@/services/giftsService';
 import { guests_list } from '@/services/guests';
 import { Gift } from '@/types/gift';
-import { Box, Button, Group, Modal, SegmentedControl, Select, Text, TextInput, Title } from '@mantine/core';
-import { IconBrandFacebook, IconBrandWhatsapp, IconCopy, IconGift, IconSearch, IconShare, IconCheck, IconEye, IconEdit, IconRefresh, IconShoppingCart, IconStatusChange } from '@tabler/icons-react';
+import { Box, Button, Group, Modal, SegmentedControl, Select, Text, TextInput, Title, Menu } from '@mantine/core';
+import { IconBrandFacebook, IconBrandWhatsapp, IconCopy, IconGift, IconSearch, IconShare, IconCheck, IconEye, IconEdit, IconRefresh, IconShoppingCart, IconStatusChange, IconDotsVertical, IconDownload, IconUpload, IconFileTypePdf, IconGiftFilled } from '@tabler/icons-react';
 import { DataTable } from 'mantine-datatable';
 import { NextPage } from 'next';
 import { useEffect, useRef, useState } from 'react';
 import { Tooltip, Badge, ActionIcon } from '@mantine/core';
 import { MarkAsPurchasedModal } from '@/components/MarkAsPurchasedModal';
+import ImportGiftsModal from '@/components/ImportGiftsModal';
+import * as XLSX from 'xlsx';
 
 const statusOptions = [
   { label: 'Todos', value: '' },
@@ -48,6 +50,10 @@ const GiftsPage: NextPage = () => {
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importPreview, setImportPreview] = useState<any[]>([]);
+  const [importColumns, setImportColumns] = useState<string[]>([]);
+  const [importMapping, setImportMapping] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -165,21 +171,89 @@ const GiftsPage: NextPage = () => {
     }
   };
 
+  // Função para o modal de importação: apenas leitura local
+  const handleImportGiftsFile = async (file: File) => {
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data, { type: 'array' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    const [header, ...rows] = json;
+    setImportColumns(header as string[]);
+    setImportPreview(rows.map(row => {
+      const obj: Record<string, string> = {};
+      (header as string[]).forEach((col, idx) => {
+        obj[col] = row[idx] ?? '';
+      });
+      return obj;
+    }));
+    // Não faz upload aqui!
+    return {
+      columns: header as string[],
+      preview: rows.map(row => {
+        const obj: Record<string, string> = {};
+        (header as string[]).forEach((col, idx) => {
+          obj[col] = row[idx] ?? '';
+        });
+        return obj;
+      })
+    };
+  };
+  // Função para o modal de importação: upload do arquivo final
+  const handleFinalizeImport = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await giftsService.importGifts(formData);
+    if (res.errors && res.errors.length > 0) return { success: false, errors: res.errors };
+    // Atualiza lista após sucesso
+    giftsService.listGifts({ page, status, search, category })
+      .then((res) => {
+        setGifts(res.results);
+        setTotal(res.count);
+      });
+    return { success: true };
+  };
+
   return (
     <BaseLayout title="Lista de Presentes" loading={loading}>
       <Box>
         <Group justify="space-between" mb="md">
-
           <Title order={2}>
             Lista de Presentes
           </Title>
+        </Group>
+        <Group mb="md" align="end" justify="end">
           <Group>
-            <Button onClick={handleDownloadTemplate} variant="light">Baixar modelo</Button>
-            <Button onClick={handleImportClick} loading={importing} variant="light">Importar planilha</Button>
-            <input type="file" accept=".xlsx,.xls,.csv" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImportChange} />
-            <Button onClick={handleExportPDF} variant="light">Exportar PDF</Button>
             <Button leftSection={<IconShare size={18} />} variant="outline" onClick={handleShare}>Compartilhar lista</Button>
-            <Button onClick={() => { setEditingGift(undefined); setModalOpen(true); }}>Adicionar Presente</Button>
+            <Button leftSection={<IconGiftFilled size={18} />} onClick={() => { setEditingGift(undefined); setModalOpen(true); }}>Adicionar Presente</Button>
+            <Menu shadow="md" width={220} position="bottom-end">
+              <Menu.Target>
+                <Button variant="light" px={8} style={{ minWidth: 44 }}>
+                  <IconDotsVertical size={22} />
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={<IconDownload size={18} />}
+                  onClick={handleDownloadTemplate}
+                >
+                  Baixar modelo de planilha
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconUpload size={18} />}
+                  onClick={() => setImportModalOpen(true)}
+                  disabled={importing}
+                >
+                  Importar planilha
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconFileTypePdf size={18} />}
+                  onClick={handleExportPDF}
+                >
+                  Exportar PDF
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+            <input type="file" accept=".xlsx,.xls,.csv" ref={fileInputRef} style={{ display: 'none' }} onChange={handleImportChange} />
           </Group>
         </Group>
         <Group mb="md">
@@ -278,6 +352,13 @@ const GiftsPage: NextPage = () => {
           </Group>
           <Text mt="md" size="sm" color="dimmed">Link público: <a href={shareUrl} target="_blank" rel="noopener noreferrer">{shareUrl}</a></Text>
         </Modal>
+        <ImportGiftsModal
+          opened={importModalOpen}
+          onClose={() => setImportModalOpen(false)}
+          onSuccess={() => setImportModalOpen(false)}
+          downloadTemplate={handleDownloadTemplate}
+          finalizeImport={handleFinalizeImport}
+        />
         {importError && <Text color="red" size="sm">{importError}</Text>}
         {importSuccess && <Text color="green" size="sm">{importSuccess}</Text>}
       </Box>

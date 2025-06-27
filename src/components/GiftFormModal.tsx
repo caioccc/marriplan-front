@@ -98,7 +98,23 @@ export function GiftFormModal({ opened, onClose, onSave, initial }: GiftFormModa
         <NumberInput label="Valor" required value={form.value || 0} onChange={v => handleChange('value', v)} mb="sm" min={0} prefix="R$ " error={errors.value} />
         <TextInput label="Link" value={form.link || ''} onChange={e => handleChange('link', e.target.value)} mb="sm" />
         <Textarea label="Descrição" value={form.description || ''} onChange={e => handleChange('description', e.target.value)} mb="sm" />
-        <Select label="Categoria" required value={form.category || ''} onChange={v => handleChange('category', v)} data={[{ value: 'home', label: 'Casa' }, { value: 'kitchen', label: 'Cozinha' }, { value: 'decor', label: 'Decoração' }]} mb="sm" error={errors.category} />
+        <Select label="Categoria" required value={form.category || ''} onChange={v => handleChange('category', v)} data={[
+          { value: 'home', label: 'Casa' },
+          { value: 'travel', label: 'Viagem' },
+          { value: 'money', label: 'Dinheiro' },
+          { value: 'other', label: 'Outros' },
+          { value: 'experience', label: 'Experiência' },
+          { value: 'charity', label: 'Caridade' },
+          { value: 'electronics', label: 'Eletrônicos' },
+          { value: 'furniture', label: 'Móveis' },
+          { value: 'kitchen', label: 'Cozinha' },
+          { value: 'clothing', label: 'Roupas' },
+          { value: 'books', label: 'Livros' },
+          { value: 'toys', label: 'Brinquedos' },
+          { value: 'jewelry', label: 'Joias' },
+          { value: 'decor', label: 'Decoração' },
+          { value: 'gift_card', label: 'Cartão Presente' },
+        ]} mb="sm" error={errors.category} />
         <Select label="Ícone" value={form.icon || ''} onChange={v => handleChange('icon', v)} data={iconOptions.map(opt => ({ value: opt.value, label: opt.label, icon: opt.icon }))} itemComponent={({ value, label, ...rest }) => <Group><span>{iconOptions.find(i => i.value === value)?.icon}</span><span>{label}</span></Group>} mb="sm" />
         <Select label="Status" required value={form.status || 'available'} onChange={v => handleChange('status', v)} data={[
           { value: 'available', label: 'Disponível' },
