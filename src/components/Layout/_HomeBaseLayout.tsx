@@ -1,6 +1,5 @@
-import React from 'react'
-import {Paper, Title} from '@mantine/core';
-import LanguageSelector from '@/components/LanguageSelector';
+import { Paper, Title } from '@mantine/core';
+import React from 'react';
 
 interface HomeBaseLayoutProps {
     children: React.ReactNode
@@ -8,9 +7,9 @@ interface HomeBaseLayoutProps {
 }
 
 const HomeBaseLayout = ({
-                            children,
-                            title,
-                        }: HomeBaseLayoutProps) => {
+    children,
+    title,
+}: HomeBaseLayoutProps) => {
 
     return (
         <div className="flex justify-center items-center min-h-screen bg-gray-50 px-4">

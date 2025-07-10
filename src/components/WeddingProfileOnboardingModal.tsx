@@ -26,11 +26,11 @@ const Marker = dynamic(() => import('react-leaflet').then(mod => mod.Marker), { 
 const useMapEvents = dynamic(() => import('react-leaflet').then(mod => mod.useMapEvents), { ssr: false });
 
 // Importar L apenas no client-side
-let L: any = null;
-if (typeof window !== 'undefined') {
-  L = require('leaflet');
-  require('leaflet/dist/leaflet.css');
-}
+// let L: any = null;
+// if (typeof window !== 'undefined') {
+//   L = require('leaflet');
+//   require('leaflet/dist/leaflet.css');
+// }
 
 export default function WeddingProfileOnboardingModal({ opened, onClose, onComplete }) {
   const { user, refreshUser } = useAuth();

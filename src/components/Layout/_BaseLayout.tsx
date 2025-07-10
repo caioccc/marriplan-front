@@ -1,30 +1,30 @@
-import { AppShell, Avatar, Box, Burger, Group, Menu, NavLink, Title, Progress, Text, ThemeIcon, Indicator } from '@mantine/core';
+import { NotificationsBell } from "@/components/NotificationsBell";
+import { ProfileModal } from "@/components/ProfileModal";
+import { SettingsModal } from "@/components/SettingsModal";
+import WeddingProfileOnboardingModal from '@/components/WeddingProfileOnboardingModal';
+import { useAuth } from '@/contexts/AuthContext';
+import { AppShell, Avatar, Box, Burger, Group, Indicator, Menu, NavLink, Progress, Text, ThemeIcon, Title } from '@mantine/core';
+import { useDisclosure, useMediaQuery } from '@mantine/hooks';
 import {
+    IconAlertCircle,
     IconBell,
+    IconCheck,
+    IconChecklist,
     IconChevronDown,
     IconCreditCard,
+    IconGift,
+    IconHeart,
+    IconHome2,
     IconLogout,
     IconMessageCircle,
     IconReportAnalytics,
     IconSettings,
     IconUser,
-    IconCheck,
-    IconAlertCircle,
     IconUserCheck,
-    IconHome,
-    IconHome2,
-    IconWorldWww,
-    IconChecklist,
-    IconGift
+    IconWorldWww
 } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { ReactNode, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useDisclosure } from '@mantine/hooks';
-import { SettingsModal } from "@/components/SettingsModal";
-import { ProfileModal } from "@/components/ProfileModal";
-import { NotificationsBell } from "@/components/NotificationsBell";
-import WeddingProfileOnboardingModal from '@/components/WeddingProfileOnboardingModal';
 
 interface BaseLayoutProps {
     children: ReactNode;
@@ -38,6 +38,8 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
     const [settingsModalOpen, setSettingsModalOpen] = useState(false);
     const [profileModalOpen, setProfileModalOpen] = useState(false);
     const [onboardingModalOpen, setOnboardingModalOpen] = useState(false);
+
+    const isMobile = useMediaQuery('(max-width: 768px)');
 
     const handleLogout = async () => {
         logout();
@@ -72,25 +74,32 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
     }
 
     return (
-
         <AppShell
             padding="xs"
             header={{ height: 60 }}
-            navbar={{
-                width: 300,
-                breakpoint: 'sm',
-                collapsed: { desktop: !opened, mobile: !opened },
-            }}
+            navbar={{ width: 220, breakpoint: 'sm', collapsed: { mobile: !opened, desktop: !opened } }}
         >
             <AppShell.Header p="md">
                 <Group justify="space-between" w="100%">
                     {/* Logo à esquerda */}
                     <Group>
-                        <Burger opened={opened} onClick={toggle} aria-label="Toggle navigation" />
-                        <Title order={3} m={0}>
-                            Marriplan
+                        {
+                            isMobile && (
+                                <Burger opened={opened} onClick={toggle} aria-label="Toggle navigation" />
+                            )
+                        }
+                        <Title order={2} c="pink.6">
+                            <Group gap="xs">
+                                {
+                                    !isMobile && (
+                                        <IconHeart size={32} onClick={toggle} aria-label="Toggle navigation" />
+                                    )
+                                }
+                                Marriplan
+                            </Group>
                         </Title>
                     </Group>
+
 
                     {/* Ícones e menu à direita */}
                     <Group>
@@ -170,21 +179,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                 </Group>
             </AppShell.Header>
 
-            <ProfileModal opened={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
-            <WeddingProfileOnboardingModal
-                opened={onboardingModalOpen}
-                onClose={() => setOnboardingModalOpen(false)}
-                onComplete={() => setOnboardingModalOpen(false)}
-            />
-
-            <SettingsModal
-                opened={settingsModalOpen}
-                onClose={() => {
-                    setSettingsModalOpen(false);
-                }}
-            />
-
-            <AppShell.Navbar withBorder p="xs" style={{ width: 250, overflowY: 'auto' }}>
+            <AppShell.Navbar withBorder p="md" style={{ overflowY: 'auto' }}>
                 <NavLink
                     label="Início"
                     leftSection={<IconHome2 size={18} />} // Ícone de dashboard
@@ -203,7 +198,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                     active={router.pathname === '/guests'}
                     onClick={() => router.push('/guests')}
                 />
-                  <NavLink
+                <NavLink
                     label="Lista de Presentes"
                     leftSection={<IconGift size={18} />} // Ícone de presente
                     active={router.pathname === '/gifts'}
@@ -218,14 +213,14 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
 
                 <NavLink
                     label="Meu Site"
-                    leftSection={<IconWorldWww size={18}/>} // Ícone de casa
+                    leftSection={<IconWorldWww size={18} />} // Ícone de casa
                 >
                     <NavLink label="Configuração do Site" onClick={() => router.push('/meu-site')} />
                     <NavLink label="Histórico de Atualizações" onClick={() => router.push('/meu-site/historico')} />
                     <NavLink label="Domínio Personalizado" onClick={() => router.push('/meu-site/dominio')} disabled />
                 </NavLink>
 
-                 <NavLink
+                <NavLink
                     label="Notificações"
                     leftSection={<IconBell size={18} />}
                     active={router.pathname === '/notifications'}
@@ -258,6 +253,20 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                     {children}
                 </Box>
             </AppShell.Main>
+
+            <ProfileModal opened={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
+            <WeddingProfileOnboardingModal
+                opened={onboardingModalOpen}
+                onClose={() => setOnboardingModalOpen(false)}
+                onComplete={() => setOnboardingModalOpen(false)}
+            />
+
+            <SettingsModal
+                opened={settingsModalOpen}
+                onClose={() => {
+                    setSettingsModalOpen(false);
+                }}
+            />
 
             {/*<AppShell.Footer p="md" withBorder style={{height: 50}}>*/}
             {/*    <Text ta="center" size="sm" color="dimmed">*/}
