@@ -44,7 +44,7 @@ export default function PublicGiftListLayout({ children, search, onSearch, filte
           </Group>
         ) : (
           <Group justify="center" align="center" w="100%">
-            <TextInput
+             <TextInput
               placeholder="Buscar por nome ou categoria..."
               leftSection={<IconSearch size={18} />}
               value={search}

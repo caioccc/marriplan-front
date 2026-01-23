@@ -1,7 +1,9 @@
 import PublicGiftListLayout from '@/components/Layout/PublicGiftListLayout';
+import api from '@/services/api';
 import {
   Box, Group, Title, Text, Badge, Image, Card, Button, Checkbox, Stack, Loader, Radio, Pagination, NumberInput, Switch, Divider, ScrollArea, SegmentedControl, Tooltip
 } from '@mantine/core';
+import { useRef } from 'react';
 import { IconExternalLink, IconFilter } from '@tabler/icons-react';
 import { giftsService } from '@/services/giftsService';
 import { Gift } from '@/types/gift';
@@ -34,13 +36,30 @@ function formatCurrency(value: number | string) {
   return value ? value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'R$ 0,00';
 }
 
+import { useCallback } from 'react';
+
 export default function GiftsSharePage() {
   const router = useRouter();
   const { token } = router.query;
   // Filtros e estado
+  // Dados do casamento
+  const [weddingProfile, setWeddingProfile] = useState<any>(null);
+
+  // Função para buscar dados do casamento pelo wedding_profile do primeiro presente
+  const fetchWeddingProfile = useCallback(async (profileId: number) => {
+    try {
+      const res = await api.get(`/api/wedding-profile/${profileId}/`);
+      setWeddingProfile(res.data);
+    } catch (e) {
+      console.log('Erro ao buscar dados do casamento:', e);
+      setWeddingProfile(null);
+    }
+  }, []);
+
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [statusOptions, setStatusOptions] = useState<string[]>([]);
+
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [minPrice, setMinPrice] = useState<number | undefined>();
@@ -73,8 +92,12 @@ export default function GiftsSharePage() {
       setTotal(res.total || 0);
       setCategories(res.categories || []);
       setStatusOptions(res.status || []);
+      // Buscar dados do casamento pelo wedding_profile do primeiro presente
+      if (res.results && res.results.length > 0 && res.results[0].wedding_profile) {
+        fetchWeddingProfile(res.results[0].wedding_profile);
+      }
     }).finally(() => setLoading(false));
-  }, [token, selectedCategories, minPrice, maxPrice, selectedStatus, hasLink, search, ordering, page, pageSize]);
+  }, [token, selectedCategories, minPrice, maxPrice, selectedStatus, hasLink, search, ordering, page, pageSize, fetchWeddingProfile]);
 
   // Handlers
   const handleCategoryChange = (cat: string) => {
@@ -164,9 +187,17 @@ export default function GiftsSharePage() {
   );
 
   // Content principal
+  // Título dinâmico com nomes do casal
+  let coupleTitle = 'Lista de Presentes';
+  if (weddingProfile && (weddingProfile.nome_noivo || weddingProfile.nome_noiva)) {
+    coupleTitle = `Lista de Presentes - ${weddingProfile.nome_noivo || ''}${weddingProfile.nome_noivo && weddingProfile.nome_noiva ? ' & ' : ''}${weddingProfile.nome_noiva || ''}`;
+  }
+
   return (
     <PublicGiftListLayout search={search} onSearch={handleSearch} filters={filters}>
       <Box>
+        <Title order={2} mb="md" style={{ textAlign: 'left' }}>{coupleTitle}</Title>
+
         <Group justify="space-between" align="center" mb="md" style={isMobile ? { flexDirection: 'column', gap: 12 } : {}}>
           <div style={isMobile ? { width: '100%', display: 'flex', justifyContent: 'center' } : {}}>
             <SegmentedControl
@@ -246,40 +277,61 @@ export default function GiftsSharePage() {
             {gifts.length === 0 && (
               <Text color="dimmed">Nenhum presente encontrado.</Text>
             )}
-            {gifts.map(gift => {
+            {gifts.map((gift, index) => {
               const isPurchased = gift.status === 'purchased';
               return (
-                <Card shadow="sm" padding="lg" radius="md" withBorder style={{ width: 320, opacity: isPurchased ? 0.7 : 1 }}>
-                  {gift.image && <Image src={gift.image} alt={gift.name} height={140} fit="contain" />}
+                <Card key={index} shadow="sm" padding="lg" radius="md" withBorder style={{ width: 320, opacity: isPurchased ? 0.7 : 1 }}>
+                  <Box style={{ width: '100%', height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fafafa', borderRadius: 8, overflow: 'hidden' }}>
+                    <Image
+                      src={gift.image || '/img/gift-placeholder.png'}
+                      alt={gift.name}
+                      width={180}
+                      height={180}
+                      fit="cover"
+                      style={{ objectFit: 'cover', width: 180, height: 180, minWidth: 180, minHeight: 180, borderRadius: 8, background: '#fafafa' }}
+                      onError={e => {
+                        const target = e.currentTarget as HTMLImageElement;
+                        if (!target.src.includes('/img/gift-placeholder.png')) {
+                          target.src = '/img/gift-placeholder.png';
+                        }
+                      }}
+                    />
+                  </Box>
                   <Title order={4} mt="sm" style={isPurchased ? { textDecoration: 'line-through', color: '#888' } : {}}>{gift.name}</Title>
                   <Text size="sm" color="dimmed" style={isPurchased ? { textDecoration: 'line-through' } : {}}>{gift.description}</Text>
                   <Text mt="xs" style={isPurchased ? { textDecoration: 'line-through' } : {}}>
-                    <b>Valor:</b> {formatCurrency(gift.value)}
+                    <b>Valor:</b> {gift.value ? formatCurrency(gift.value) : 'não informado'}
                   </Text>
-                  <Text style={isPurchased ? { textDecoration: 'line-through' } : {}}>
-                    <b>Categoria:</b> {CATEGORY_LABELS[gift.category] || gift.category}
-                  </Text>
-                  <Badge color={isPurchased ? 'gray' : STATUS_COLORS[gift.status] || 'gray'} mt="xs">
-                    {STATUS_LABELS[gift.status] || gift.status}
-                  </Badge>
-                  {gift.link && (
-                    <Tooltip label="Abrir link do produto" withArrow position="top">
-                      <Button
-                        component="a"
-                        href={gift.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        leftSection={<IconExternalLink size={16} />}
-                        mt="xs"
-                        size="xs"
-                        variant="light"
-                        color="blue"
-                        disabled={isPurchased}
-                      >
-                        Ver Produto
-                      </Button>
-                    </Tooltip>
+                  {gift.category ? (
+                    <Text style={isPurchased ? { textDecoration: 'line-through' } : {}}>
+                      <b>Categoria:</b> {CATEGORY_LABELS[gift.category] || gift.category}
+                    </Text>
+                  ) : (
+                    <Text style={isPurchased ? { textDecoration: 'line-through' } : {}}>
+                      <b>Categoria:</b> não informado
+                    </Text>
                   )}
+                  <Group mt="xs" justify="space-between" align="center">
+                    <Badge color={isPurchased ? 'gray' : STATUS_COLORS[gift.status] || 'gray'}>
+                      {STATUS_LABELS[gift.status] || gift.status}
+                    </Badge>
+                    {gift.link && !isPurchased && (
+                      <Tooltip label="Abrir link do produto" withArrow position="top">
+                        <Button
+                          component="a"
+                          href={gift.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          leftSection={<IconExternalLink size={16} />}
+                          size="xs"
+                          variant="light"
+                          color="blue"
+                        >
+                          Ver Produto
+                        </Button>
+                      </Tooltip>
+                    )}
+                  </Group>
                 </Card>
               );
             })}

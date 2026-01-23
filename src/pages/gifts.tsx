@@ -1,18 +1,17 @@
-import { ListView } from '@/components/ListView';
 import { GalleryView } from '@/components/GalleryView';
 import { GiftFormModal } from '@/components/GiftFormModal';
+import ImportGiftsModal from '@/components/ImportGiftsModal';
 import BaseLayout from '@/components/Layout/_BaseLayout';
+import { ListView } from '@/components/ListView';
+import { MarkAsPurchasedModal } from '@/components/MarkAsPurchasedModal';
 import { giftsService } from '@/services/giftsService';
 import { guests_list } from '@/services/guests';
 import { Gift } from '@/types/gift';
-import { Box, Button, Group, Modal, SegmentedControl, Select, Text, TextInput, Title, Menu, Pagination, Flex } from '@mantine/core';
-import { IconBrandFacebook, IconBrandWhatsapp, IconCopy, IconGift, IconSearch, IconShare, IconCheck, IconEye, IconEdit, IconRefresh, IconShoppingCart, IconStatusChange, IconDotsVertical, IconDownload, IconUpload, IconFileTypePdf, IconGiftFilled, IconLayoutGrid, IconCards, IconList } from '@tabler/icons-react';
+import { ActionIcon, Badge, Box, Button, Flex, Group, Menu, Modal, Pagination, SegmentedControl, Select, Text, TextInput, Title, Tooltip } from '@mantine/core';
+import { IconBrandFacebook, IconBrandWhatsapp, IconCards, IconCheck, IconCopy, IconDotsVertical, IconDownload, IconEdit, IconEye, IconFileTypePdf, IconGift, IconGiftFilled, IconLayoutGrid, IconList, IconSearch, IconShare, IconStatusChange, IconUpload, IconWorldPin } from '@tabler/icons-react';
 import { DataTable } from 'mantine-datatable';
 import { NextPage } from 'next';
 import { useEffect, useRef, useState } from 'react';
-import { Tooltip, Badge, ActionIcon } from '@mantine/core';
-import { MarkAsPurchasedModal } from '@/components/MarkAsPurchasedModal';
-import ImportGiftsModal from '@/components/ImportGiftsModal';
 import * as XLSX from 'xlsx';
 
 const statusOptions = [
@@ -226,6 +225,19 @@ const GiftsPage: NextPage = () => {
         </Group>
         <Group mb="md" align="end" justify="end">
           <Group>
+            <Button
+              leftSection={<IconWorldPin size={18} />}
+              variant="outline"
+              color="gray"
+              onClick={async () => {
+                const res = await giftsService.getShareToken();
+                const token = res.token;
+                setShareUrl(`${window.location.origin}/gifts/share/${token}`);
+                window.open(`${window.location.origin}/gifts/share/${token}`, '_blank')
+              }}
+            >
+              Ver Vitrine
+            </Button>
             <Button leftSection={<IconShare size={18} />} variant="outline" onClick={handleShare}>Compartilhar lista</Button>
             <Button leftSection={<IconGiftFilled size={18} />} onClick={() => { setEditingGift(undefined); setModalOpen(true); }}>Adicionar Presente</Button>
             <Menu shadow="md" width={220} position="bottom-end">
