@@ -296,9 +296,26 @@ export default function ImportGuestsModal({ opened, onClose, onSuccess }: Import
               <Box bg="#fffbe6" p="md" style={{ border: '1px solid #ffe58f', borderRadius: 6 }}>
                 <Text fw={500} mb={4} color="orange">Erros encontrados na importação:</Text>
                 <ul style={{ margin: 0, paddingLeft: 18 }}>
-                  {finalizeError.map((err, i) => (
-                    <li key={i} style={{ color: '#ad6800' }}>{err.error || JSON.stringify(err)}</li>
-                  ))}
+                  {finalizeError.map((err, i) => {
+                    let msg = '';
+                    if (typeof err === 'string') {
+                      msg = err;
+                    } else if (err && typeof err === 'object') {
+                      if (err.error) {
+                        msg = typeof err.error === 'string' ? err.error : JSON.stringify(err.error);
+                      } else if (err.email) {
+                        // Exemplo: { email: ["mensagem"] }
+                        msg = Object.entries(err)
+                          .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+                          .join('; ');
+                      } else {
+                        msg = JSON.stringify(err);
+                      }
+                    }
+                    return (
+                      <li key={i} style={{ color: '#ad6800' }}>{msg}</li>
+                    );
+                  })}
                 </ul>
               </Box>
             )}

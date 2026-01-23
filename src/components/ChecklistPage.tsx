@@ -1,27 +1,16 @@
-import { useEffect, useState, useRef } from 'react';
-import { fetchChecklistTasks } from '@/services/checklist';
-import { ChecklistTask, MONTHS } from '@/types/checklist';
-import { Group, Title, Progress, Card, Button, Select, Text, Stack, Loader, Box, SimpleGrid, Badge } from '@mantine/core';
-import { IconChecklist, IconPlus } from '@tabler/icons-react';
+//eslint-disable react-hooks/exhaustive-deps
+//eslint-disable @typescript-eslint/no-unused-vars
+/* eslint-disable @typescript-eslint/no-explicit-any */
+//eslint no-explicit-any: "off"
+import { createChecklistTask, deleteChecklistTask, fetchChecklistTasks, updateChecklistTask } from '@/services/checklist';
+import { ChecklistTask } from '@/types/checklist';
+import { ActionIcon, Badge, Box, Button, Card, Checkbox, Collapse, Group, Loader, RingProgress, Select, SimpleGrid, Stack, Tabs, Text, TextInput, Title, Tooltip as TooltipMantine } from '@mantine/core';
+import { useMediaQuery, useDisclosure } from '@mantine/hooks';
+import { IconEdit, IconFileDownload, IconPlus, IconSearch, IconTrash } from '@tabler/icons-react';
+import { useEffect, useRef, useState } from 'react';
 import ChecklistTaskModal from './ChecklistTaskModal';
-import { IconCheck, IconEdit, IconTrash, IconFileDownload, IconSearch } from '@tabler/icons-react';
-import { createChecklistTask, updateChecklistTask, deleteChecklistTask } from '@/services/checklist';
-import { TextInput, Checkbox, ActionIcon, Tooltip as TooltipMantine } from '@mantine/core';
-import { Bar } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title as ChartTitle,
-  Tooltip,
-  Legend,
-} from 'chart.js';
 import BaseLayout from './Layout/_BaseLayout';
-import dayjs from 'dayjs';
-import { useMediaQuery } from '@mantine/hooks';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, ChartTitle, Tooltip, Legend);
 
 export default function ChecklistPage() {
   const [tasks, setTasks] = useState<ChecklistTask[]>([]);
@@ -48,53 +37,95 @@ export default function ChecklistPage() {
     (!filterStatus || t.status === filterStatus) &&
     (!filterPriority || t.priority === filterPriority)
   );
-  // Nova lógica de agrupamento baseada em month e days_before_event
-  const PERIODS = [
-    { label: '12 meses antes', test: (t: ChecklistTask) => t.month === 12, month: 12, days_before_event: 0 },
-    { label: '11 meses antes', test: (t: ChecklistTask) => t.month === 11, month: 11, days_before_event: 0 },
-    { label: '10 meses antes', test: (t: ChecklistTask) => t.month === 10, month: 10, days_before_event: 0 },
-    { label: '9 meses antes', test: (t: ChecklistTask) => t.month === 9, month: 9, days_before_event: 0 },
-    { label: '8 meses antes', test: (t: ChecklistTask) => t.month === 8, month: 8, days_before_event: 0 },
-    { label: '7 meses antes', test: (t: ChecklistTask) => t.month === 7, month: 7, days_before_event: 0 },
-    { label: '6 meses antes', test: (t: ChecklistTask) => t.month === 6, month: 6, days_before_event: 0 },
-    { label: '5 meses antes', test: (t: ChecklistTask) => t.month === 5, month: 5, days_before_event: 0 },
-    { label: '4 meses antes', test: (t: ChecklistTask) => t.month === 4, month: 4, days_before_event: 0 },
-    { label: '3 meses antes', test: (t: ChecklistTask) => t.month === 3, month: 3, days_before_event: 0 },
-    { label: '2 meses antes', test: (t: ChecklistTask) => t.month === 2, month: 2, days_before_event: 0 },
-    { label: '1 mês antes', test: (t: ChecklistTask) => t.month === 1, month: 1, days_before_event: 0 },
-    { label: '15 dias antes', test: (t: ChecklistTask) => t.days_before_event === 15, month: 0, days_before_event: 15 },
-    { label: '10 dias antes', test: (t: ChecklistTask) => t.days_before_event === 10, month: 0, days_before_event: 10 },
-    { label: '1 semana antes', test: (t: ChecklistTask) => t.days_before_event === 7, month: 0, days_before_event: 7 },
-    { label: '5 dias antes', test: (t: ChecklistTask) => t.days_before_event === 5, month: 0, days_before_event: 5 },
-    { label: '2 dias antes', test: (t: ChecklistTask) => t.days_before_event === 2, month: 0, days_before_event: 2 },
-    { label: '1 dia antes', test: (t: ChecklistTask) => t.days_before_event === 1, month: 0, days_before_event: 1 },
-    { label: 'Após o casamento', test: (t: ChecklistTask) => t.days_before_event === -1, month: 0, days_before_event: -1 }
+  // Agrupamento por fases para Tabs (cada tab é um grupo de períodos)
+  const PHASES = [
+    {
+      key: 'fase1',
+      label: '12-10 meses antes',
+      periods: [
+        { label: '12 meses antes', test: (t: ChecklistTask) => t.month === 12 },
+        { label: '11 meses antes', test: (t: ChecklistTask) => t.month === 11 },
+        { label: '10 meses antes', test: (t: ChecklistTask) => t.month === 10 },
+      ]
+    },
+    {
+      key: 'fase2',
+      label: '9-5 meses antes',
+      periods: [
+        { label: '9 meses antes', test: (t: ChecklistTask) => t.month === 9 },
+        { label: '8 meses antes', test: (t: ChecklistTask) => t.month === 8 },
+        { label: '7 meses antes', test: (t: ChecklistTask) => t.month === 7 },
+        { label: '6 meses antes', test: (t: ChecklistTask) => t.month === 6 },
+        { label: '5 meses antes', test: (t: ChecklistTask) => t.month === 5 },
+      ]
+    },
+    {
+      key: 'fase3',
+      label: '4-1 mês antes',
+      periods: [
+        { label: '4 meses antes', test: (t: ChecklistTask) => t.month === 4 },
+        { label: '3 meses antes', test: (t: ChecklistTask) => t.month === 3 },
+        { label: '2 meses antes', test: (t: ChecklistTask) => t.month === 2 },
+        { label: '1 mês antes', test: (t: ChecklistTask) => t.month === 1 },
+      ]
+    },
+    {
+      key: 'fase4',
+      label: 'Dias finais e pós',
+      periods: [
+        { label: '15 dias antes', test: (t: ChecklistTask) => t.days_before_event === 15 },
+        { label: '10 dias antes', test: (t: ChecklistTask) => t.days_before_event === 10 },
+        { label: '1 semana antes', test: (t: ChecklistTask) => t.days_before_event === 7 },
+        { label: '5 dias antes', test: (t: ChecklistTask) => t.days_before_event === 5 },
+        { label: '2 dias antes', test: (t: ChecklistTask) => t.days_before_event === 2 },
+        { label: '1 dia antes', test: (t: ChecklistTask) => t.days_before_event === 1 },
+        { label: 'Após o casamento', test: (t: ChecklistTask) => t.days_before_event === -1 },
+      ]
+    }
   ];
 
-  const tasksByPeriod = PERIODS.map(period => ({
-    label: period.label,
-    tasks: filteredTasks.filter(period.test)
-  }));
+  // Mapeamento dos períodos para exibição
+  const PERIODS = [
+    { label: '12 meses antes', test: (t: ChecklistTask) => t.month === 12 },
+    { label: '11 meses antes', test: (t: ChecklistTask) => t.month === 11 },
+    { label: '10 meses antes', test: (t: ChecklistTask) => t.month === 10 },
+    { label: '9 meses antes', test: (t: ChecklistTask) => t.month === 9 },
+    { label: '8 meses antes', test: (t: ChecklistTask) => t.month === 8 },
+    { label: '7 meses antes', test: (t: ChecklistTask) => t.month === 7 },
+    { label: '6 meses antes', test: (t: ChecklistTask) => t.month === 6 },
+    { label: '5 meses antes', test: (t: ChecklistTask) => t.month === 5 },
+    { label: '4 meses antes', test: (t: ChecklistTask) => t.month === 4 },
+    { label: '3 meses antes', test: (t: ChecklistTask) => t.month === 3 },
+    { label: '2 meses antes', test: (t: ChecklistTask) => t.month === 2 },
+    { label: '1 mês antes', test: (t: ChecklistTask) => t.month === 1 },
+    { label: '15 dias antes', test: (t: ChecklistTask) => t.days_before_event === 15 },
+    { label: '10 dias antes', test: (t: ChecklistTask) => t.days_before_event === 10 },
+    { label: '1 semana antes', test: (t: ChecklistTask) => t.days_before_event === 7 },
+    { label: '5 dias antes', test: (t: ChecklistTask) => t.days_before_event === 5 },
+    { label: '2 dias antes', test: (t: ChecklistTask) => t.days_before_event === 2 },
+    { label: '1 dia antes', test: (t: ChecklistTask) => t.days_before_event === 1 },
+    { label: 'Após o casamento', test: (t: ChecklistTask) => t.days_before_event === -1 }
+  ];
 
-  // Gráfico de barras: mostrar apenas meses
-  const chartData = {
-    labels: MONTHS,
-    datasets: [{
-      label: 'Tarefas concluídas',
-      data: MONTHS.map((_, idx) => filteredTasks.filter(t => t.month === 12 - idx && t.status === 'done').length),
-      backgroundColor: '#40c057',
-    }, {
-      label: 'Total de tarefas',
-      data: MONTHS.map((_, idx) => filteredTasks.filter(t => t.month === 12 - idx).length),
-      backgroundColor: '#228be6',
-    }],
-  };
+  // Função para obter os períodos de cada fase
+  function getPeriodsForPhase(phase: typeof PHASES[number]) {
+    return phase.periods;
+  }
+
 
   // Calcula progresso por mês
   function getMonthProgress(monthTasks: ChecklistTask[]) {
     if (!monthTasks.length) return 0;
     const done = monthTasks.filter(t => t.status === 'done').length;
     return Math.round((done / monthTasks.length) * 100);
+  }
+
+  // Cor do progresso gamificado
+  function getProgressColor(progress: number) {
+    if (progress === 100) return 'teal';
+    if (progress >= 70) return 'blue';
+    if (progress >= 30) return 'yellow';
+    return 'red';
   }
 
   // Handlers
@@ -118,6 +149,7 @@ export default function ChecklistPage() {
     setEditingTask(task);
     setModalOpen(true);
   }
+  // eslint-disable-next-line
   async function handleSaveTask(task: Partial<ChecklistTask>, file?: File) {
     setModalOpen(false);
     if (editingTask && editingTask.id) {
@@ -138,6 +170,23 @@ export default function ChecklistPage() {
     await updateChecklistTask(task.id, { status: task.status === 'done' ? 'pending' : 'done' });
     fetchChecklistTasks().then(setTasks).finally(() => setLoadingTaskId(null));
   }
+
+  // Estado global de abertura dos cards: { [phaseKey]: boolean[] }
+  const [openedCards, setOpenedCards] = useState<{ [phaseKey: string]: boolean[] }>(() => {
+    const obj: { [phaseKey: string]: boolean[] } = {};
+    PHASES.forEach(phase => {
+      const periods = getPeriodsForPhase(phase);
+      obj[phase.key] = periods.map(() => !isMobile);
+    });
+    return obj;
+  });
+
+  const handleToggle = (phaseKey: string, idx: number) => {
+    setOpenedCards(prev => ({
+      ...prev,
+      [phaseKey]: prev[phaseKey].map((v, i) => i === idx ? !v : v)
+    }));
+  };
 
   return (
     <BaseLayout title="Checklist do Casamento">
@@ -175,53 +224,111 @@ export default function ChecklistPage() {
             Exportar PDF
           </Button>
         </Group>
-        <Box mb={24} style={{ maxWidth: '90%'}}>
-          <Bar data={chartData} options={{ plugins: { legend: { display: true } }, responsive: true, maintainAspectRatio: false, height: 300 }} />
-        </Box>
         {loading ? <Loader /> : (
-          <SimpleGrid cols={isMobile ? 1 : 2} spacing="md" verticalSpacing="md">
-            {tasksByPeriod.map(({ label, tasks }) => (
-              <Card key={label} shadow="xs" mb={8}>
-                <Group position="apart" mb={8}>
-                  <Title order={4}>{label}</Title>
-                  <Progress value={getMonthProgress(tasks)} w={isMobile ? 80 : 120} size={isMobile ? 'sm' : 'md'} />
-                  <Button leftSection={<IconPlus size={14} />} size="xs" variant="light" onClick={() => handleAddTask(tasks[0]?.month || 0)}>
-                    Adicionar tarefa
-                  </Button>
-                </Group>
-                {tasks.length === 0 ? (
-                  <Text size="sm" c="dimmed">Nenhuma tarefa para este período.</Text>
-                ) : (
-                  <Stack spacing={4}>
-                    {tasks.map(task => (
-                      <Group key={task.id} position="apart" style={{ borderBottom: '1px solid #eee', padding: 4 }}>
-                        <Group>
-                          <Checkbox checked={task.status === 'done'} onChange={() => handleToggleDone(task)} disabled={loadingTaskId === task.id} size="xs" />
-                          <Text size="sm" style={{ textDecoration: task.status === 'done' ? 'line-through' : undefined }}>{task.description}</Text>
-                          {!task.is_template && <TooltipMantine label="Editar"><ActionIcon onClick={() => handleEditTask(task)} disabled={loadingTaskId === task.id} size="xs"><IconEdit size={14} /></ActionIcon></TooltipMantine>}
-                          {!task.is_template && <TooltipMantine label="Excluir"><ActionIcon color="red" onClick={() => handleDeleteTask(task.id)} disabled={loadingTaskId === task.id} size="xs"><IconTrash size={14} /></ActionIcon></TooltipMantine>}
-                        </Group>
-                        <div ref={el => (pendingBadgeRef.current[task.id] = el)}>
-                          {loadingTaskId === task.id ? (
-                            <Loader size={14} />
-                          ) : (
-                            <Badge
-                              size="xs"
-                              color={task.status === 'done' ? 'green' : task.status === 'in_progress' ? 'blue' : 'yellow'}
-                              variant={task.status === 'pending' ? 'filled' : 'light'}
-                              style={task.status === 'pending' ? { animation: 'target-badge 1s infinite alternate' } : {}}
-                            >
-                              {task.status === 'done' ? 'Concluído' : task.status === 'in_progress' ? 'Em andamento' : 'Pendente'}
-                            </Badge>
-                          )}
-                        </div>
-                      </Group>
-                    ))}
-                  </Stack>
-                )}
-              </Card>
-            ))}
-          </SimpleGrid>
+          <Tabs defaultValue={PHASES[0].key} variant="pills" keepMounted={false}>
+            <Tabs.List mb="md">
+              {PHASES.map(phase => (
+                <Tabs.Tab key={phase.key} value={phase.key}>{phase.label}</Tabs.Tab>
+              ))}
+            </Tabs.List>
+            {PHASES.map(phase => {
+              const periods = getPeriodsForPhase(phase);
+              return (
+                <Tabs.Panel key={phase.key} value={phase.key}>
+                  <SimpleGrid
+                    cols={{ base: 1, sm: 2, md: 2, lg: 2, xl: 2 }}
+                    spacing="lg"
+                    verticalSpacing="lg"
+                  >
+                    {periods.map((period, idx) => {
+                      const periodTasks = filteredTasks.filter(period.test);
+                      const progress = getMonthProgress(periodTasks);
+                      const opened = openedCards[phase.key]?.[idx];
+                      return (
+                        <Card key={period.label} shadow="md" radius="md" p="md" withBorder>
+                          <Box mb="sm" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Group gap={8} align="center">
+                              <Button
+                                variant="subtle"
+                                size="xs"
+                                px={4}
+                                onClick={() => handleToggle(phase.key, idx)}
+                                style={{ minWidth: 28 }}
+                                aria-label={opened ? 'Fechar' : 'Abrir'}
+                                visibleFrom="xs"
+                              >
+                                <span style={{ display: 'inline-block', transform: opened ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▶</span>
+                              </Button>
+                              <Title order={5} style={{ margin: 0 }}>{period.label}</Title>
+                            </Group>
+                            <RingProgress
+                              size={48}
+                              thickness={6}
+                              sections={[{ value: progress, color: getProgressColor(progress) }]}
+                              label={<Text size="xs" fw={700}>{progress}%</Text>}
+                            />
+                          </Box>
+                          <Collapse in={opened} transitionDuration={200}>
+                            <Group mb="xs" justify="space-between">
+                              <Button leftSection={<IconPlus size={14} />} size="xs" variant="light" onClick={() => handleAddTask(periodTasks[0]?.month || 0)}>
+                                Adicionar tarefa
+                              </Button>
+                            </Group>
+                            {periodTasks.length === 0 ? (
+                              <Text size="sm" c="dimmed">Nenhuma tarefa para este período.</Text>
+                            ) : (
+                              <Stack spacing={4}>
+                                {periodTasks.map(task => (
+                                  <Group key={task.id} position="apart" style={{ borderBottom: '1px solid #eee', padding: 4 }}>
+                                    <Group>
+                                      <Checkbox
+                                        checked={task.status === 'done'}
+                                        onChange={() => handleToggleDone(task)}
+                                        disabled={loadingTaskId === task.id}
+                                        size="xs"
+                                        styles={{
+                                          input: {
+                                            accentColor: task.status === 'done' ? '#12b886' : undefined
+                                          }
+                                        }}
+                                      />
+                                      <Text
+                                        size="sm"
+                                        c={task.status === 'done' ? 'dimmed' : undefined}
+                                        style={{ textDecoration: task.status === 'done' ? 'line-through' : undefined }}
+                                      >
+                                        {task.description}
+                                      </Text>
+                                      {!task.is_template && <TooltipMantine label="Editar"><ActionIcon onClick={() => handleEditTask(task)} disabled={loadingTaskId === task.id} size="xs"><IconEdit size={14} /></ActionIcon></TooltipMantine>}
+                                      {!task.is_template && <TooltipMantine label="Excluir"><ActionIcon color="red" onClick={() => handleDeleteTask(task.id)} disabled={loadingTaskId === task.id} size="xs"><IconTrash size={14} /></ActionIcon></TooltipMantine>}
+                                    </Group>
+                                    <div ref={el => (pendingBadgeRef.current[task.id] = el)}>
+                                      {loadingTaskId === task.id ? (
+                                        <Loader size={14} />
+                                      ) : (
+                                        <Badge
+                                          size="xs"
+                                          color={task.status === 'done' ? 'green' : task.status === 'in_progress' ? 'blue' : 'yellow'}
+                                          variant={task.status === 'pending' ? 'filled' : 'light'}
+                                          style={task.status === 'pending' ? { animation: 'target-badge 1s infinite alternate' } : {}}
+                                        >
+                                          {task.status === 'done' ? 'Concluído' : task.status === 'in_progress' ? 'Em andamento' : 'Pendente'}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </Group>
+                                ))}
+                              </Stack>
+                            )}
+                          </Collapse>
+                        </Card>
+                      );
+                    })}
+                  </SimpleGrid>
+                </Tabs.Panel>
+              );
+            })}
+          </Tabs>
         )}
         <ChecklistTaskModal
           opened={modalOpen}

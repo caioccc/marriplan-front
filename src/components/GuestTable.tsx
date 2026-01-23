@@ -259,7 +259,7 @@ export default function GuestTable() {
                       variant="subtle"
                       color="green"
                       component="a"
-                      href={`https://wa.me/55${g.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('🎉 Olá! Você está convidado para nosso casamento 💍. Por favor, confirme sua presença (RSVP) pelo site ou respondendo esta mensagem. Esperamos você! 🥂')}`}
+                      href={`https://wa.me/55${g.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Por gentileza, confirme sua presença no nosso casamento respondendo esta mensagem ou pelo site. O convite formal será enviado via papelaria. Obrigado!')}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       title="Enviar RSVP por WhatsApp"
@@ -272,7 +272,7 @@ export default function GuestTable() {
                       variant="subtle"
                       color="gray"
                       component="a"
-                      href={`mailto:${g.email}?subject=${encodeURIComponent('Convite de Casamento - RSVP')}&body=${encodeURIComponent('🎉 Olá! Você está convidado para nosso casamento 💍. Por favor, confirme sua presença (RSVP) pelo site ou respondendo este e-mail. Esperamos você! 🥂')}`}
+                      href={`mailto:${g.email}?subject=${encodeURIComponent('Confirmação de Presença - Casamento')}&body=${encodeURIComponent('Olá! Por gentileza, confirme sua presença no nosso casamento respondendo este e-mail ou pelo site. O convite formal será enviado via papelaria. Obrigado!')}`}
                       title="Enviar RSVP por Email"
                     >
                       <IconMail size={18} />
@@ -331,7 +331,7 @@ export default function GuestTable() {
                   <Menu.Item
                     leftSection={<IconBrandWhatsapp size={14} />}
                     component="a"
-                    href={`https://wa.me/55${g.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('🎉 Olá! Você está convidado para nosso casamento 💍. Por favor, confirme sua presença (RSVP) pelo site ou respondendo esta mensagem. Esperamos você! 🥂')}`}
+                    href={`https://wa.me/55${g.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Por gentileza, confirme sua presença no nosso casamento respondendo esta mensagem ou pelo site. O convite formal será enviado via papelaria. Obrigado!')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -344,7 +344,7 @@ export default function GuestTable() {
                   <Menu.Item
                     leftSection={<IconMail size={14} />}
                     component="a"
-                    href={`mailto:${g.email}?subject=${encodeURIComponent('Convite de Casamento - RSVP')}&body=${encodeURIComponent('🎉 Olá! Você está convidado para nosso casamento 💍. Por favor, confirme sua presença (RSVP) pelo site ou respondendo este e-mail. Esperamos você! 🥂')}`}
+                    href={`mailto:${g.email}?subject=${encodeURIComponent('Confirmação de Presença - Casamento')}&body=${encodeURIComponent('Olá! Por gentileza, confirme sua presença no nosso casamento respondendo este e-mail ou pelo site. O convite formal será enviado via papelaria. Obrigado!')}`}
                   >
                     Email
                   </Menu.Item>
@@ -388,7 +388,7 @@ export default function GuestTable() {
                   <Menu.Item
                     leftSection={<IconBrandWhatsapp size={14} />}
                     component="a"
-                    href={`https://wa.me/55${g.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('🎉 Olá! Você está convidado para nosso casamento 💍. Por favor, confirme sua presença (RSVP) pelo site ou respondendo esta mensagem. Esperamos você! 🥂')}`}
+                    href={`https://wa.me/55${g.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Por gentileza, confirme sua presença no nosso casamento respondendo esta mensagem ou pelo site. Esperamos você! 🥂')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -400,8 +400,8 @@ export default function GuestTable() {
                 <Tooltip label="Enviar RSVP por Email" position="right">
                   <Menu.Item
                     leftSection={<IconMail size={14} />}
-                    component="a"
-                    href={`mailto:${g.email}?subject=${encodeURIComponent('Convite de Casamento - RSVP')}&body=${encodeURIComponent('🎉 Olá! Você está convidado para nosso casamento 💍. Por favor, confirme sua presença (RSVP) pelo site ou respondendo este e-mail. Esperamos você! 🥂')}`}
+                      component="a"
+                      href={`mailto:${g.email}?subject=${encodeURIComponent('Confirmação de Presença - Casamento')}&body=${encodeURIComponent('Olá! Por gentileza, confirme sua presença no nosso casamento respondendo este e-mail ou pelo site. Esperamos você! 🥂')}`}
                   >
                     Email
                   </Menu.Item>

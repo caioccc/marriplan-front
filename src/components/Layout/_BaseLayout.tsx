@@ -13,10 +13,8 @@ import {
     IconChevronDown,
     IconCreditCard,
     IconGift,
-    IconHeart,
     IconHome2,
     IconLogout,
-    IconMessageCircle,
     IconReportAnalytics,
     IconSettings,
     IconUser,
@@ -92,7 +90,14 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                             <Group gap="xs">
                                 {
                                     !isMobile && (
-                                        <IconHeart size={32} onClick={toggle} aria-label="Toggle navigation" />
+                                        <img
+                                            src="/logo-marri.png"
+                                            alt="Logo Marriplan"
+                                            width={32}
+                                            height={32}
+                                            style={{ cursor: 'pointer', borderRadius: 8 }}
+                                            onClick={toggle}
+                                        />
                                     )
                                 }
                                 Marriplan
@@ -204,21 +209,15 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                     active={router.pathname === '/gifts'}
                     onClick={() => router.push('/gifts')}
                 />
-                <NavLink
-                    label="Chat"
-                    leftSection={<IconMessageCircle size={18} />} // Ícone de chat
-                    active={router.pathname === '/chat'}
-                    onClick={() => router.push('/chat')}
-                />
 
-                <NavLink
+                {/* <NavLink
                     label="Meu Site"
                     leftSection={<IconWorldWww size={18} />} // Ícone de casa
                 >
                     <NavLink label="Configuração do Site" onClick={() => router.push('/meu-site')} />
                     <NavLink label="Histórico de Atualizações" onClick={() => router.push('/meu-site/historico')} />
                     <NavLink label="Domínio Personalizado" onClick={() => router.push('/meu-site/dominio')} disabled />
-                </NavLink>
+                </NavLink> */}
 
                 <NavLink
                     label="Notificações"
@@ -226,12 +225,12 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                     active={router.pathname === '/notifications'}
                     onClick={() => router.push('/notifications')}
                 />
-                <NavLink
+                {/* <NavLink
                     label="Relatórios"
                     leftSection={<IconReportAnalytics size={18} />}
                     active={router.pathname === '/reports'}
                     onClick={() => router.push('/reports')}
-                />
+                /> */}
 
                 <NavLink
                     label="Sair"

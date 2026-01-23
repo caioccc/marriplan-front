@@ -1,21 +1,17 @@
+//eslint-disable react-hooks/exhaustive-deps
+//eslint-disable @typescript-eslint/no-unused-vars
+/* eslint-disable @typescript-eslint/no-explicit-any */
+//eslint no-explicit-any: "off"
+
 import BaseLayout from '@/components/Layout/_BaseLayout';
 import WeddingProfileOnboardingModal from '@/components/WeddingProfileOnboardingModal';
 import { useAuth } from '@/contexts/AuthContext';
-import { Carousel } from '@mantine/carousel';
-import { Avatar, Badge, Box, Button, Card, Center, Checkbox, Container, Group, Loader, Paper, Progress, ScrollArea, SimpleGrid, Stack, Text, Title, useMantineTheme } from '@mantine/core';
+import { giftsService } from '@/services/giftsService';
+import { guests_list } from '@/services/guests';
+import { Avatar, Badge, Box, Button, Card, Center, Container, Group, Loader, Paper, Progress, ScrollArea, SimpleGrid, Stack, Text, Title, useMantineTheme } from '@mantine/core';
 import {
-  IconBuildingStore,
   IconCalendar,
-  IconCheck,
-  IconChevronLeft,
-  IconChevronRight,
-  IconClock,
-  IconCurrency,
-  IconHeart,
-  IconMapPin,
-  IconMinus,
-  IconTrendingDown,
-  IconTrendingUp
+  IconMapPin
 } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 
@@ -29,20 +25,22 @@ interface Guest {
 }
 
 interface Gift {
-  id: string;
+  id: number;
   name: string;
-  price: number;
+  description: string;
+  price?: number; // deprecated, use value
+  value: number | string;
   status: 'available' | 'purchased';
   image?: string;
+  icon?: string;
   category: string;
-}
-
-interface ChecklistItem {
-  id: string;
-  title: string;
-  completed: boolean;
-  month: string;
-  category: string;
+  product_code?: string;
+  link?: string;
+  purchased_by?: string;
+  purchase_date?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  wedding_profile?: number;
 }
 
 interface WeddingOverview {
@@ -53,11 +51,20 @@ interface WeddingOverview {
   totalGuests: number;
 }
 
+interface GuestsResponse {
+  results: Guest[];
+  count: number;
+}
+
+interface GiftsResponse {
+  results: Gift[];
+  count: number;
+}
+
 const MarriplanDashboard: React.FC = () => {
   const theme = useMantineTheme();
-  const [guests, setGuests] = useState<Guest[]>([]);
-  const [gifts, setGifts] = useState<Gift[]>([]);
-  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+  const [guests, setGuests] = useState<GuestsResponse>({ results: [], count: 0 });
+  const [gifts, setGifts] = useState<GiftsResponse>({ results: [], count: 0 });
   const [loadingGuests, setLoadingGuests] = useState(false);
   const [loadingGifts, setLoadingGifts] = useState(false);
   const [guestPage, setGuestPage] = useState(0);
@@ -77,129 +84,130 @@ const MarriplanDashboard: React.FC = () => {
     }
   }, [user]);
 
-  // Dados de exemplo
-  const weddingOverview: WeddingOverview = {
-    date: '15 de Junho, 2025',
-    daysRemaining: 142,
-    venue: 'Jardim do Pôr do Sol',
-    confirmedGuests: 85,
-    totalGuests: 120
+
+  // Dados reais do perfil de casamento
+  // Visão Geral do Casamento com dados reais
+  let weddingOverview: WeddingOverview = {
+    date: '-',
+    daysRemaining: 0,
+    venue: '-',
+    confirmedGuests: 0,
+    totalGuests: 0
   };
 
-  const quickChecklist = [
-    { id: '1', title: 'Local Reservado', completed: true },
-    { id: '2', title: 'Convites Enviados', completed: true },
-    { id: '3', title: 'Buffet Confirmado', completed: false },
-    { id: '4', title: 'Fotógrafo Reservado', completed: false }
-  ];
+  if (user?.wedding_profile) {
+    const p = user.wedding_profile;
+    console.log('Wedding Profile:', p);
+    // Data formatada e cálculo de dias restantes
+    const weddingDate = p.data_casamento
+      ? new Date(p.data_casamento + 'T' + (p.hora_casamento || '00:00:00'))
+      : null;
+    console.log('Wedding Date:', weddingDate);
+    let daysRemaining = 0;
+    if (weddingDate) {
+      // Zera hora/min/seg do casamento e hoje para evitar erro de fuso
+      const weddingDateOnly = new Date(weddingDate.getFullYear(), weddingDate.getMonth(), weddingDate.getDate());
+      const today = new Date();
+      const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const diff = weddingDateOnly.getTime() - todayOnly.getTime();
+      daysRemaining = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 
-  const keyInformation = [
-    {
-      icon: IconCurrency,
-      title: 'Orçamento',
-      value: 'R$ 28.500',
-      total: 'R$ 35.000',
-      color: 'green',
-      trend: 'up'
-    },
-    {
-      icon: IconClock,
-      title: 'Cronograma',
-      value: 'No prazo',
-      color: 'blue',
-      trend: 'stable'
-    },
-    {
-      icon: IconBuildingStore,
-      title: 'Fornecedores',
-      value: '6 confirmados',
-      color: 'violet',
-      trend: 'up'
+      console.log('Days Remaining:', daysRemaining, todayOnly, weddingDateOnly);
     }
-  ];
+    // Convidados
+    const totalGuests = guests.count;
+    const confirmedGuests = guests.results.filter(g => g.status === 'confirmed').length;
+    weddingOverview = {
+      date: weddingDate ? weddingDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : '-',
+      daysRemaining,
+      venue: p.local || '-',
+      confirmedGuests,
+      totalGuests
+    };
+  }
 
-  const monthlyTasks = [
-    {
-      month: 'Janeiro',
-      tasks: [
-        { id: '1', title: 'Definir orçamento geral', completed: true, category: 'Planejamento' },
-        { id: '2', title: 'Escolher data do casamento', completed: true, category: 'Planejamento' },
-        { id: '3', title: 'Fazer lista de convidados', completed: true, category: 'Convidados' }
-      ]
-    },
-    {
-      month: 'Fevereiro',
-      tasks: [
-        { id: '4', title: 'Reservar local da cerimônia', completed: true, category: 'Local' },
-        { id: '5', title: 'Reservar local da recepção', completed: true, category: 'Local' },
-        { id: '6', title: 'Contratar fotógrafo', completed: false, category: 'Fornecedores' }
-      ]
-    },
-    {
-      month: 'Março',
-      tasks: [
-        { id: '7', title: 'Escolher buffet', completed: false, category: 'Alimentação' },
-        { id: '8', title: 'Provar cardápio', completed: false, category: 'Alimentação' },
-        { id: '9', title: 'Definir decoração', completed: false, category: 'Decoração' }
-      ]
-    },
-    {
-      month: 'Abril',
-      tasks: [
-        { id: '10', title: 'Enviar convites', completed: false, category: 'Convidados' },
-        { id: '11', title: 'Contratar música', completed: false, category: 'Entretenimento' },
-        { id: '12', title: 'Escolher flores', completed: false, category: 'Decoração' }
-      ]
-    }
-  ];
-
-  // Simular carregamento de dados
+  // Carregar convidados reais da API
   useEffect(() => {
-    const initialGuests: Guest[] = [
-      { id: '1', name: 'Sarah Johnson', status: 'confirmed', plusOne: true },
-      { id: '2', name: 'Michael Chen', status: 'pending', plusOne: false },
-      { id: '3', name: 'Emma Wilson', status: 'confirmed', plusOne: true },
-      { id: '4', name: 'David Brown', status: 'declined', plusOne: false },
-      { id: '5', name: 'Ana Silva', status: 'confirmed', plusOne: true },
-      { id: '6', name: 'Carlos Santos', status: 'pending', plusOne: false }
-    ];
+    async function fetchGuests() {
+      setLoadingGuests(true);
+      try {
+        const data = await guests_list({ page: 1, page_size: 10 });
+        const mappedGuests = (data.results || []).map((g: any) => ({
+          id: g.id,
+          name: g.name,
+          status: g.status || 'pending',
+          plusOne: g.acompanhantes && g.acompanhantes > 0,
+          avatar: g.avatar,
+        }));
+        setGuests({
+          results: mappedGuests,
+          count: data.count
+        });
+      } catch (e) {
+        console.error(e);
+        setGuests({ results: [], count: 0 });
+      } finally {
+        setLoadingGuests(false);
+      }
+    }
+    fetchGuests();
 
-    const initialGifts: Gift[] = [
-      { id: '1', name: 'Batedeira KitchenAid', price: 299.99, status: 'purchased', category: 'Cozinha' },
-      { id: '2', name: 'Conjunto de Jantar', price: 149.99, status: 'available', category: 'Mesa' },
-      { id: '3', name: 'Jogo de Cama', price: 89.99, status: 'available', category: 'Quarto' },
-      { id: '4', name: 'Panela de Pressão', price: 79.99, status: 'available', category: 'Cozinha' },
-      { id: '5', name: 'Conjunto de Taças', price: 119.99, status: 'purchased', category: 'Mesa' }
-    ];
-
-    setGuests(initialGuests);
-    setGifts(initialGifts);
+    // Carregar presentes reais da API
+    async function fetchGifts() {
+      setLoadingGifts(true);
+      try {
+        const res = await giftsService.listGifts({ page: 1 });
+        setGifts(res);
+      } catch (e) {
+        console.error(e);
+        setGifts({ results: [], count: 0 });
+      } finally {
+        setLoadingGifts(false);
+      }
+    }
+    fetchGifts();
   }, []);
 
-  const loadMoreGuests = () => {
+  const loadMoreGuests = async () => {
     setLoadingGuests(true);
-    setTimeout(() => {
-      const newGuests: Guest[] = [
-        { id: `${Date.now()}-1`, name: 'João Costa', status: 'confirmed', plusOne: true },
-        { id: `${Date.now()}-2`, name: 'Maria Oliveira', status: 'pending', plusOne: false },
-      ];
-      setGuests(prev => [...prev, ...newGuests]);
-      setGuestPage(prev => prev + 1);
+    try {
+      const nextPage = guestPage + 1;
+      const data = await guests_list({ page: nextPage + 1, page_size: 10 });
+      const mappedGuests = (data.results || []).map((g: any) => ({
+        id: g.id,
+        name: g.name,
+        status: g.status || 'pending',
+        plusOne: g.acompanhantes && g.acompanhantes > 0,
+        avatar: g.avatar,
+      }));
+      setGuests(prev => ({
+        results: [...prev.results, ...mappedGuests],
+        count: data.count
+      }));
+      setGuestPage(nextPage);
+    } catch (e) {
+      console.error(e);
+      // erro silencioso
+    } finally {
       setLoadingGuests(false);
-    }, 1000);
+    }
   };
 
-  const loadMoreGifts = () => {
+  const loadMoreGifts = async () => {
     setLoadingGifts(true);
-    setTimeout(() => {
-      const newGifts: Gift[] = [
-        { id: `${Date.now()}-1`, name: 'Liquidificador', price: 159.99, status: 'available', category: 'Cozinha' },
-        { id: `${Date.now()}-2`, name: 'Conjunto de Potes', price: 89.99, status: 'available', category: 'Cozinha' },
-      ];
-      setGifts(prev => [...prev, ...newGifts]);
-      setGiftPage(prev => prev + 1);
+    try {
+      const nextPage = giftPage + 1;
+      const res = await giftsService.listGifts({ page: nextPage + 1 });
+      setGifts(prev => ({
+        results: [...prev.results, ...res.results],
+        count: res.count
+      }));
+      setGiftPage(nextPage);
+    } catch (e) {
+      console.error(e);
+    } finally {
       setLoadingGifts(false);
-    }, 1000);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -221,14 +229,6 @@ const MarriplanDashboard: React.FC = () => {
       case 'available': return 'Disponível';
       case 'purchased': return 'Comprado';
       default: return status;
-    }
-  };
-
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case 'up': return <IconTrendingUp size={16} />;
-      case 'down': return <IconTrendingDown size={16} />;
-      default: return <IconMinus size={16} />;
     }
   };
 
@@ -286,111 +286,6 @@ const MarriplanDashboard: React.FC = () => {
             </SimpleGrid>
           </Card>
 
-          {/* Checklist Rápido */}
-          <Card shadow="md" radius="lg" p="lg">
-            <Group justify="space-between" mb="md">
-              <Title order={2}>Lista de Verificação Rápida</Title>
-              <Badge variant="light" color="blue">
-                {quickChecklist.filter(item => item.completed).length} / {quickChecklist.length}
-              </Badge>
-            </Group>
-
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-              {quickChecklist.map((item) => (
-                <Group key={item.id} gap="md">
-                  <Checkbox
-                    checked={item.completed}
-                    color="green"
-                    size="md"
-                    readOnly
-                  />
-                  <Box style={{ flex: 1 }}>
-                    <Text fw={500} td={item.completed ? 'line-through' : 'none'}>
-                      {item.title}
-                    </Text>
-                  </Box>
-                  {item.completed && <IconCheck size={16} color={theme.colors.green[6]} />}
-                </Group>
-              ))}
-            </SimpleGrid>
-          </Card>
-
-          {/* Informações Principais */}
-          <Card shadow="md" radius="lg" p="lg">
-            <Title order={2} mb="md">Status do Planejamento</Title>
-
-            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg">
-              {keyInformation.map((info, index) => (
-                <Paper key={index} p="md" radius="md" withBorder>
-                  <Group justify="space-between" mb="xs">
-                    <Group gap="xs">
-                      <info.icon size={20} color={theme.colors[info.color][6]} />
-                      <Text fw={500}>{info.title}</Text>
-                    </Group>
-                    {getTrendIcon(info.trend)}
-                  </Group>
-                  <Text fw={700} size="lg" c={info.color}>
-                    {info.value}
-                  </Text>
-                  {info.total && (
-                    <Text size="sm" c="dimmed">
-                      de {info.total}
-                    </Text>
-                  )}
-                </Paper>
-              ))}
-            </SimpleGrid>
-          </Card>
-
-          {/* Cronograma Mensal */}
-          <Card shadow="md" radius="lg" p="lg">
-            <Title order={2} mb="md">Cronograma Mensal</Title>
-
-            <Carousel
-              withIndicators
-              slideSize="100%"
-              slideGap="md"
-              align="start"
-              nextControlIcon={<IconChevronRight size={16} />}
-              previousControlIcon={<IconChevronLeft size={16} />}
-              controlSize={40}
-            >
-              {monthlyTasks.map((month) => (
-                <Carousel.Slide key={month.month}>
-                  <Paper p="md" radius="md" withBorder h={300}>
-                    <Group justify="space-between" mb="md">
-                      <Title order={3} c="pink.6">{month.month}</Title>
-                      <Badge variant="light" color="blue">
-                        {month.tasks.filter(task => task.completed).length} / {month.tasks.length}
-                      </Badge>
-                    </Group>
-
-                    <Stack gap="sm">
-                      {month.tasks.map((task) => (
-                        <Group key={task.id} gap="md">
-                          <Checkbox
-                            checked={task.completed}
-                            color="green"
-                            size="sm"
-                            readOnly
-                          />
-                          <Box style={{ flex: 1 }}>
-                            <Text size="sm" fw={500} td={task.completed ? 'line-through' : 'none'}>
-                              {task.title}
-                            </Text>
-                            <Text size="xs" c="dimmed">
-                              {task.category}
-                            </Text>
-                          </Box>
-                        </Group>
-                      ))}
-                    </Stack>
-                  </Paper>
-                </Carousel.Slide>
-              ))}
-            </Carousel>
-          </Card>
-
           {/* Lista de Convidados e Presentes */}
           <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
             {/* Lista de Convidados */}
@@ -398,13 +293,13 @@ const MarriplanDashboard: React.FC = () => {
               <Group justify="space-between" mb="md">
                 <Title order={2}>Lista de Convidados</Title>
                 <Badge variant="light" color="blue">
-                  {guests.length} convidados
+                  {guests.count} convidados
                 </Badge>
               </Group>
 
               <ScrollArea h={400}>
                 <Stack gap="sm">
-                  {guests.map((guest) => (
+                  {guests.results.map((guest) => (
                     <Paper key={guest.id} p="sm" radius="md" withBorder>
                       <Group justify="space-between">
                         <Group gap="sm">
@@ -453,23 +348,36 @@ const MarriplanDashboard: React.FC = () => {
               <Group justify="space-between" mb="md">
                 <Title order={2}>Lista de Presentes</Title>
                 <Badge variant="light" color="green">
-                  {gifts.filter(gift => gift.status === 'purchased').length} / {gifts.length}
+                  {gifts.count} itens cadastrados
                 </Badge>
               </Group>
 
               <ScrollArea h={400}>
                 <Stack gap="sm">
-                  {gifts.map((gift) => (
+                  {gifts.results.map((gift) => (
                     <Paper key={gift.id} p="sm" radius="md" withBorder>
-                      <Group justify="space-between">
+                      <Group justify="space-between" align="flex-start">
                         <Box style={{ flex: 1 }}>
                           <Text fw={500} size="sm">{gift.name}</Text>
+                          {gift.description && (
+                            <Text size="xs" c="dimmed" mt={2} lineClamp={2}>{gift.description}</Text>
+                          )}
                           <Group gap="xs" mt={2}>
                             <Text size="xs" c="dimmed">{gift.category}</Text>
                             <Text size="xs" fw={500} c="green">
-                              R$ {gift.price.toFixed(2)}
+                              {typeof gift.value === 'number' ? `R$ ${Number(gift.value).toFixed(2)}` : (typeof gift.price === 'number' ? `R$ ${Number(gift.price).toFixed(2)}` : '-')}
                             </Text>
                           </Group>
+                          {gift.link && (
+                            <Text size="xs" c="blue" style={{ cursor: 'pointer' }} onClick={() => window.open(gift.link, '_blank')}>
+                              Ver presente
+                            </Text>
+                          )}
+                          {gift.purchased_by && (
+                            <Text size="xs" c="dimmed" mt={2}>
+                              Comprado por: {gift.purchased_by}
+                            </Text>
+                          )}
                         </Box>
                         <Badge
                           variant="light"
