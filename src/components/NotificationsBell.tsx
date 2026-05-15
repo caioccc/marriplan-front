@@ -15,8 +15,24 @@ export function NotificationsBell() {
         markAllAsRead,
     } = useNotifications();
 
+    const menuStyles = {
+        dropdown: {
+            borderRadius: 16,
+            border: '1px solid var(--marriplan-border)',
+            background: 'var(--marriplan-surface)',
+            boxShadow: 'var(--marriplan-shadow)',
+        },
+        item: {
+            borderRadius: 10,
+            transition: 'all 140ms ease',
+            '&[data-hovered]': {
+                backgroundColor: 'rgba(242, 230, 216, 0.6)',
+            },
+        },
+    } as const;
+
     return (
-        <Menu width={350} position="bottom-end" withArrow>
+        <Menu width={360} position="bottom-end" withArrow styles={menuStyles}>
             <Menu.Target>
                 <ActionIcon size="lg" variant="subtle">
                     <IconBell size={22}/>
@@ -30,7 +46,7 @@ export function NotificationsBell() {
             <Menu.Dropdown>
                 <Group justify="space-between" px="sm" py={4}>
                     <Text fw={500}>Notificações</Text>
-                    <Text size="xs" color="blue" style={{cursor: 'pointer'}} onClick={markAllAsRead}>
+                    <Text size="xs" style={{cursor: 'pointer', color: 'var(--marriplan-rose)'}} onClick={markAllAsRead}>
                         Marcar todas como lida
                     </Text>
                 </Group>
@@ -50,9 +66,10 @@ export function NotificationsBell() {
                                 p="xs"
                                 mb="xs"
                                 style={{
-                                    border: `1px solid var(--mantine-color-${color}-4)`,
-                                    borderRadius: 8,
-                                    background: n.is_read ? '#f8fafc' : '#e3f2fd'
+                                    border: '1px solid var(--marriplan-border)',
+                                    borderRadius: 12,
+                                    background: n.is_read ? 'var(--marriplan-surface)' : 'var(--marriplan-surface-muted)',
+                                    boxShadow: n.is_read ? 'none' : '0 12px 24px rgba(70, 56, 43, 0.06)'
                                 }}
                             >
                                 <Group justify="space-between" align="flex-start">
@@ -79,7 +96,7 @@ export function NotificationsBell() {
                                             <Button
                                                 size="xs"
                                                 variant="light"
-                                                color="blue"
+                                                style={{ color: 'var(--marriplan-rose)' }}
                                                 leftSection={<IconEye size={16} />}
                                                 onClick={() => markAsRead(n.id)}
                                             >

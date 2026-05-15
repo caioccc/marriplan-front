@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx';
 import { DataTable } from 'mantine-datatable';
 import { useToast } from "@/hooks/use-toast";
 import { guests_download_model, guests_import } from '@/services/guests';
+import { primaryButtonStyles, softButtonStyles } from '@/styles';
 
 interface ImportGuestsModalProps {
   opened: boolean;
@@ -85,7 +86,10 @@ export default function ImportGuestsModal({ opened, onClose, onSuccess }: Import
       const file = files[0];
       setFile(file);
       const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data, { type: 'array' });
+      const isCsv = file.type.includes('csv') || file.name.toLowerCase().endsWith('.csv');
+      const workbook = isCsv
+        ? XLSX.read(new TextDecoder('utf-8').decode(data), { type: 'string' })
+        : XLSX.read(data, { type: 'array' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
       const [header, ...rows] = json;
@@ -187,11 +191,11 @@ export default function ImportGuestsModal({ opened, onClose, onSuccess }: Import
     return (
       <Box
         {...getRootProps()}
-        style={{ border: '2px dashed #228be6', borderRadius: rem(12), padding: 32, width: '100%', maxWidth: 400, background: '#f8fafd', cursor: 'pointer', outline: 'none' }}
+        style={{ border: '2px dashed var(--marriplan-rose)', borderRadius: rem(12), padding: 32, width: '100%', maxWidth: 400, background: 'var(--marriplan-surface-muted)', cursor: 'pointer', outline: 'none' }}
       >
         <input {...getInputProps()} />
         <Group justify="center" align="center">
-          <IconFileSpreadsheet size={48} color="#228be6" />
+          <IconFileSpreadsheet size={48} color="var(--marriplan-rose)" />
         </Group>
         <Text ta="center" mt="sm" c="dimmed">
           {isDragActive ? 'Solte o arquivo aqui...' : 'Clique ou arraste o arquivo .xlsx ou .csv aqui'}
@@ -207,9 +211,8 @@ export default function ImportGuestsModal({ opened, onClose, onSuccess }: Import
           <Stack align="center" gap="md">
             <Text size="lg" fw={500}>Baixe o modelo de planilha</Text>
             <Text ta="center">Faça o download do modelo para garantir que os dados estejam no formato correto. Utilize um editor de planilhas para preencher os convidados.</Text>
-            <Button leftSection={<IconDownload size={18} />} onClick={handleDownload} variant="light">Baixar modelo de planilha</Button>
-            <Button mt="md" onClick={() => setActive(1)}
-              disabled={loading}>Avançar</Button>
+            <Button leftSection={<IconDownload size={18} />} onClick={handleDownload} styles={softButtonStyles}>Baixar modelo de planilha</Button>
+            <Button mt="md" onClick={() => setActive(1)} disabled={loading} styles={primaryButtonStyles}>Avançar</Button>
           </Stack>
         </Stepper.Step>
         <Stepper.Step icon={<IconUpload size={20} />} label="Importar">
@@ -217,7 +220,7 @@ export default function ImportGuestsModal({ opened, onClose, onSuccess }: Import
             <Text size="lg" fw={500}>Selecione ou arraste sua planilha preenchida</Text>
             <DropzoneArea onDrop={handleDrop} importing={importing} />
             {importError && <Notification color="red" mt="md">{importError}</Notification>}
-            <Button mt="md" onClick={() => setActive(0)} variant="subtle">Voltar</Button>
+            <Button mt="md" onClick={() => setActive(0)} styles={softButtonStyles}>Voltar</Button>
           </Stack>
         </Stepper.Step>
         <Stepper.Step icon={<IconFileSpreadsheet size={20} />} label="Mapeamento">
@@ -226,20 +229,20 @@ export default function ImportGuestsModal({ opened, onClose, onSuccess }: Import
             <Text c="dimmed">Verifique se cada coluna da sua planilha está corretamente associada ao campo esperado. Ajuste se necessário.</Text>
             <Table withColumnBorders withRowBorders striped highlightOnHover>
               <thead>
-                <tr style={{ borderBottom: '2px solid #e0e0e0' }}>
-                  <th style={{ textAlign: 'center', verticalAlign: 'middle', borderRight: '2px solid #e0e0e0', fontSize: 16, padding: '16px 0' }}>Campo esperado</th>
+                <tr style={{ borderBottom: '1px solid var(--marriplan-border)' }}>
+                  <th style={{ textAlign: 'center', verticalAlign: 'middle', borderRight: '1px solid var(--marriplan-border)', fontSize: 16, padding: '16px 0' }}>Campo esperado</th>
                   <th style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: 16, padding: '16px 0' }}>Coluna da planilha</th>
                 </tr>
               </thead>
               <tbody>
                 {EXPECTED_COLUMNS.map((col, idx) => (
-                  <tr key={col.key} style={{ borderBottom: '2px solid #e0e0e0', height: 56 }}>
-                    <td style={{ textAlign: 'center', verticalAlign: 'middle', borderRight: '2px solid #e0e0e0', fontSize: 15, padding: '12px 0', background: idx % 2 === 0 ? '#f8fafc' : '#fff' }}>{col.label}</td>
-                    <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: 15, padding: '12px 0', background: idx % 2 === 0 ? '#f8fafc' : '#fff' }}>
+                  <tr key={col.key} style={{ borderBottom: '1px solid var(--marriplan-border)', height: 56 }}>
+                    <td style={{ textAlign: 'center', verticalAlign: 'middle', borderRight: '1px solid var(--marriplan-border)', fontSize: 15, padding: '12px 0', background: idx % 2 === 0 ? 'var(--marriplan-surface-muted)' : '#fff' }}>{col.label}</td>
+                    <td style={{ textAlign: 'center', verticalAlign: 'middle', fontSize: 15, padding: '12px 0', background: idx % 2 === 0 ? 'var(--marriplan-surface-muted)' : '#fff' }}>
                       <select
                         value={mapping[col.key] || ''}
                         onChange={e => handleMappingChange(col.key, e.target.value)}
-                        style={{ width: 200, textAlign: 'center', height: 36, fontSize: 15, borderRadius: 6, border: '1px solid #d0d7de', background: '#fff', margin: '0 4px' }}
+                        style={{ width: 200, textAlign: 'center', height: 36, fontSize: 15, borderRadius: 8, border: '1px solid var(--marriplan-border)', background: '#fff', margin: '0 4px' }}
                       >
                         <option value="">Selecione...</option>
                         {columns.map(c => (
@@ -252,8 +255,8 @@ export default function ImportGuestsModal({ opened, onClose, onSuccess }: Import
               </tbody>
             </Table>
             <Group mt="md" gap="md" grow>
-              <Button onClick={() => setActive(1)} variant="subtle" fullWidth>Voltar</Button>
-              <Button onClick={() => setActive(3)} disabled={Object.values(mapping).some(v => !v)} fullWidth>Avançar</Button>
+              <Button onClick={() => setActive(1)} styles={softButtonStyles} fullWidth>Voltar</Button>
+              <Button onClick={() => setActive(3)} disabled={Object.values(mapping).some(v => !v)} styles={primaryButtonStyles} fullWidth>Avançar</Button>
             </Group>
           </Stack>
         </Stepper.Step>
@@ -321,8 +324,8 @@ export default function ImportGuestsModal({ opened, onClose, onSuccess }: Import
             )}
             {success && <Notification color="green" mt="md">Importação realizada com sucesso!</Notification>}
             <Group mt="md" gap="md" grow>
-              <Button onClick={() => setActive(2)} variant="subtle" fullWidth>Voltar</Button>
-              <Button onClick={handleFinalize} disabled={preview.length === 0 || Object.values(mapping).some(v => !v)} loading={importing} color="blue" fullWidth>Finalizar importação</Button>
+              <Button onClick={() => setActive(2)} styles={softButtonStyles} fullWidth>Voltar</Button>
+              <Button onClick={handleFinalize} disabled={preview.length === 0 || Object.values(mapping).some(v => !v)} loading={importing} styles={primaryButtonStyles} fullWidth>Finalizar importação</Button>
             </Group>
           </Stack>
         </Stepper.Step>

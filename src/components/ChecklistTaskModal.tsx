@@ -5,6 +5,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { ptBR } from 'date-fns/locale';
+import { primaryButtonStylesWithDisabled } from '@/styles';
 
 const PRIORITY_OPTIONS = [
   { value: 'high', label: 'Alta' },
@@ -33,6 +34,9 @@ export default function ChecklistTaskModal({ opened, onClose, onSave, initial }:
   const [file, setFile] = useState<File | null>(null);
   const [notes, setNotes] = useState(initial?.notes || '');
 
+  const isEditing = Boolean(initial?.id);
+  const isValid = Boolean(description.trim()) && !!startDate && !!dueDate;
+
   useEffect(() => {
     setDescription(initial?.description || '');
     setStartDate(initial?.start_date ? new Date(initial.start_date) : null);
@@ -55,7 +59,7 @@ export default function ChecklistTaskModal({ opened, onClose, onSave, initial }:
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title={initial ? 'Editar Tarefa' : 'Nova Tarefa'}>
+    <Modal opened={opened} onClose={onClose} title={isEditing ? 'Editar Tarefa' : 'Adicionar Tarefa'}>
       <TextInput label="Descrição" value={description} onChange={e => setDescription(e.currentTarget.value)} required mb="sm" />
 
       <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
@@ -116,7 +120,9 @@ export default function ChecklistTaskModal({ opened, onClose, onSave, initial }:
       {/* <FileInput label="Anexo (opcional)" value={file} onChange={setFile} mb="sm" /> */}
       <Group position="right">
         <Button onClick={onClose} variant="default">Cancelar</Button>
-        <Button onClick={handleSave}>{initial ? 'Salvar' : 'Adicionar'}</Button>
+        <Button onClick={handleSave} disabled={!isValid} styles={primaryButtonStylesWithDisabled}>
+          {isEditing ? 'Salvar' : 'Adicionar'}
+        </Button>
       </Group>
     </Modal>
   );

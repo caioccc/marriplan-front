@@ -7,14 +7,15 @@ import classes from './LanguagePicker.module.css';
 export function LanguagePicker() {
     const {t, i18n} = useTranslation();
 
-    const setLanguage = (option: MenuOption) => {
-        i18n.changeLanguage(option.key);
-        setSelected(option);
+    const setLanguage = (_option: MenuOption) => {
+        const forcedOption = langMenu[0];
+        i18n.changeLanguage(forcedOption.key);
+        setSelected(forcedOption);
     };
 
     const langMenu: Array<MenuOption> = [
         {
-            key: 'pt-BR',
+            key: 'pt',
             label: 'general.language.portuguese',
             onClick: setLanguage
         },
@@ -31,9 +32,7 @@ export function LanguagePicker() {
     ];
 
     const [opened, setOpened] = useState(false);
-    const [selected, setSelected] = useState<MenuOption>(
-        langMenu.find((item) => item.key === i18n.language) || langMenu[0]
-    );
+    const [selected, setSelected] = useState<MenuOption>(langMenu[0]);
     const items = langMenu.map((item) => (
         <Menu.Item
             key={item.key}

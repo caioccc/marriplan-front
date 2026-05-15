@@ -6,10 +6,11 @@ import { createChecklistTask, deleteChecklistTask, fetchChecklistTasks, updateCh
 import { ChecklistTask } from '@/types/checklist';
 import { ActionIcon, Badge, Box, Button, Card, Checkbox, Collapse, Group, Loader, RingProgress, Select, SimpleGrid, Stack, Tabs, Text, TextInput, Title, Tooltip as TooltipMantine } from '@mantine/core';
 import { useMediaQuery, useDisclosure } from '@mantine/hooks';
-import { IconEdit, IconFileDownload, IconPlus, IconSearch, IconTrash } from '@tabler/icons-react';
+import { IconChevronRight, IconEdit, IconFileDownload, IconPlus, IconSearch, IconTrash } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import ChecklistTaskModal from './ChecklistTaskModal';
 import BaseLayout from './Layout/_BaseLayout';
+import { checklistTabsStyles, inputStyles, primaryButtonStyles, softButtonStyles } from '@/styles';
 
 
 export default function ChecklistPage() {
@@ -122,10 +123,10 @@ export default function ChecklistPage() {
 
   // Cor do progresso gamificado
   function getProgressColor(progress: number) {
-    if (progress === 100) return 'teal';
-    if (progress >= 70) return 'blue';
-    if (progress >= 30) return 'yellow';
-    return 'red';
+    if (progress === 100) return 'var(--marriplan-rose)';
+    if (progress >= 70) return 'var(--marriplan-gold)';
+    if (progress >= 30) return '#d5a55a';
+    return '#c06a5a';
   }
 
   // Handlers
@@ -188,21 +189,87 @@ export default function ChecklistPage() {
     }));
   };
 
+  const formatDate = (value?: string) => {
+    if (!value) return '-';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString('pt-BR');
+  };
+
+  const statusLabels: Record<string, string> = {
+    pending: 'Pendente',
+    in_progress: 'Em andamento',
+    done: 'Concluido',
+  };
+
+  const priorityLabels: Record<string, string> = {
+    high: 'Alta',
+    medium: 'Media',
+    low: 'Baixa',
+  };
+
+  const handleExportPDF = async () => {
+    const [{ jsPDF }, autoTableModule] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
+
+    const autoTable = autoTableModule.default;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const periods = PERIODS;
+
+    periods.forEach((period, index) => {
+      if (index > 0) doc.addPage();
+      doc.setFontSize(14);
+      doc.text(period.label, 14, 18);
+
+      const periodTasks = tasks.filter(period.test);
+      if (!periodTasks.length) {
+        doc.setFontSize(11);
+        doc.text('Sem tarefas para este periodo.', 14, 28);
+        return;
+      }
+
+      const body = periodTasks.map(task => ([
+        task.description,
+        formatDate(task.start_date),
+        formatDate(task.due_date),
+        priorityLabels[task.priority] ?? task.priority,
+        statusLabels[task.status] ?? task.status,
+      ]));
+
+      autoTable(doc, {
+        startY: 26,
+        head: [['Descricao', 'Inicio', 'Vencimento', 'Prioridade', 'Status']],
+        body,
+        styles: { fontSize: 10 },
+        headStyles: { fillColor: [246, 238, 228], textColor: '#000' },
+        theme: 'grid',
+      });
+    });
+
+    doc.save('checklist_casamento.pdf');
+  };
+
   return (
     <BaseLayout title="Checklist do Casamento">
-      <Box>
-        <Group mb="md" align="center">
-          <Title order={2}>Checklist de Casamento</Title>
+      <Box maw={1180} mx="auto" px={{ base: 'xs', sm: 'md' }}>
+        <Group mb="sm" align="center" justify="space-between" wrap="wrap" gap="sm">
+          <Title order={2} style={{ letterSpacing: '0.01em' }}>Checklist de Casamento</Title>
+          <Button leftSection={<IconFileDownload size={18} />} variant="light" styles={softButtonStyles} onClick={handleExportPDF}>
+            Exportar PDF
+          </Button>
         </Group>
-        <Group mb={16}>
-          <TextInput leftSection={<IconSearch size={16} />} placeholder="Buscar tarefa..." value={search} onChange={e => setSearch(e.currentTarget.value)} w={220} />
+        <Group mb="lg" gap="sm" align="center" wrap="wrap" style={{ background: 'var(--marriplan-surface)', border: '1px solid var(--marriplan-border)', padding: '12px 14px', borderRadius: 16 }}>
+          <TextInput leftSection={<IconSearch size={16} />} placeholder="Buscar tarefa..." value={search} onChange={e => setSearch(e.currentTarget.value)} w={{ base: '100%', sm: 220 }} styles={inputStyles} />
           <Select
             data={[{ value: 'pending', label: 'Pendente' }, { value: 'in_progress', label: 'Em Andamento' }, { value: 'done', label: 'Concluído' }]}
             value={filterStatus}
             onChange={v => setFilterStatus(v || null)}
             placeholder="Status"
             clearable
-            w={120}
+            w={{ base: '100%', sm: 170 }}
+            styles={inputStyles}
           />
           <Select
             data={[{ value: 'high', label: 'Alta' }, { value: 'medium', label: 'Média' }, { value: 'low', label: 'Baixa' }]}
@@ -210,23 +277,13 @@ export default function ChecklistPage() {
             onChange={v => setFilterPriority(v || null)}
             placeholder="Prioridade"
             clearable
-            w={120}
+            w={{ base: '100%', sm: 170 }}
+            styles={inputStyles}
           />
-          <Button leftSection={<IconFileDownload size={18} />} variant="light" onClick={() => {
-            const list = document.querySelector('.mantine-SimpleGrid-root');
-            if (list) {
-              const printWindow = window.open('', '', 'width=800,height=600');
-              printWindow!.document.write('<html><head><title>Checklist</title></head><body>' + list.innerHTML + '</body></html>');
-              printWindow!.document.close();
-              printWindow!.print();
-            }
-          }}>
-            Exportar PDF
-          </Button>
         </Group>
         {loading ? <Loader /> : (
-          <Tabs defaultValue={PHASES[0].key} variant="pills" keepMounted={false}>
-            <Tabs.List mb="md">
+          <Tabs defaultValue={PHASES[0].key} variant="pills" keepMounted={false} styles={checklistTabsStyles} className="checklist-tabs">
+            <Tabs.List mb="lg">
               {PHASES.map(phase => (
                 <Tabs.Tab key={phase.key} value={phase.key}>{phase.label}</Tabs.Tab>
               ))}
@@ -245,41 +302,66 @@ export default function ChecklistPage() {
                       const progress = getMonthProgress(periodTasks);
                       const opened = openedCards[phase.key]?.[idx];
                       return (
-                        <Card key={period.label} shadow="md" radius="md" p="md" withBorder>
-                          <Box mb="sm" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Group gap={8} align="center">
-                              <Button
-                                variant="subtle"
-                                size="xs"
-                                px={4}
+                        <Card
+                          key={period.label}
+                          radius="xl"
+                          p="lg"
+                          withBorder
+                          style={{
+                            background: 'var(--marriplan-surface)',
+                            borderColor: 'var(--marriplan-border)',
+                            boxShadow: 'var(--marriplan-shadow)'
+                          }}
+                        >
+                          <Box mb="md" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                            <Group gap={10} align="center" wrap="nowrap">
+                              <ActionIcon
+                                variant="light"
+                                size="sm"
+                                radius="xl"
                                 onClick={() => handleToggle(phase.key, idx)}
-                                style={{ minWidth: 28 }}
                                 aria-label={opened ? 'Fechar' : 'Abrir'}
                                 visibleFrom="xs"
+                                styles={{
+                                  root: {
+                                    backgroundColor: 'var(--marriplan-champagne)',
+                                    color: 'var(--marriplan-rose)',
+                                    border: '1px solid var(--marriplan-border)'
+                                  }
+                                }}
                               >
-                                <span style={{ display: 'inline-block', transform: opened ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▶</span>
-                              </Button>
+                                <span style={{ display: 'inline-flex', transform: opened ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                                  <IconChevronRight size={14} />
+                                </span>
+                              </ActionIcon>
                               <Title order={5} style={{ margin: 0 }}>{period.label}</Title>
                             </Group>
-                            <RingProgress
-                              size={48}
-                              thickness={6}
-                              sections={[{ value: progress, color: getProgressColor(progress) }]}
-                              label={<Text size="xs" fw={700}>{progress}%</Text>}
-                            />
+                            <Box style={{ flex: '0 0 auto', minWidth: 56 }}>
+                              <RingProgress
+                                size={56}
+                                thickness={6}
+                                sections={[{ value: progress, color: getProgressColor(progress) }]}
+                                label={<Text size="xs" fw={700} ta="center" style={{ lineHeight: 1 }}>{progress}%</Text>}
+                              />
+                            </Box>
                           </Box>
                           <Collapse in={opened} transitionDuration={200}>
-                            <Group mb="xs" justify="space-between">
-                              <Button leftSection={<IconPlus size={14} />} size="xs" variant="light" onClick={() => handleAddTask(periodTasks[0]?.month || 0)}>
+                            <Group mb="sm" justify="space-between">
+                              <Button leftSection={<IconPlus size={14} />} size="xs" styles={primaryButtonStyles} onClick={() => handleAddTask(periodTasks[0]?.month || 0)}>
                                 Adicionar tarefa
                               </Button>
+                              <Text size="xs" c="dimmed">{periodTasks.length} tarefa(s)</Text>
                             </Group>
                             {periodTasks.length === 0 ? (
                               <Text size="sm" c="dimmed">Nenhuma tarefa para este período.</Text>
                             ) : (
-                              <Stack spacing={4}>
+                              <Stack spacing={6}>
                                 {periodTasks.map(task => (
-                                  <Group key={task.id} position="apart" style={{ borderBottom: '1px solid #eee', padding: 4 }}>
+                                  <Group
+                                    key={task.id}
+                                    position="apart"
+                                    style={{ borderBottom: '1px solid var(--marriplan-border)', padding: '8px 6px' }}
+                                  >
                                     <Group>
                                       <Checkbox
                                         checked={task.status === 'done'}
@@ -288,7 +370,14 @@ export default function ChecklistPage() {
                                         size="xs"
                                         styles={{
                                           input: {
-                                            accentColor: task.status === 'done' ? '#12b886' : undefined
+                                            borderColor: 'var(--marriplan-border)',
+                                            '&:checked': {
+                                              backgroundColor: 'var(--marriplan-rose)',
+                                              borderColor: 'var(--marriplan-rose)'
+                                            }
+                                          },
+                                          icon: {
+                                            color: '#fff'
                                           }
                                         }}
                                       />
@@ -341,6 +430,14 @@ export default function ChecklistPage() {
 @keyframes target-badge {
   0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
   100% { box-shadow: 0 0 0 6px rgba(255, 193, 7, 0); }
+}
+.checklist-tabs .mantine-Tabs-tab[data-active] {
+  background-color: #fffaf6 !important;
+  color: var(--marriplan-text) !important;
+  box-shadow: inset 0 0 0 1px var(--marriplan-border) !important;
+}
+.checklist-tabs .mantine-Tabs-tab[data-active] .mantine-Tabs-tabLabel {
+  color: var(--marriplan-text) !important;
 }
 `}</style>
     </BaseLayout>

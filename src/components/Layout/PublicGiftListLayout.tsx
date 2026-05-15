@@ -23,8 +23,21 @@ export default function PublicGiftListLayout({ children, search, onSearch, filte
         breakpoint: 'sm',
         collapsed: { mobile: !navbarOpened },
       }}
+      styles={{
+        main: {
+          background: 'var(--marriplan-bg)',
+          minHeight: '100vh',
+        },
+      }}
     >
-      <AppShell.Header p="md">
+      <AppShell.Header
+        p="md"
+        style={{
+          background: 'rgba(255, 251, 247, 0.9)',
+          borderBottom: '1px solid var(--marriplan-border)',
+          backdropFilter: 'blur(10px)',
+        }}
+      >
         {isMobile ? (
           <Group w="100%" gap="xs" align="center">
             <Burger
@@ -55,14 +68,21 @@ export default function PublicGiftListLayout({ children, search, onSearch, filte
         )}
       </AppShell.Header>
 
-      <AppShell.Navbar width={300} p="md">
+      <AppShell.Navbar
+        width={300}
+        p="md"
+        style={{
+          background: 'var(--marriplan-surface)',
+          borderRight: '1px solid var(--marriplan-border)',
+        }}
+      >
         <Title order={4} mb="md">Filtros</Title>
         <Divider mb="sm" labelPosition="center" label={<Group gap={4}><IconFilter size={16} />Filtros</Group>} />
         {filters}
       </AppShell.Navbar>
 
       <AppShell.Main>
-        <Box style={{ maxWidth: 1200, margin: '0 auto' }}>
+        <Box style={{ margin: '8px 8px 8px 8px' }}>
           {children}
         </Box>
       </AppShell.Main>

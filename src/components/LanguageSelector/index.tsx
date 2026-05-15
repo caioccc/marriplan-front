@@ -13,34 +13,36 @@ const normalizeLang = (lang: string) => {
     if (lang === 'pt-BR' || lang === 'pt') return 'pt'
     if (lang === 'en' || lang === 'en-US') return 'en'
     if (lang === 'es' || lang === 'es-ES') return 'es'
-    return 'en'
+    return 'pt'
 }
 
 const LanguageSelector = () => {
     const {i18n} = useTranslation()
     const {language} = parseCookies()
 
-    const handleChange = (locale: string) => {
+    const handleChange = () => {
+        const locale = 'pt'
         i18n.changeLanguage(locale)
         setCookie(null, 'language', locale, {path: '/'})
         localStorage.setItem('language', locale)
     }
 
     useEffect(() => {
-        const storedLang = localStorage.getItem('language')
-        if (storedLang && normalizeLang(i18n.language) !== normalizeLang(storedLang)) {
-            i18n.changeLanguage(storedLang)
-        } else if (language && normalizeLang(i18n.language) !== normalizeLang(language)) {
-            i18n.changeLanguage(language)
+        const locale = 'pt'
+        if (normalizeLang(i18n.language) !== locale) {
+            i18n.changeLanguage(locale)
         }
+        setCookie(null, 'language', locale, {path: '/'})
+        localStorage.setItem('language', locale)
     }, [i18n, language])
 
     // @ts-ignore
     return (
         <Select
             data={selectOptions}
-            value={normalizeLang(i18n.language)}
+            value="pt"
             onChange={handleChange}
+            disabled
             withinPortal
             size="xs"
             className="ml-6"

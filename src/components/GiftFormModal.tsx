@@ -1,6 +1,7 @@
 import { giftsService } from '@/services/giftsService';
 import { Gift } from '@/types/gift';
 import { ActionIcon, Badge, Box, Button, Group, Modal as MantineModal, Modal, Notification, NumberInput, Select, Textarea, TextInput } from '@mantine/core';
+import { inputStyles, primaryButtonStylesWithDisabled, softButtonStyles } from '@/styles';
 import { IconBox, IconCheck, IconEye, IconGift, IconHeart, IconHome, IconStatusChange, IconTrash } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 
@@ -30,6 +31,8 @@ export function GiftFormModal({ opened, onClose, onSave, initial }: GiftFormModa
   const handleChange = (field: keyof Gift, value: any) => {
     setForm((f) => ({ ...f, [field]: value }));
   };
+
+  const [valueStr, setValueStr] = useState<string>('');
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
@@ -70,12 +73,38 @@ export function GiftFormModal({ opened, onClose, onSave, initial }: GiftFormModa
       setForm({});
       setErrors({});
       setSubmitError(null);
+      setValueStr('');
     } else if (opened && initial) {
       setForm(initial);
       setErrors({});
       setSubmitError(null);
+      setValueStr(initial?.value !== undefined && initial?.value !== null ? String(initial.value) : '');
     }
   }, [opened, initial]);
+
+  // Validação simples: habilita o botão apenas se nome, valor numérico e categoria preenchidos
+  const isValid = (() => {
+    if (!form.name || !form.name.trim()) return false;
+    if (!form.category) return false;
+    if (form.value === undefined || form.value === null || Number.isNaN(Number(form.value))) return false;
+    return true;
+  })();
+
+  function handleValueChange(raw: string) {
+    // permite dígitos, ponto e vírgula; converte vírgula para ponto
+    let v = raw.replace(/[^\d.,]/g, '');
+    v = v.replace(/,/g, '.');
+    // remover zeros à esquerda quando não houver parte decimal
+    if (!v.includes('.')) {
+      v = v.replace(/^0+(?=\d)/, '');
+    } else {
+      const parts = v.split('.');
+      parts[0] = parts[0].replace(/^0+(?=\d)/, '') || '0';
+      v = parts.join('.');
+    }
+    setValueStr(v);
+    setForm(f => ({ ...f, value: v === '' ? undefined : Number(v) }));
+  }
 
   return (
     <Modal opened={opened} onClose={onClose} title={form.id ? 'Editar Presente' : 'Adicionar Presente'} size="xl">
@@ -94,8 +123,8 @@ export function GiftFormModal({ opened, onClose, onSave, initial }: GiftFormModa
             <Badge color={form.status === 'purchased' ? 'green' : form.status === 'reserved' ? 'yellow' : 'gray'}>{form.status}</Badge>
           </Group>
         )} */}
-        <TextInput label="Nome" required value={form.name || ''} onChange={e => handleChange('name', e.target.value)} mb="sm" error={errors.name} />
-        <NumberInput label="Valor" required value={form.value || 0} onChange={v => handleChange('value', v)} mb="sm" min={0} prefix="R$ " error={errors.value} />
+        <TextInput label="Nome" required value={form.name || ''} onChange={e => handleChange('name', e.target.value)} mb="sm" error={errors.name} styles={inputStyles} />
+        <TextInput label="Valor" required value={valueStr} onChange={e => handleValueChange(e.currentTarget.value)} mb="sm" placeholder="0.00" rightSection={<span style={{ paddingRight: 8 }}>R$</span>} error={errors.value} styles={inputStyles} />
         <TextInput label="Link" value={form.link || ''} onChange={e => handleChange('link', e.target.value)} mb="sm" />
         <Textarea label="Descrição" value={form.description || ''} onChange={e => handleChange('description', e.target.value)} mb="sm" />
         <Select label="Categoria" required value={form.category || ''} onChange={v => handleChange('category', v)} data={[
@@ -124,7 +153,9 @@ export function GiftFormModal({ opened, onClose, onSave, initial }: GiftFormModa
         {/* <ImageUpload label="Imagem" value={form.image} onChange={handleImageUpload} mb="sm" /> */}
         <Group mt="md" justify="flex-end">
           <Button onClick={onClose} variant="default">Cancelar</Button>
-          <Button onClick={handleSubmit} loading={loading}>{form.id ? 'Salvar' : 'Adicionar'}</Button>
+          <Button onClick={handleSubmit} loading={loading} styles={isValid ? primaryButtonStylesWithDisabled : primaryButtonStylesWithDisabled} disabled={!isValid}>
+            {form.id ? 'Salvar' : 'Adicionar'}
+          </Button>
         </Group>
         {/* Modal de detalhes */}
         <MantineModal opened={showDetails} onClose={() => setShowDetails(false)} title="Detalhes do Presente" size="lg">

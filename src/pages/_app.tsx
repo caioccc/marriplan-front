@@ -25,7 +25,7 @@ const MyApp = (props: AppProps) => {
                 <link rel="preconnect" href="https://fonts.googleapis.com"/>
                 <link rel="preconnect" href="https://fonts.gstatic.com"/>
                 <link
-                    href="https://fonts.googleapis.com/css2?family=Open%20Sans:wght@300;500;700&display=swap"
+                    href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Playfair%20Display:wght@400;500;600;700&display=swap"
                     rel="stylesheet"
                 />
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"

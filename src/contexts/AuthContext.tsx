@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             if (token && userSaved) {
                 setLoading(false)
                 setUser(JSON.parse(userSaved))
-                router.push(`/dashboard`)
+                // Keep current route; route guards will handle redirects.
             } else {
                 setLoading(false)
                 localStorage.removeItem('token')
@@ -216,15 +216,37 @@ export const ProtectedRoute = ({
     children,
 }: ProtetedRouteProps) => {
     const router = useRouter()
-    const { isAuthenticated, loading } = useAuth()
+    const { isAuthenticated, loading, user } = useAuth()
+
+    const onboardingRoute = '/onboarding'
+
+    const isWeddingProfileComplete = (profile?: any) => {
+        if (!profile) return false
+        return !!(
+            profile.nome_noivo &&
+            profile.nome_noiva &&
+            profile.data_casamento &&
+            profile.hora_casamento &&
+            profile.local
+        )
+    }
 
     const pathIsProtected = !(unprotectedRoutes.indexOf(router.pathname) !== -1)
 
     useEffect(() => {
         if (!isAuthenticated && !loading && pathIsProtected) {
             router.push(`/login?redirect=${router.route}`)
+            return
         }
-    }, [isAuthenticated, loading])
+
+        if (!loading && isAuthenticated && pathIsProtected) {
+            const needsOnboarding = !isWeddingProfileComplete(user?.wedding_profile)
+
+            if (needsOnboarding && router.pathname !== onboardingRoute) {
+                router.push(onboardingRoute)
+            }
+        }
+    }, [isAuthenticated, loading, pathIsProtected, router.pathname, user])
 
     if ((loading || !isAuthenticated) && pathIsProtected) {
         return (

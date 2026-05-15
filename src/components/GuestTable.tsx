@@ -9,21 +9,25 @@ import {
   Group,
   Menu,
   Modal,
+  RangeSlider,
   rem,
+  Select,
+  SegmentedControl,
   Stack,
   Text,
   TextInput,
   Title,
-  useMantineTheme,
   Tooltip,
+  useMantineTheme,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { IconBrandWhatsapp, IconCards, IconDotsVertical, IconDownload, IconEdit, IconFileTypePdf, IconLayoutGrid, IconList, IconMail, IconPlus, IconTrash, IconUpload, IconUser } from '@tabler/icons-react';
+import { IconBrandWhatsapp, IconCards, IconDotsVertical, IconDownload, IconEdit, IconFileTypePdf, IconFilter, IconLayoutGrid, IconList, IconMail, IconPlus, IconSearch, IconTrash, IconUpload, IconUser } from '@tabler/icons-react';
 import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { Pagination, SegmentedControl } from '@mantine/core';
+import { Pagination } from '@mantine/core';
+import { inputStyles, primaryButtonStyles, segmentedTabsStyles, softButtonStyles } from '@/styles';
 
 
 interface Guest {
@@ -55,7 +59,30 @@ export default function GuestTable() {
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState('table');
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [advancedFilterOpen, setAdvancedFilterOpen] = useState(false);
+  const [companionsRange, setCompanionsRange] = useState<[number, number]>([0, 10]);
+  const [whatsappFilter, setWhatsappFilter] = useState<'all' | 'with' | 'without'>('all');
+  const [allergyFilter, setAllergyFilter] = useState<'all' | 'with' | 'without'>('all');
   const theme = useMantineTheme();
+
+  const maxCompanionsValue = Math.max(10, ...guests.map(g => g.acompanhantes ?? 0));
+  const rangeIsDefault = companionsRange[0] === 0 && companionsRange[1] === maxCompanionsValue;
+  const filtersActive = !rangeIsDefault || whatsappFilter !== 'all' || allergyFilter !== 'all';
+
+  async function fetchAllGuests({ ordering }: { ordering: string }) {
+    const pageSize = 200;
+    let currentPage = 1;
+    let results: Guest[] = [];
+    let count = 0;
+    while (true) {
+      const data = await guests_list({ page: currentPage, page_size: pageSize, search, ordering });
+      if (currentPage === 1) count = data.count || 0;
+      results = results.concat(data.results || []);
+      if (!data.results?.length || results.length >= count) break;
+      currentPage += 1;
+    }
+    return { results, count };
+  }
 
   const form = useForm({
     initialValues: {
@@ -85,20 +112,41 @@ export default function GuestTable() {
         const ordering = sortStatus.columnAccessor
           ? `${sortStatus.direction === 'desc' ? '-' : ''}${sortStatus.columnAccessor}`
           : '';
-        const data = await guests_list({
-          page,
-          page_size: recordsPerPage,
-          search,
-          ordering,
-        });
-        setGuests(data.results || []);
-        setTotalRecords(data.count || 0);
+        if (filtersActive) {
+          const data = await fetchAllGuests({ ordering });
+          setGuests(data.results || []);
+          setTotalRecords(data.count || 0);
+        } else {
+          const data = await guests_list({
+            page,
+            page_size: recordsPerPage,
+            search,
+            ordering,
+          });
+          setGuests(data.results || []);
+          setTotalRecords(data.count || 0);
+        }
       } finally {
         setLoading(false);
       }
     }
     fetchGuests();
-  }, [page, recordsPerPage, search, sortStatus]);
+  }, [page, recordsPerPage, search, sortStatus, filtersActive]);
+
+  useEffect(() => {
+    if (filtersActive) {
+      setPage(1);
+    }
+  }, [companionsRange, whatsappFilter, allergyFilter, filtersActive]);
+
+  useEffect(() => {
+    setCompanionsRange(prev => {
+      const nextMax = maxCompanionsValue;
+      const nextMin = Math.min(prev[0], nextMax);
+      const nextHigh = prev[1] > nextMax ? nextMax : prev[1];
+      return [nextMin, nextHigh];
+    });
+  }, [maxCompanionsValue]);
 
   function handleAdd() {
     setEditing(null);
@@ -154,11 +202,47 @@ export default function GuestTable() {
       const ordering = sortStatus.columnAccessor
         ? `${sortStatus.direction === 'desc' ? '-' : ''}${sortStatus.columnAccessor}`
         : '';
+      if (format === 'pdf') {
+        const [{ jsPDF }, autoTableModule] = await Promise.all([
+          import('jspdf'),
+          import('jspdf-autotable'),
+        ]);
+        const autoTable = autoTableModule.default;
+        const data = filtersActive
+          ? { results: filteredGuests, count: filteredGuests.length }
+          : await fetchAllGuests({ ordering });
+
+        const doc = new jsPDF('p', 'mm', 'a4');
+        doc.setFontSize(14);
+        doc.text('Lista de convidados', 14, 18);
+
+        const body = (data.results || []).map(g => ([
+          g.name,
+          g.phone,
+          g.whatsapp || '-',
+          g.email || '-',
+          g.acompanhantes ?? '-',
+          g.alergias || '-',
+        ]));
+
+        autoTable(doc, {
+          startY: 26,
+          head: [['Nome', 'Telefone', 'WhatsApp', 'Email', 'Acompanhantes', 'Alergias']],
+          body,
+          styles: { fontSize: 9 },
+          headStyles: { fillColor: [246, 238, 228], textColor: '#000' },
+          theme: 'grid',
+        });
+
+        doc.save('convidados.pdf');
+        notifications.show({ color: 'green', message: 'Exportação PDF concluída!' });
+        return;
+      }
+
       // const res = await guests_export(format, { search, ordering });
       const res = await guests_export(format);
       let filename = `convidados.${format}`;
       if (format === 'xlsx') filename = 'convidados.xlsx';
-      if (format === 'pdf') filename = 'convidados.pdf';
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -174,19 +258,42 @@ export default function GuestTable() {
     }
   }
 
+  const filteredGuests = guests.filter(g => {
+    if (companionsRange[0] > 0 && (g.acompanhantes === undefined || g.acompanhantes < companionsRange[0])) return false;
+    if (companionsRange[1] < maxCompanionsValue && (g.acompanhantes === undefined || g.acompanhantes > companionsRange[1])) return false;
+
+    if (whatsappFilter === 'with' && !g.whatsapp) return false;
+    if (whatsappFilter === 'without' && g.whatsapp) return false;
+
+    const hasAllergy = !!g.alergias?.trim();
+    if (allergyFilter === 'with' && !hasAllergy) return false;
+    if (allergyFilter === 'without' && hasAllergy) return false;
+
+    return true;
+  });
+
+  const paginatedGuests = filtersActive
+    ? filteredGuests.slice((page - 1) * recordsPerPage, page * recordsPerPage)
+    : guests;
+
+  const derivedTotalRecords = filtersActive ? filteredGuests.length : totalRecords;
+
   return (
     <Stack spacing="md">
       <Group justify="space-between" mb="md">
         <Title order={2}>Meus Convidados</Title>
+        <Button leftSection={<IconFileTypePdf size={18} />} styles={softButtonStyles} onClick={() => handleExport('pdf')} loading={exporting === 'pdf'}>
+          Exportar PDF
+        </Button>
       </Group>
-      <Group mb="md" align="end" justify="end">
-        <Group>
-          <Button leftSection={<IconPlus size={18} />} onClick={handleAdd} variant="filled" color="blue">
+      <Group mb="md" align="center" justify="space-between" wrap="wrap" gap="sm">
+        <Group gap="sm">
+          <Button leftSection={<IconPlus size={18} />} onClick={handleAdd} styles={primaryButtonStyles}>
             Adicionar convidado
           </Button>
           <Menu shadow="md" width={220} position="bottom-end">
             <Menu.Target>
-              <Button variant="light" px={8} style={{ minWidth: 44 }}>
+              <Button styles={softButtonStyles} px={8} style={{ minWidth: 44 }}>
                 <IconDotsVertical size={22} />
               </Button>
             </Menu.Target>
@@ -206,23 +313,12 @@ export default function GuestTable() {
               <Menu.Item
                 leftSection={<IconFileTypePdf size={18} />}
                 onClick={() => handleExport('pdf')}
-                loading={exporting === 'pdf'}
               >
                 Exportar PDF
               </Menu.Item>
             </Menu.Dropdown>
           </Menu>
         </Group>
-      </Group>
-      {/* Busca global */}
-      <TextInput
-        placeholder="Buscar por nome, e-mail, telefone..."
-        value={search}
-        onChange={e => { setSearch(e.currentTarget.value); setPage(1); }}
-        mb={-8}
-        style={{ maxWidth: 320 }}
-      />
-      <Group justify="flex-end">
         <SegmentedControl
           value={viewMode}
           onChange={setViewMode}
@@ -231,12 +327,33 @@ export default function GuestTable() {
             { value: 'cards', label: <IconCards size={16} /> },
             { value: 'gallery', label: <IconLayoutGrid size={16} /> },
           ]}
+          styles={segmentedTabsStyles}
         />
+      </Group>
+      <Group
+        mb="md"
+        gap="sm"
+        align="center"
+        wrap="wrap"
+        style={{ background: 'var(--marriplan-surface)', border: '1px solid var(--marriplan-border)', padding: '12px 14px', borderRadius: 16 }}
+      >
+        <TextInput
+          leftSection={<IconSearch size={16} />}
+          placeholder="Buscar por nome, e-mail, telefone..."
+          value={search}
+          onChange={e => { setSearch(e.currentTarget.value); setPage(1); }}
+          w={{ base: '100%', sm: 260 }}
+          styles={inputStyles}
+        />
+        <Button leftSection={<IconFilter size={16} />} styles={softButtonStyles} onClick={() => setAdvancedFilterOpen(true)}>
+          Filtro avançado
+        </Button>
       </Group>
       {viewMode === 'table' && (
         <DataTable
+          className="guest-table"
           withBorder
-          borderRadius="md"
+          borderRadius="xl"
           highlightOnHover
           verticalSpacing="sm"
           horizontalSpacing="md"
@@ -288,8 +405,8 @@ export default function GuestTable() {
               ),
             },
           ]}
-          records={guests}
-          totalRecords={totalRecords}
+          records={paginatedGuests}
+          totalRecords={derivedTotalRecords}
           page={page}
           onPageChange={setPage}
           recordsPerPage={recordsPerPage}
@@ -304,12 +421,11 @@ export default function GuestTable() {
           responsive
           fetching={loading}
           paginationText={({ from, to, totalRecords }) => `${from}–${to} de ${totalRecords}`}
-          paginationActiveTextColor="blue"
         />
       )}
       {viewMode === 'cards' && (
         <ListView
-          items={guests}
+          items={paginatedGuests}
           getItemId={(g) => g.id}
           getImageUrl={(g) => undefined} // Convidados não têm imagem, então é undefined
           fallbackIcon={<IconUser size={48} color="var(--mantine-color-gray-5)" />}
@@ -366,7 +482,7 @@ export default function GuestTable() {
       )}
       {viewMode === 'gallery' && (
         <GalleryView
-          items={guests}
+          items={paginatedGuests}
           getItemId={(g) => g.id}
           getImageUrl={(g) => undefined} // Convidados não têm imagem, então é undefined
           fallbackIcon={<IconUser size={48} color="var(--mantine-color-gray-5)" />}
@@ -423,7 +539,12 @@ export default function GuestTable() {
       )}
       {(viewMode === 'cards' || viewMode === 'gallery') && (
         <Group justify="center" mt="md">
-          <Pagination total={Math.ceil(totalRecords / recordsPerPage)} value={page} onChange={setPage} />
+          <Pagination
+            className="guest-pagination"
+            total={Math.ceil(derivedTotalRecords / recordsPerPage)}
+            value={page}
+            onChange={setPage}
+          />
         </Group>
       )}
       <Modal
@@ -431,7 +552,7 @@ export default function GuestTable() {
         onClose={() => setModalOpen(false)}
         title={editing ? 'Editar convidado' : 'Adicionar convidado'}
         centered
-        size="xs"
+        size="md"
         overlayProps={{ blur: 2 }}
       >
         <form onSubmit={form.onSubmit(handleSubmit)}>
@@ -441,6 +562,7 @@ export default function GuestTable() {
               required
               {...form.getInputProps('name')}
               autoFocus
+              styles={inputStyles}
             />
             <TextInput
               label="Telefone"
@@ -460,6 +582,7 @@ export default function GuestTable() {
               }}
               error={form.errors.phone}
               placeholder="(11) 99999-9999"
+              styles={inputStyles}
             />
             <Checkbox
               label="Possui WhatsApp?"
@@ -484,6 +607,7 @@ export default function GuestTable() {
                 }}
                 error={form.errors.whatsapp}
                 placeholder="(11) 98888-8888"
+                styles={inputStyles}
               />
             )}
             <TextInput
@@ -492,11 +616,13 @@ export default function GuestTable() {
               {...form.getInputProps('email')}
               error={form.errors.email}
               placeholder="exemplo@email.com"
+              styles={inputStyles}
             />
             <TextInput
               label="Alergias"
               {...form.getInputProps('alergias')}
               placeholder="Ex: Amendoim, frutos do mar..."
+              styles={inputStyles}
             />
             <TextInput
               label="Acompanhantes"
@@ -504,20 +630,90 @@ export default function GuestTable() {
               min={0}
               {...form.getInputProps('acompanhantes')}
               placeholder="0"
+              styles={inputStyles}
             />
             <TextInput
               label="Observações"
               {...form.getInputProps('observacoes')}
               placeholder="Observações adicionais"
+              styles={inputStyles}
             />
             <Group justify="flex-end" mt="md">
-              <Button variant="default" onClick={() => setModalOpen(false)} type="button">
+              <Button variant="default" onClick={() => setModalOpen(false)} type="button" styles={softButtonStyles}>
                 Cancelar
               </Button>
-              <Button type="submit">Salvar</Button>
+              <Button type="submit" styles={primaryButtonStyles}>Salvar</Button>
             </Group>
           </Stack>
         </form>
+      </Modal>
+      <Modal
+        opened={advancedFilterOpen}
+        onClose={() => setAdvancedFilterOpen(false)}
+        title="Filtro avançado"
+        centered
+        size="sm"
+        overlayProps={{ blur: 2 }}
+      >
+        <Stack gap="md">
+          <Group gap="sm" grow>
+            <Stack gap="xs" style={{ flex: 1 }}>
+              <Text size="sm" fw={600}>Acompanhantes</Text>
+              <RangeSlider
+                min={0}
+                max={maxCompanionsValue}
+                value={companionsRange}
+                onChange={setCompanionsRange}
+                minRange={0}
+                label={value => `${value}`}
+                styles={{ track: { backgroundColor: 'var(--marriplan-border)' }, bar: { backgroundColor: 'var(--marriplan-rose)' }, thumb: { borderColor: 'var(--marriplan-rose)' } }}
+              />
+              <Text size="xs" c="dimmed">{companionsRange[0]} a {companionsRange[1]} acompanhantes</Text>
+            </Stack>
+          </Group>
+          <Stack gap="xs">
+            <Text size="sm" fw={600}>WhatsApp</Text>
+            <Select
+              value={whatsappFilter}
+              onChange={value => setWhatsappFilter((value as 'all' | 'with' | 'without') || 'all')}
+              data={[
+                { value: 'all', label: 'Todos' },
+                { value: 'with', label: 'Com WhatsApp' },
+                { value: 'without', label: 'Sem WhatsApp' },
+              ]}
+              styles={inputStyles}
+            />
+          </Stack>
+          <Stack gap="xs">
+            <Text size="sm" fw={600}>Alergia</Text>
+            <Select
+              value={allergyFilter}
+              onChange={value => setAllergyFilter((value as 'all' | 'with' | 'without') || 'all')}
+              data={[
+                { value: 'all', label: 'Todos' },
+                { value: 'with', label: 'Com alergia' },
+                { value: 'without', label: 'Sem alergia' },
+              ]}
+              styles={inputStyles}
+            />
+          </Stack>
+          <Group justify="space-between" mt="sm">
+            <Button
+              variant="default"
+              styles={softButtonStyles}
+              onClick={() => {
+                setCompanionsRange([0, maxCompanionsValue]);
+                setWhatsappFilter('all');
+                setAllergyFilter('all');
+              }}
+            >
+              Limpar filtros
+            </Button>
+            <Button styles={primaryButtonStyles} onClick={() => setAdvancedFilterOpen(false)}>
+              Aplicar
+            </Button>
+          </Group>
+        </Stack>
       </Modal>
       <ImportGuestsModal
         opened={importModalOpen}
@@ -541,6 +737,26 @@ export default function GuestTable() {
           .mantine-DataTable-table th, .mantine-DataTable-table-td {
             padding: 8px 4px;
           }
+        }
+        .guest-table .mantine-Pagination-control {
+          border-radius: 12px;
+          border-color: var(--marriplan-border);
+          color: var(--marriplan-text);
+        }
+        .guest-table .mantine-Pagination-control[data-active] {
+          background-color: var(--marriplan-rose);
+          border-color: var(--marriplan-rose);
+          color: #fff;
+        }
+        .guest-pagination .mantine-Pagination-control {
+          border-radius: 12px;
+          border-color: var(--marriplan-border);
+          color: var(--marriplan-text);
+        }
+        .guest-pagination .mantine-Pagination-control[data-active] {
+          background-color: var(--marriplan-rose);
+          border-color: var(--marriplan-rose);
+          color: #fff;
         }
       `}</style>
     </Stack>

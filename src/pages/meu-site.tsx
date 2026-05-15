@@ -131,7 +131,17 @@ export default function MeuSitePage() {
           <Title order={2}>Meu Site de Casamento</Title>
         </Group>
         {user?.wedding_profile && user?.wedding_site && (
-          <Card shadow="md" p="lg" radius="md" withBorder mb="xl">
+          <Card
+            p="lg"
+            radius="lg"
+            withBorder
+            mb="xl"
+            style={{
+              background: 'var(--marriplan-surface)',
+              borderColor: 'var(--marriplan-border)',
+              boxShadow: '0 16px 32px rgba(70, 56, 43, 0.08)'
+            }}
+          >
             <Group justify="space-between" align="center">
               <Group>
                 <IconHome size={32} />
@@ -146,7 +156,7 @@ export default function MeuSitePage() {
                           href={`${window.location.origin}/site/${dataSite.url_slug}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: "#228be6", textDecoration: "underline" }}
+                          style={{ color: "var(--marriplan-rose)", textDecoration: "underline" }}
                         >
                           {`${window.location.origin}/site/${dataSite.url_slug}`}
                         </a>
@@ -162,12 +172,12 @@ export default function MeuSitePage() {
               dataSite.status === 'published' && (
                 <>
                   <Group mt="md" gap="xl">
-                    <Badge color="blue" size="lg">Visitas: {visitas.toLocaleString()}</Badge>
-                    <Badge color="teal" size="lg">RSVP: {taxaRSVP}%</Badge>
+                    <Badge color="gray" size="lg">Visitas: {visitas.toLocaleString()}</Badge>
+                    <Badge color="gray" size="lg">RSVP: {taxaRSVP}%</Badge>
                     <Badge color="gray" size="lg">Última visita: {ultimaVisita}</Badge>
                   </Group>
                   <Group mt="md" gap="md">
-                    <Button leftSection={<IconEye size={18} />} color="blue" onClick={() => {
+                    <Button leftSection={<IconEye size={18} />} color="gray" variant="light" onClick={() => {
                       window.open(`${window.location.origin}/site/${dataSite.url_slug}`, '_blank');
                     }}>Visualizar Site</Button>
                     {/* <Button leftSection={<IconShare size={18} />} color="green" variant="outline">Compartilhar</Button> */}
@@ -183,7 +193,17 @@ export default function MeuSitePage() {
           loadingSite ? (
             <Text>Carregando site...</Text>
           ) : (
-            <Card shadow="sm" p="lg" radius="md" withBorder mb="xl">
+            <Card
+              p="lg"
+              radius="lg"
+              withBorder
+              mb="xl"
+              style={{
+                background: 'var(--marriplan-surface)',
+                borderColor: 'var(--marriplan-border)',
+                boxShadow: '0 16px 32px rgba(70, 56, 43, 0.08)'
+              }}
+            >
               <Title order={4} mb="sm">Configuração do Site</Title>
               <SiteConfigStepper
                 initialData={dataSite}

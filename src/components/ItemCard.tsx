@@ -64,9 +64,16 @@ export function ItemCard<T>({
     </Menu>
   );
 
+  const cardStyle = {
+    background: 'var(--marriplan-surface)',
+    border: '1px solid var(--marriplan-border)',
+    boxShadow: '0 16px 32px rgba(70, 56, 43, 0.08)',
+    transition: 'transform 180ms ease, box-shadow 180ms ease',
+  } as const;
+
   if (layout === 'vertical') {
     return (
-      <Card shadow="sm" padding="lg" radius="md" withBorder style={{ position: 'relative' }}>
+      <Card padding="lg" radius="lg" withBorder style={{ ...cardStyle, position: 'relative' }}>
         <Box style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 1 }}>
           {menu}
         </Box>
@@ -81,7 +88,7 @@ export function ItemCard<T>({
   }
 
   return (
-    <Card shadow="sm" padding="lg" radius="md" withBorder>
+    <Card padding="lg" radius="lg" withBorder style={cardStyle}>
       <Flex gap="lg" align="flex-start">
         <Box w={100} h={100} style={{ flexShrink: 0 }}>
           {imageContent}

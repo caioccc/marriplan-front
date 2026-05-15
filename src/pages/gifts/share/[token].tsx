@@ -1,7 +1,7 @@
 import PublicGiftListLayout from '@/components/Layout/PublicGiftListLayout';
 import api from '@/services/api';
 import {
-  Box, Group, Title, Text, Badge, Image, Card, Button, Checkbox, Stack, Loader, Radio, Pagination, NumberInput, Switch, Divider, ScrollArea, SegmentedControl, Tooltip
+  Box, Group, Title, Text, Badge, Image, Card, Button, Checkbox, Stack, Loader, Radio, Pagination, NumberInput, Switch, Divider, ScrollArea, SegmentedControl, Tooltip, RangeSlider
 } from '@mantine/core';
 import { useRef } from 'react';
 import { IconExternalLink, IconFilter } from '@tabler/icons-react';
@@ -64,6 +64,7 @@ export default function GiftsSharePage() {
   const [selectedStatus, setSelectedStatus] = useState<string[]>([]);
   const [minPrice, setMinPrice] = useState<number | undefined>();
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 1000]);
   const [hasLink, setHasLink] = useState<boolean | undefined>(undefined);
   const [search, setSearch] = useState('');
   const [ordering, setOrdering] = useState<'recent' | 'oldest' | 'price_asc' | 'price_desc'>('recent');
@@ -97,6 +98,7 @@ export default function GiftsSharePage() {
         fetchWeddingProfile(res.results[0].wedding_profile);
       }
     }).finally(() => setLoading(false));
+
   }, [token, selectedCategories, minPrice, maxPrice, selectedStatus, hasLink, search, ordering, page, pageSize, fetchWeddingProfile]);
 
   // Handlers

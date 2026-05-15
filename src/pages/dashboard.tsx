@@ -4,16 +4,23 @@
 //eslint no-explicit-any: "off"
 
 import BaseLayout from '@/components/Layout/_BaseLayout';
-import WeddingProfileOnboardingModal from '@/components/WeddingProfileOnboardingModal';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchChecklistTasks } from '@/services/checklist';
 import { giftsService } from '@/services/giftsService';
 import { guests_list } from '@/services/guests';
-import { Avatar, Badge, Box, Button, Card, Center, Container, Group, Loader, Paper, Progress, ScrollArea, SimpleGrid, Stack, Text, Title, useMantineTheme } from '@mantine/core';
+import { ChecklistTask } from '@/types/checklist';
+import { Avatar, Badge, Box, Button, Card, Center, Container, Divider, Group, Loader, Paper, Progress, RingProgress, ScrollArea, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import {
   IconCalendar,
-  IconMapPin
+  IconChecklist,
+  IconChevronRight,
+  IconClock,
+  IconGift,
+  IconMapPin,
+  IconSparkles,
+  IconUsers
 } from '@tabler/icons-react';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 // Tipos de dados
 interface Guest {
@@ -51,6 +58,14 @@ interface WeddingOverview {
   totalGuests: number;
 }
 
+interface CountdownState {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  isComplete: boolean;
+}
+
 interface GuestsResponse {
   results: Guest[];
   count: number;
@@ -62,27 +77,22 @@ interface GiftsResponse {
 }
 
 const MarriplanDashboard: React.FC = () => {
-  const theme = useMantineTheme();
   const [guests, setGuests] = useState<GuestsResponse>({ results: [], count: 0 });
   const [gifts, setGifts] = useState<GiftsResponse>({ results: [], count: 0 });
   const [loadingGuests, setLoadingGuests] = useState(false);
   const [loadingGifts, setLoadingGifts] = useState(false);
+  const [loadingChecklist, setLoadingChecklist] = useState(false);
+  const [checklistTasks, setChecklistTasks] = useState<ChecklistTask[]>([]);
   const [guestPage, setGuestPage] = useState(0);
   const [giftPage, setGiftPage] = useState(0);
   const { user } = useAuth();
-  const [showOnboarding, setShowOnboarding] = useState(false);
-
-  useEffect(() => {
-    // Detecta perfil incompleto (campos obrigatórios)
-    if (!user?.wedding_profile) {
-      setShowOnboarding(true);
-    } else {
-      const p = user.wedding_profile;
-      if (!p.nome_noivo || !p.nome_noiva || !p.data_casamento || !p.hora_casamento || !p.local) {
-        setShowOnboarding(true);
-      }
-    }
-  }, [user]);
+  const [countdown, setCountdown] = useState<CountdownState>({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0,
+    isComplete: false,
+  });
 
 
   // Dados reais do perfil de casamento
@@ -95,14 +105,16 @@ const MarriplanDashboard: React.FC = () => {
     totalGuests: 0
   };
 
+  const weddingDateTime = useMemo(() => {
+    if (!user?.wedding_profile?.data_casamento) return null;
+    const time = user.wedding_profile.hora_casamento || '00:00:00';
+    return new Date(`${user.wedding_profile.data_casamento}T${time}`);
+  }, [user?.wedding_profile?.data_casamento, user?.wedding_profile?.hora_casamento]);
+
   if (user?.wedding_profile) {
     const p = user.wedding_profile;
-    console.log('Wedding Profile:', p);
     // Data formatada e cálculo de dias restantes
-    const weddingDate = p.data_casamento
-      ? new Date(p.data_casamento + 'T' + (p.hora_casamento || '00:00:00'))
-      : null;
-    console.log('Wedding Date:', weddingDate);
+    const weddingDate = weddingDateTime;
     let daysRemaining = 0;
     if (weddingDate) {
       // Zera hora/min/seg do casamento e hoje para evitar erro de fuso
@@ -111,8 +123,6 @@ const MarriplanDashboard: React.FC = () => {
       const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const diff = weddingDateOnly.getTime() - todayOnly.getTime();
       daysRemaining = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-
-      console.log('Days Remaining:', daysRemaining, todayOnly, weddingDateOnly);
     }
     // Convidados
     const totalGuests = guests.count;
@@ -125,6 +135,35 @@ const MarriplanDashboard: React.FC = () => {
       totalGuests
     };
   }
+
+  useEffect(() => {
+    if (!weddingDateTime) {
+      setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0, isComplete: false });
+      return;
+    }
+
+    const tick = () => {
+      const now = Date.now();
+      const diff = weddingDateTime.getTime() - now;
+
+      if (diff <= 0) {
+        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0, isComplete: true });
+        return;
+      }
+
+      const totalSeconds = Math.floor(diff / 1000);
+      const days = Math.floor(totalSeconds / 86400);
+      const hours = Math.floor((totalSeconds % 86400) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+
+      setCountdown({ days, hours, minutes, seconds, isComplete: false });
+    };
+
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [weddingDateTime]);
 
   // Carregar convidados reais da API
   useEffect(() => {
@@ -166,6 +205,22 @@ const MarriplanDashboard: React.FC = () => {
       }
     }
     fetchGifts();
+  }, []);
+
+  useEffect(() => {
+    async function fetchChecklist() {
+      setLoadingChecklist(true);
+      try {
+        const data = await fetchChecklistTasks();
+        setChecklistTasks(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error(e);
+        setChecklistTasks([]);
+      } finally {
+        setLoadingChecklist(false);
+      }
+    }
+    fetchChecklist();
   }, []);
 
   const loadMoreGuests = async () => {
@@ -232,92 +287,309 @@ const MarriplanDashboard: React.FC = () => {
     }
   };
 
+  const palette = {
+    champagne: '#F7F1E8',
+    roseGold: '#E6B8A2',
+    beige: '#EFE6DA',
+    warmGray: '#6F6660',
+    ink: '#2D2622',
+    line: '#EEE3D8',
+    softWhite: '#FFFCF8'
+  };
+
+  const checklistStats = useMemo(() => {
+    const total = checklistTasks.length;
+    const done = checklistTasks.filter(task => task.status === 'done').length;
+    const inProgress = checklistTasks.filter(task => task.status === 'in_progress').length;
+    const pending = checklistTasks.filter(task => task.status === 'pending').length;
+    const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+    return { total, done, inProgress, pending, progress };
+  }, [checklistTasks]);
+
+  const guestsProgress = weddingOverview.totalGuests > 0
+    ? Math.round((weddingOverview.confirmedGuests / weddingOverview.totalGuests) * 100)
+    : 0;
+
+  const giftsPurchased = gifts.results.filter(gift => gift.status === 'purchased').length;
+  const giftsProgress = gifts.count > 0 ? Math.round((giftsPurchased / gifts.count) * 100) : 0;
+
+  const checklistSections = useMemo(() => {
+    const total = Math.max(checklistStats.total, 1);
+    return [
+      { value: Math.round((checklistStats.done / total) * 100), color: '#D1A48C' },
+      { value: Math.round((checklistStats.inProgress / total) * 100), color: '#E6C9B8' },
+      { value: Math.round((checklistStats.pending / total) * 100), color: '#EFE6DA' }
+    ];
+  }, [checklistStats]);
+
+  const nextTasks = useMemo(() => {
+    const priorityWeight: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    return checklistTasks
+      .filter(task => task.status !== 'done')
+      .sort((a, b) => {
+        const dateA = a.due_date || a.start_date || a.created_at;
+        const dateB = b.due_date || b.start_date || b.created_at;
+        const timeA = dateA ? new Date(dateA).getTime() : Number.MAX_SAFE_INTEGER;
+        const timeB = dateB ? new Date(dateB).getTime() : Number.MAX_SAFE_INTEGER;
+        if (timeA !== timeB) return timeA - timeB;
+        return (priorityWeight[a.priority] ?? 3) - (priorityWeight[b.priority] ?? 3);
+      })
+      .slice(0, 4);
+  }, [checklistTasks]);
+
+  const coupleName = user?.wedding_profile
+    ? `${user.wedding_profile.nome_noivo || 'Noivo'} & ${user.wedding_profile.nome_noiva || 'Noiva'}`
+    : 'Seu casamento';
+
   return (
     <BaseLayout title="Dashboard">
       <Container size="xl" py="md">
-        <WeddingProfileOnboardingModal
-          opened={showOnboarding}
-          onClose={() => setShowOnboarding(false)}
-          onComplete={() => setShowOnboarding(false)}
-        />
         <Stack gap="xl">
-          {/* Overview do Casamento */}
-          <Card shadow="md" radius="lg" p="lg">
-            <Group justify="space-between" mb="md">
-              <Title order={2}>Visão Geral do Casamento</Title>
-            </Group>
-
-            <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="lg">
-              <Box>
-                <Text size="sm" c="dimmed" mb={4}>Data do Casamento</Text>
-                <Group gap="xs">
-                  <IconCalendar size={16} color={theme.colors.pink[6]} />
-                  <Text fw={500}>{weddingOverview.date}</Text>
-                </Group>
-              </Box>
-
-              <Box>
-                <Text size="sm" c="dimmed" mb={4}>Dias Restantes</Text>
-                <Text fw={700} size="xl" c="pink.6">
-                  {weddingOverview.daysRemaining} dias
+          <Card
+            radius="xl"
+            p="xl"
+            style={{
+              background: `linear-gradient(135deg, ${palette.softWhite} 0%, ${palette.champagne} 50%, ${palette.beige} 100%)`,
+              border: `1px solid ${palette.line}`
+            }}
+          >
+            <Stack gap="lg">
+              <Group justify="space-between" align="flex-start" gap="xl" wrap="wrap">
+                <Stack gap={8} style={{ maxWidth: 520 }}>
+                <Text size="xs" c={palette.warmGray} fw={600} tt="uppercase" style={{ letterSpacing: 1.2 }}>
+                  Seu momento especial
                 </Text>
-              </Box>
-
-              <Box>
-                <Text size="sm" c="dimmed" mb={4}>Local</Text>
-                <Group gap="xs">
-                  <IconMapPin size={16} color={theme.colors.green[6]} />
-                  <Text fw={500}>{weddingOverview.venue}</Text>
+                <Title order={2} c={palette.ink} style={{ fontWeight: 600 }}>
+                  {coupleName}
+                </Title>
+                <Group gap="md" wrap="wrap">
+                  <Group gap="xs">
+                    <IconCalendar size={16} color={palette.roseGold} />
+                    <Text size="sm" c={palette.ink}>{weddingOverview.date}</Text>
+                  </Group>
+                  <Group gap="xs">
+                    <IconMapPin size={16} color={palette.warmGray} />
+                    <Text size="sm" c={palette.ink}>{weddingOverview.venue}</Text>
+                  </Group>
                 </Group>
-              </Box>
-
-              <Box>
-                <Text size="sm" c="dimmed" mb={4}>Convidados</Text>
-                <Text fw={500}>
-                  {weddingOverview.confirmedGuests} / {weddingOverview.totalGuests}
-                </Text>
-                <Progress
-                  value={(weddingOverview.confirmedGuests / weddingOverview.totalGuests) * 100}
-                  size="sm"
-                  color="blue"
-                  mt={4}
-                />
-              </Box>
-            </SimpleGrid>
+                  <Text size="sm" c={palette.warmGray}>
+                    Cada detalhe conta. Veja o progresso e os proximos passos mais importantes da sua jornada.
+                  </Text>
+                </Stack>
+              </Group>
+              <Card
+                radius="xl"
+                p="lg"
+                style={{
+                  background: palette.softWhite,
+                  border: `1px solid ${palette.line}`
+                }}
+              >
+                <Stack gap={8} align="center">
+                  <Group gap="xs">
+                    <IconClock size={16} color={palette.roseGold} />
+                    <Text size="xs" c={palette.warmGray} fw={600} tt="uppercase" style={{ letterSpacing: 1 }}>
+                      Contador regressivo
+                    </Text>
+                  </Group>
+                  {countdown.isComplete ? (
+                    <Text size="lg" fw={700} c={palette.ink}>
+                      Chegou o grande dia! Felicidades aos noivos.
+                    </Text>
+                  ) : (
+                    <Group gap="md" wrap="wrap" justify="center">
+                      <Stack gap={2} align="center">
+                        <Text size="xl" fw={700} c={palette.ink}>{countdown.days}</Text>
+                        <Text size="xs" c={palette.warmGray}>Dias</Text>
+                      </Stack>
+                      <Stack gap={2} align="center">
+                        <Text size="xl" fw={700} c={palette.ink}>{countdown.hours}</Text>
+                        <Text size="xs" c={palette.warmGray}>Horas</Text>
+                      </Stack>
+                      <Stack gap={2} align="center">
+                        <Text size="xl" fw={700} c={palette.ink}>{countdown.minutes}</Text>
+                        <Text size="xs" c={palette.warmGray}>Minutos</Text>
+                      </Stack>
+                      <Stack gap={2} align="center">
+                        <Text size="xl" fw={700} c={palette.ink}>{countdown.seconds}</Text>
+                        <Text size="xs" c={palette.warmGray}>Segundos</Text>
+                      </Stack>
+                    </Group>
+                  )}
+                </Stack>
+              </Card>
+            </Stack>
           </Card>
 
-          {/* Lista de Convidados e Presentes */}
+          <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="lg">
+            <Card radius="xl" p="lg" style={{ background: palette.softWhite, border: `1px solid ${palette.line}` }}>
+              <Group justify="space-between" align="flex-start">
+                <Stack gap={6}>
+                  <Text size="xs" c={palette.warmGray} fw={600} tt="uppercase" style={{ letterSpacing: 1 }}>
+                    Progresso do casamento
+                  </Text>
+                  <Text size="lg" fw={600} c={palette.ink}>{checklistStats.progress}% concluido</Text>
+                  <Text size="xs" c={palette.warmGray}>{checklistStats.done} de {checklistStats.total} tarefas</Text>
+                </Stack>
+                <RingProgress
+                  size={72}
+                  thickness={6}
+                  sections={[{ value: checklistStats.progress, color: palette.roseGold }]}
+                  label={
+                    <Text size="xs" fw={600} c={palette.ink} ta="center">
+                      {checklistStats.progress}%
+                    </Text>
+                  }
+                />
+              </Group>
+            </Card>
+
+            <Card radius="xl" p="lg" style={{ background: palette.softWhite, border: `1px solid ${palette.line}` }}>
+              <Group justify="space-between" align="flex-start">
+                <Stack gap={6}>
+                  <Text size="xs" c={palette.warmGray} fw={600} tt="uppercase" style={{ letterSpacing: 1 }}>
+                    Convidados
+                  </Text>
+                  <Text size="lg" fw={600} c={palette.ink}>{weddingOverview.confirmedGuests} confirmados</Text>
+                  <Text size="xs" c={palette.warmGray}>{weddingOverview.totalGuests} convidados totais</Text>
+                </Stack>
+                <IconUsers size={24} color={palette.roseGold} />
+              </Group>
+              <Progress value={guestsProgress} color={palette.roseGold} mt="sm" radius="xl" />
+            </Card>
+
+            <Card radius="xl" p="lg" style={{ background: palette.softWhite, border: `1px solid ${palette.line}` }}>
+              <Group justify="space-between" align="flex-start">
+                <Stack gap={6}>
+                  <Text size="xs" c={palette.warmGray} fw={600} tt="uppercase" style={{ letterSpacing: 1 }}>
+                    Lista de presentes
+                  </Text>
+                  <Text size="lg" fw={600} c={palette.ink}>{giftsPurchased} comprados</Text>
+                  <Text size="xs" c={palette.warmGray}>{gifts.count} itens cadastrados</Text>
+                </Stack>
+                <IconGift size={24} color={palette.roseGold} />
+              </Group>
+              <Progress value={giftsProgress} color={palette.roseGold} mt="sm" radius="xl" />
+            </Card>
+
+            <Card radius="xl" p="lg" style={{ background: palette.softWhite, border: `1px solid ${palette.line}` }}>
+              <Group justify="space-between" align="flex-start">
+                <Stack gap={6}>
+                  <Text size="xs" c={palette.warmGray} fw={600} tt="uppercase" style={{ letterSpacing: 1 }}>
+                    Energia do planejamento
+                  </Text>
+                  <Text size="lg" fw={600} c={palette.ink}>Tudo alinhado</Text>
+                  <Text size="xs" c={palette.warmGray}>Um passo de cada vez</Text>
+                </Stack>
+                <IconSparkles size={24} color={palette.roseGold} />
+              </Group>
+            </Card>
+          </SimpleGrid>
+
           <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
-            {/* Lista de Convidados */}
-            <Card shadow="md" radius="lg" p="lg">
+            <Card radius="xl" p="lg" style={{ background: palette.softWhite, border: `1px solid ${palette.line}` }}>
+              <Group justify="space-between" align="center" mb="md">
+                <Stack gap={2}>
+                  <Group gap="xs">
+                    <IconChecklist size={18} color={palette.roseGold} />
+                    <Title order={4} c={palette.ink}>Proximos passos</Title>
+                  </Group>
+                  <Text size="xs" c={palette.warmGray}>Foque no que destrava seu planejamento</Text>
+                </Stack>
+                <Button
+                  variant="subtle"
+                  color="dark"
+                  rightSection={<IconChevronRight size={16} />}
+                  onClick={() => window.location.href = '/checklist'}
+                >
+                  Ver checklist
+                </Button>
+              </Group>
+              <Divider mb="md" color={palette.line} />
+              <Stack gap="sm">
+                {loadingChecklist && (
+                  <Center py="md">
+                    <Loader size="sm" />
+                  </Center>
+                )}
+                {!loadingChecklist && nextTasks.length === 0 && (
+                  <Text size="sm" c={palette.warmGray}>Nenhuma tarefa pendente no momento.</Text>
+                )}
+                {nextTasks.map(task => (
+                  <Paper key={task.id} radius="lg" p="sm" style={{ border: `1px solid ${palette.line}` }}>
+                    <Group justify="space-between" align="center" wrap="nowrap">
+                      <Box>
+                        <Text size="sm" fw={600} c={palette.ink}>{task.description}</Text>
+                        <Text size="xs" c={palette.warmGray}>
+                          {task.due_date ? `Entrega: ${new Date(task.due_date).toLocaleDateString('pt-BR')}` : 'Sem data definida'}
+                        </Text>
+                      </Box>
+                      <Badge
+                        variant="light"
+                        color={task.status === 'in_progress' ? 'orange' : 'gray'}
+                      >
+                        {task.status === 'in_progress' ? 'Em andamento' : 'Pendente'}
+                      </Badge>
+                    </Group>
+                  </Paper>
+                ))}
+              </Stack>
+            </Card>
+
+            <Card radius="xl" p="lg" style={{ background: palette.softWhite, border: `1px solid ${palette.line}` }}>
+              <Group justify="space-between" align="center" mb="md">
+                <Stack gap={2}>
+                  <Title order={4} c={palette.ink}>Resumo do checklist</Title>
+                  <Text size="xs" c={palette.warmGray}>Distribuicao por status</Text>
+                </Stack>
+                <Badge variant="light" color="gray">{checklistStats.total} tarefas</Badge>
+              </Group>
+              <Stack gap="sm">
+                <Progress
+                  radius="xl"
+                  size="lg"
+                  sections={checklistSections}
+                />
+                <Group justify="space-between">
+                  <Text size="sm" c={palette.warmGray}>Concluido</Text>
+                  <Text size="sm" fw={600} c={palette.ink}>{checklistStats.done}</Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="sm" c={palette.warmGray}>Em andamento</Text>
+                  <Text size="sm" fw={600} c={palette.ink}>{checklistStats.inProgress}</Text>
+                </Group>
+                <Group justify="space-between">
+                  <Text size="sm" c={palette.warmGray}>Pendente</Text>
+                  <Text size="sm" fw={600} c={palette.ink}>{checklistStats.pending}</Text>
+                </Group>
+              </Stack>
+            </Card>
+          </SimpleGrid>
+
+          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
+            <Card radius="xl" p="lg" style={{ background: palette.softWhite, border: `1px solid ${palette.line}` }}>
               <Group justify="space-between" mb="md">
-                <Title order={2}>Lista de Convidados</Title>
-                <Badge variant="light" color="blue">
-                  {guests.count} convidados
-                </Badge>
+                <Title order={4} c={palette.ink}>Convidados recentes</Title>
+                <Badge variant="light" color="gray">{guests.count} convidados</Badge>
               </Group>
 
-              <ScrollArea h={400}>
+              <ScrollArea h={320}>
                 <Stack gap="sm">
                   {guests.results.map((guest) => (
-                    <Paper key={guest.id} p="sm" radius="md" withBorder>
+                    <Paper key={guest.id} p="sm" radius="lg" style={{ border: `1px solid ${palette.line}` }}>
                       <Group justify="space-between">
                         <Group gap="sm">
-                          <Avatar size="sm" color="pink" variant="light">
+                          <Avatar size="sm" color="gray" variant="light">
                             {guest.name.split(' ').map(n => n[0]).join('')}
                           </Avatar>
                           <Box>
-                            <Text fw={500} size="sm">{guest.name}</Text>
-                            <Text size="xs" c="dimmed">
+                            <Text fw={500} size="sm" c={palette.ink}>{guest.name}</Text>
+                            <Text size="xs" c={palette.warmGray}>
                               {guest.plusOne ? 'Com acompanhante' : 'Sem acompanhante'}
                             </Text>
                           </Box>
                         </Group>
-                        <Badge
-                          variant="light"
-                          color={getStatusColor(guest.status)}
-                          size="sm"
-                        >
+                        <Badge variant="light" color={getStatusColor(guest.status)} size="sm">
                           {getStatusLabel(guest.status)}
                         </Badge>
                       </Group>
@@ -331,11 +603,7 @@ const MarriplanDashboard: React.FC = () => {
                   )}
 
                   <Center>
-                    <Button
-                      variant="light"
-                      onClick={loadMoreGuests}
-                      disabled={loadingGuests}
-                    >
+                    <Button variant="subtle" color="dark" onClick={loadMoreGuests} disabled={loadingGuests}>
                       Carregar mais convidados
                     </Button>
                   </Center>
@@ -343,47 +611,37 @@ const MarriplanDashboard: React.FC = () => {
               </ScrollArea>
             </Card>
 
-            {/* Lista de Presentes */}
-            <Card shadow="md" radius="lg" p="lg">
+            <Card radius="xl" p="lg" style={{ background: palette.softWhite, border: `1px solid ${palette.line}` }}>
               <Group justify="space-between" mb="md">
-                <Title order={2}>Lista de Presentes</Title>
-                <Badge variant="light" color="green">
-                  {gifts.count} itens cadastrados
-                </Badge>
+                <Title order={4} c={palette.ink}>Presentes recentes</Title>
+                <Badge variant="light" color="gray">{gifts.count} itens</Badge>
               </Group>
 
-              <ScrollArea h={400}>
+              <ScrollArea h={320}>
                 <Stack gap="sm">
                   {gifts.results.map((gift) => (
-                    <Paper key={gift.id} p="sm" radius="md" withBorder>
+                    <Paper key={gift.id} p="sm" radius="lg" style={{ border: `1px solid ${palette.line}` }}>
                       <Group justify="space-between" align="flex-start">
                         <Box style={{ flex: 1 }}>
-                          <Text fw={500} size="sm">{gift.name}</Text>
+                          <Text fw={500} size="sm" c={palette.ink}>{gift.name}</Text>
                           {gift.description && (
-                            <Text size="xs" c="dimmed" mt={2} lineClamp={2}>{gift.description}</Text>
+                            <Text size="xs" c={palette.warmGray} mt={2} lineClamp={2}>{gift.description}</Text>
                           )}
                           <Group gap="xs" mt={2}>
-                            <Text size="xs" c="dimmed">{gift.category}</Text>
-                            <Text size="xs" fw={500} c="green">
-                              {typeof gift.value === 'number' ? `R$ ${Number(gift.value).toFixed(2)}` : (typeof gift.price === 'number' ? `R$ ${Number(gift.price).toFixed(2)}` : '-')}
+                            <Text size="xs" c={palette.warmGray}>{gift.category}</Text>
+                            <Text size="xs" fw={600} c={palette.ink}>
+                              {typeof gift.value === 'number'
+                                ? `R$ ${Number(gift.value).toFixed(2)}`
+                                : (typeof gift.price === 'number' ? `R$ ${Number(gift.price).toFixed(2)}` : '-')}
                             </Text>
                           </Group>
                           {gift.link && (
-                            <Text size="xs" c="blue" style={{ cursor: 'pointer' }} onClick={() => window.open(gift.link, '_blank')}>
+                            <Text size="xs" c={palette.warmGray} style={{ cursor: 'pointer' }} onClick={() => window.open(gift.link, '_blank')}>
                               Ver presente
                             </Text>
                           )}
-                          {gift.purchased_by && (
-                            <Text size="xs" c="dimmed" mt={2}>
-                              Comprado por: {gift.purchased_by}
-                            </Text>
-                          )}
                         </Box>
-                        <Badge
-                          variant="light"
-                          color={getStatusColor(gift.status)}
-                          size="sm"
-                        >
+                        <Badge variant="light" color={getStatusColor(gift.status)} size="sm">
                           {getStatusLabel(gift.status)}
                         </Badge>
                       </Group>
@@ -397,11 +655,7 @@ const MarriplanDashboard: React.FC = () => {
                   )}
 
                   <Center>
-                    <Button
-                      variant="light"
-                      onClick={loadMoreGifts}
-                      disabled={loadingGifts}
-                    >
+                    <Button variant="subtle" color="dark" onClick={loadMoreGifts} disabled={loadingGifts}>
                       Carregar mais presentes
                     </Button>
                   </Center>

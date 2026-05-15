@@ -59,12 +59,30 @@ const ReportsContent: NextPage = () => {
             </Title>
 
             <SimpleGrid cols={{base: 1, sm: 2}} spacing="lg">
-                <Card shadow="sm" padding="lg" radius="md" withBorder>
+                <Card
+                    padding="lg"
+                    radius="lg"
+                    withBorder
+                    style={{
+                        background: 'var(--marriplan-surface)',
+                        borderColor: 'var(--marriplan-border)',
+                        boxShadow: '0 16px 32px rgba(70, 56, 43, 0.08)'
+                    }}
+                >
                     <Text size="lg" fw={700}>Total de Sessões</Text>
                     <Text size="xl">{totalSessions ?? 'Carregando...'}</Text>
                 </Card>
 
-                <Card shadow="sm" padding="lg" radius="md" withBorder>
+                <Card
+                    padding="lg"
+                    radius="lg"
+                    withBorder
+                    style={{
+                        background: 'var(--marriplan-surface)',
+                        borderColor: 'var(--marriplan-border)',
+                        boxShadow: '0 16px 32px rgba(70, 56, 43, 0.08)'
+                    }}
+                >
                     <Text size="lg" fw={700}>Total de Conversas</Text>
                     <Text size="xl">{totalConversations ?? 'Carregando...'}</Text>
                 </Card>
