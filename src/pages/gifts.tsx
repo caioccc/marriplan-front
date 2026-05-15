@@ -6,6 +6,7 @@ import { ListView } from "@/components/ListView";
 import { MarkAsPurchasedModal } from "@/components/MarkAsPurchasedModal";
 import { giftsService } from "@/services/giftsService";
 import { guests_list } from "@/services/guests";
+import { MarriplanStatusBadge } from "@/components/MarriplanStatusBadge";
 import { Gift } from "@/types/gift";
 import {
   inputStyles,
@@ -64,10 +65,10 @@ const statusOptions = [
   { label: "Reservados", value: "reserved" },
 ];
 
-const statusLabels: Record<string, { label: string; color: string }> = {
-  available: { label: "Disponível", color: "gray" },
-  purchased: { label: "Comprado", color: "green" },
-  reserved: { label: "Reservado", color: "yellow" },
+const statusLabels: Record<string, { label: string }> = {
+  available: { label: "Disponível" },
+  purchased: { label: "Comprado" },
+  reserved: { label: "Reservado" },
 };
 
 const categoryOptions = [
@@ -545,9 +546,7 @@ const GiftsPage: NextPage = () => {
                 accessor: "status",
                 title: "Status",
                 render: (g) => (
-                  <Badge color={statusLabels[g.status]?.color}>
-                    {statusLabels[g.status]?.label}
-                  </Badge>
+                  <MarriplanStatusBadge kind="gift" status={g.status} />
                 ),
               },
               {
@@ -656,9 +655,7 @@ const GiftsPage: NextPage = () => {
               </>
             )}
             renderStatus={(g) => (
-              <Badge color={statusLabels[g.status]?.color}>
-                {statusLabels[g.status]?.label}
-              </Badge>
+              <MarriplanStatusBadge kind="gift" status={g.status} />
             )}
             renderActions={(g) => (
               <>
@@ -712,9 +709,7 @@ const GiftsPage: NextPage = () => {
                 <Text fw={500} lineClamp={2}>
                   {g.name}
                 </Text>
-                <Badge color={statusLabels[g.status]?.color} fullWidth>
-                  {statusLabels[g.status]?.label}
-                </Badge>
+                <MarriplanStatusBadge kind="gift" status={g.status} fullWidth />
                 <Text size="sm" c="dimmed">
                   Valor: R$ {g.value}
                 </Text>

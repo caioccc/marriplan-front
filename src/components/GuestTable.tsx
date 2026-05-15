@@ -27,7 +27,7 @@ import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
 import { useEffect, useState } from 'react';
 
 import { Pagination } from '@mantine/core';
-import { inputStyles, primaryButtonStyles, segmentedTabsStyles, softButtonStyles } from '@/styles';
+import { actionIconDangerStyles, actionIconEditStyles, inputStyles, primaryButtonStyles, segmentedTabsStyles, softButtonStyles } from '@/styles';
 
 
 interface Guest {
@@ -395,10 +395,10 @@ export default function GuestTable() {
                       <IconMail size={18} />
                     </ActionIcon>
                   )}
-                  <ActionIcon variant="subtle" color="blue" onClick={() => handleEdit(g)}>
+                  <ActionIcon variant="subtle" styles={actionIconEditStyles} onClick={() => handleEdit(g)}>
                     <IconEdit size={18} />
                   </ActionIcon>
-                  <ActionIcon variant="subtle" color="red" onClick={() => handleDelete(g.id)}>
+                  <ActionIcon variant="subtle" styles={actionIconDangerStyles} onClick={() => handleDelete(g.id)}>
                     <IconTrash size={18} />
                   </ActionIcon>
                 </Group>
@@ -467,12 +467,12 @@ export default function GuestTable() {
                 </Tooltip>
               )}
               <Tooltip label="Editar convidado" position="right">
-                <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => handleEdit(g)}>
+                <Menu.Item leftSection={<IconEdit size={14} color="var(--marriplan-rose)" />} onClick={() => handleEdit(g)}>
                   Editar
                 </Menu.Item>
               </Tooltip>
               <Tooltip label="Excluir convidado" position="right">
-                <Menu.Item leftSection={<IconTrash size={14} />} onClick={() => handleDelete(g.id)} color="red">
+                <Menu.Item leftSection={<IconTrash size={14} color="var(--marriplan-rose)" />} onClick={() => handleDelete(g.id)} color="red">
                   Excluir
                 </Menu.Item>
               </Tooltip>
@@ -524,12 +524,12 @@ export default function GuestTable() {
                 </Tooltip>
               )}
               <Tooltip label="Editar convidado" position="right">
-                <Menu.Item leftSection={<IconEdit size={14} />} onClick={() => handleEdit(g)}>
+                <Menu.Item leftSection={<IconEdit size={14} color="var(--marriplan-rose)" />} onClick={() => handleEdit(g)}>
                   Editar
                 </Menu.Item>
               </Tooltip>
               <Tooltip label="Excluir convidado" position="right">
-                <Menu.Item leftSection={<IconTrash size={14} />} onClick={() => handleDelete(g.id)} color="red">
+                <Menu.Item leftSection={<IconTrash size={14} color="var(--marriplan-rose)" />} onClick={() => handleDelete(g.id)} color="red">
                   Excluir
                 </Menu.Item>
               </Tooltip>

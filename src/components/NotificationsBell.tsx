@@ -3,6 +3,7 @@ import {IconBell, IconEye} from '@tabler/icons-react';
 import {useNotifications} from '@/contexts/NotificationContext';
 import {AnimatedTargetDot} from "@/components/AnimatedTargetDot";
 import {truncate} from "@/lib/utils";
+import { actionIconStyles } from '@/styles';
 
 export function NotificationsBell() {
     const {
@@ -34,10 +35,10 @@ export function NotificationsBell() {
     return (
         <Menu width={360} position="bottom-end" withArrow styles={menuStyles}>
             <Menu.Target>
-                <ActionIcon size="lg" variant="subtle">
-                    <IconBell size={22}/>
+                <ActionIcon size="lg" variant="subtle" styles={actionIconStyles} style={{ position: 'relative', backgroundColor: 'var(--marriplan-surface-muted)', color: 'var(--marriplan-rose)' }}>
+                    <IconBell size={22} />
                     {unreadCount > 0 && (
-                        <Badge color="red" size="sm" style={{position: 'absolute', top: 2, right: 2}}>
+                        <Badge color="red" size="sm" style={{position: 'absolute', top: 2, right: 2, backgroundColor: 'var(--marriplan-rose)', color: '#fff'}}>
                             {unreadCount}
                         </Badge>
                     )}

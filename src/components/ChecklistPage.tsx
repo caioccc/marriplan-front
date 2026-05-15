@@ -4,13 +4,14 @@
 //eslint no-explicit-any: "off"
 import { createChecklistTask, deleteChecklistTask, fetchChecklistTasks, updateChecklistTask } from '@/services/checklist';
 import { ChecklistTask } from '@/types/checklist';
-import { ActionIcon, Badge, Box, Button, Card, Checkbox, Collapse, Group, Loader, RingProgress, Select, SimpleGrid, Stack, Tabs, Text, TextInput, Title, Tooltip as TooltipMantine } from '@mantine/core';
+import { ActionIcon, Box, Button, Card, Checkbox, Collapse, Group, Loader, RingProgress, Select, SimpleGrid, Stack, Tabs, Text, TextInput, Title, Tooltip as TooltipMantine } from '@mantine/core';
 import { useMediaQuery, useDisclosure } from '@mantine/hooks';
 import { IconChevronRight, IconEdit, IconFileDownload, IconPlus, IconSearch, IconTrash } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import ChecklistTaskModal from './ChecklistTaskModal';
 import BaseLayout from './Layout/_BaseLayout';
-import { checklistTabsStyles, inputStyles, primaryButtonStyles, softButtonStyles } from '@/styles';
+import { MarriplanStatusBadge } from '@/components/MarriplanStatusBadge';
+import { actionIconDangerStyles, actionIconEditStyles, checklistTabsStyles, inputStyles, primaryButtonStyles, softButtonStyles } from '@/styles';
 
 
 export default function ChecklistPage() {
@@ -22,7 +23,6 @@ export default function ChecklistPage() {
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [filterPriority, setFilterPriority] = useState<string | null>(null);
   const [loadingTaskId, setLoadingTaskId] = useState<number | null>(null);
-  const pendingBadgeRef = useRef<{ [key: number]: HTMLDivElement | null }>({});
   const isMobile = useMediaQuery('(max-width: 600px)');
 
   useEffect(() => {
@@ -388,23 +388,11 @@ export default function ChecklistPage() {
                                       >
                                         {task.description}
                                       </Text>
-                                      {!task.is_template && <TooltipMantine label="Editar"><ActionIcon onClick={() => handleEditTask(task)} disabled={loadingTaskId === task.id} size="xs"><IconEdit size={14} /></ActionIcon></TooltipMantine>}
-                                      {!task.is_template && <TooltipMantine label="Excluir"><ActionIcon color="red" onClick={() => handleDeleteTask(task.id)} disabled={loadingTaskId === task.id} size="xs"><IconTrash size={14} /></ActionIcon></TooltipMantine>}
+                                      <MarriplanStatusBadge kind="checklist" status={task.status} size="xs" />
+                                      {!task.is_template && <TooltipMantine label="Editar"><ActionIcon variant="subtle" styles={actionIconEditStyles} onClick={() => handleEditTask(task)} disabled={loadingTaskId === task.id} size="xs"><IconEdit size={14} /></ActionIcon></TooltipMantine>}
+                                      {!task.is_template && <TooltipMantine label="Excluir"><ActionIcon variant="subtle" styles={actionIconDangerStyles} onClick={() => handleDeleteTask(task.id)} disabled={loadingTaskId === task.id} size="xs"><IconTrash size={14} /></ActionIcon></TooltipMantine>}
                                     </Group>
-                                    <div ref={el => (pendingBadgeRef.current[task.id] = el)}>
-                                      {loadingTaskId === task.id ? (
-                                        <Loader size={14} />
-                                      ) : (
-                                        <Badge
-                                          size="xs"
-                                          color={task.status === 'done' ? 'green' : task.status === 'in_progress' ? 'blue' : 'yellow'}
-                                          variant={task.status === 'pending' ? 'filled' : 'light'}
-                                          style={task.status === 'pending' ? { animation: 'target-badge 1s infinite alternate' } : {}}
-                                        >
-                                          {task.status === 'done' ? 'Concluído' : task.status === 'in_progress' ? 'Em andamento' : 'Pendente'}
-                                        </Badge>
-                                      )}
-                                    </div>
+                                    {loadingTaskId === task.id && <Loader size={14} />}
                                   </Group>
                                 ))}
                               </Stack>

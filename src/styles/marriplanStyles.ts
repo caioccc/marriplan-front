@@ -41,6 +41,55 @@ export const softButtonStyles = {
   },
 } as const;
 
+export const actionIconStyles = {
+  root: {
+    backgroundColor: 'transparent',
+    color: 'var(--marriplan-text)',
+    borderRadius: 10,
+    transition: 'all 160ms ease',
+    '&:hover': {
+      backgroundColor: 'var(--marriplan-surface-muted)',
+      color: 'var(--marriplan-text)',
+    },
+    '&:focus-visible': {
+      outline: '2px solid rgba(142, 126, 111, 0.35)',
+      outlineOffset: 2,
+    },
+  },
+} as const;
+
+export const actionIconEditStyles = {
+  root: {
+    backgroundColor: 'transparent',
+    color: 'var(--marriplan-rose)',
+    borderRadius: 10,
+    transition: 'all 160ms ease',
+    '&:hover': {
+      backgroundColor: 'rgba(181, 139, 122, 0.12)',
+    },
+    '&:focus-visible': {
+      outline: '2px solid rgba(181, 139, 122, 0.35)',
+      outlineOffset: 2,
+    },
+  },
+} as const;
+
+export const actionIconDangerStyles = {
+  root: {
+    backgroundColor: 'transparent',
+    color: 'var(--marriplan-rose)',
+    borderRadius: 10,
+    transition: 'all 160ms ease',
+    '&:hover': {
+      backgroundColor: 'rgba(181, 139, 122, 0.16)',
+    },
+    '&:focus-visible': {
+      outline: '2px solid rgba(181, 139, 122, 0.35)',
+      outlineOffset: 2,
+    },
+  },
+} as const;
+
 export const inputStyles = { input: { borderRadius: 12 } } as const;
 
 export const checklistTabsStyles = {

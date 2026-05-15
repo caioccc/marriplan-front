@@ -32,7 +32,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
     const { logout, user } = useAuth();
     // Altere o valor inicial de opened para true para manter o menu sempre aberto
     const [opened, { toggle }] = useDisclosure(true);
-    const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+    // const [settingsModalOpen, setSettingsModalOpen] = useState(false);
     const [profileModalOpen, setProfileModalOpen] = useState(false);
 
     const isMobile = useMediaQuery('(max-width: 768px)');
@@ -264,15 +264,15 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                                 <Menu.Item leftSection={<IconUserCheck size={16} />} onClick={() => router.push('/onboarding')}>
                                     Meus dados
                                 </Menu.Item>
-                                <Menu.Item leftSection={<IconUser size={16} />} onClick={() => setProfileModalOpen(true)}>
+                                {/* <Menu.Item leftSection={<IconUser size={16} />} onClick={() => setProfileModalOpen(true)}>
                                     Meu Perfil
-                                </Menu.Item>
-                                <Menu.Item
+                                </Menu.Item> */}
+                                {/* <Menu.Item
                                     leftSection={<IconSettings size={16} />}
                                     onClick={() => setSettingsModalOpen(true)}>
                                     Configurações
-                                </Menu.Item>
-                                <Menu.Item leftSection={<IconCreditCard size={16} />}>Pagamento</Menu.Item>
+                                </Menu.Item> */}
+                                {/* <Menu.Item leftSection={<IconCreditCard size={16} />}>Pagamento</Menu.Item> */}
                                 <Menu.Divider />
                                 <Menu.Item color="red" leftSection={<IconLogout size={16} />} onClick={handleLogout}>
                                     Sair
@@ -390,12 +390,12 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
             </AppShell.Main>
 
             <ProfileModal opened={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
-            <SettingsModal
+            {/* <SettingsModal
                 opened={settingsModalOpen}
                 onClose={() => {
                     setSettingsModalOpen(false);
                 }}
-            />
+            /> */}
 
             {/*<AppShell.Footer p="md" withBorder style={{height: 50}}>*/}
             {/*    <Text ta="center" size="sm" color="dimmed">*/}

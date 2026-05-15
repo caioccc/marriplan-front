@@ -4,6 +4,7 @@
 //eslint no-explicit-any: "off"
 
 import BaseLayout from '@/components/Layout/_BaseLayout';
+import { MarriplanStatusBadge } from '@/components/MarriplanStatusBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchChecklistTasks } from '@/services/checklist';
 import { giftsService } from '@/services/giftsService';
@@ -37,7 +38,7 @@ interface Gift {
   description: string;
   price?: number; // deprecated, use value
   value: number | string;
-  status: 'available' | 'purchased';
+  status: 'available' | 'purchased' | 'reserved';
   image?: string;
   icon?: string;
   category: string;
@@ -262,28 +263,6 @@ const MarriplanDashboard: React.FC = () => {
       console.error(e);
     } finally {
       setLoadingGifts(false);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'confirmed': return 'green';
-      case 'pending': return 'orange';
-      case 'declined': return 'red';
-      case 'available': return 'blue';
-      case 'purchased': return 'gray';
-      default: return 'gray';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'confirmed': return 'Confirmado';
-      case 'pending': return 'Pendente';
-      case 'declined': return 'Recusado';
-      case 'available': return 'Disponível';
-      case 'purchased': return 'Comprado';
-      default: return status;
     }
   };
 
@@ -524,12 +503,7 @@ const MarriplanDashboard: React.FC = () => {
                           {task.due_date ? `Entrega: ${new Date(task.due_date).toLocaleDateString('pt-BR')}` : 'Sem data definida'}
                         </Text>
                       </Box>
-                      <Badge
-                        variant="light"
-                        color={task.status === 'in_progress' ? 'orange' : 'gray'}
-                      >
-                        {task.status === 'in_progress' ? 'Em andamento' : 'Pendente'}
-                      </Badge>
+                      <MarriplanStatusBadge kind="checklist" status={task.status} />
                     </Group>
                   </Paper>
                 ))}
@@ -542,7 +516,7 @@ const MarriplanDashboard: React.FC = () => {
                   <Title order={4} c={palette.ink}>Resumo do checklist</Title>
                   <Text size="xs" c={palette.warmGray}>Distribuicao por status</Text>
                 </Stack>
-                <Badge variant="light" color="gray">{checklistStats.total} tarefas</Badge>
+                <Badge variant="light" color="gray" style={{ border: '1px solid var(--marriplan-border)', backgroundColor: 'var(--marriplan-surface-muted)', color: 'var(--marriplan-text)', fontWeight: 600 }}>{checklistStats.total} tarefas</Badge>
               </Group>
               <Stack gap="sm">
                 <Progress
@@ -570,7 +544,7 @@ const MarriplanDashboard: React.FC = () => {
             <Card radius="xl" p="lg" style={{ background: palette.softWhite, border: `1px solid ${palette.line}` }}>
               <Group justify="space-between" mb="md">
                 <Title order={4} c={palette.ink}>Convidados recentes</Title>
-                <Badge variant="light" color="gray">{guests.count} convidados</Badge>
+                <Badge variant="light" color="gray" style={{ border: '1px solid var(--marriplan-border)', backgroundColor: 'var(--marriplan-surface-muted)', color: 'var(--marriplan-text)', fontWeight: 600 }}>{guests.count} convidados</Badge>
               </Group>
 
               <ScrollArea h={320}>
@@ -589,9 +563,7 @@ const MarriplanDashboard: React.FC = () => {
                             </Text>
                           </Box>
                         </Group>
-                        <Badge variant="light" color={getStatusColor(guest.status)} size="sm">
-                          {getStatusLabel(guest.status)}
-                        </Badge>
+                        <MarriplanStatusBadge kind="guest" status={guest.status} />
                       </Group>
                     </Paper>
                   ))}
@@ -614,7 +586,7 @@ const MarriplanDashboard: React.FC = () => {
             <Card radius="xl" p="lg" style={{ background: palette.softWhite, border: `1px solid ${palette.line}` }}>
               <Group justify="space-between" mb="md">
                 <Title order={4} c={palette.ink}>Presentes recentes</Title>
-                <Badge variant="light" color="gray">{gifts.count} itens</Badge>
+                <Badge variant="light" color="gray" style={{ border: '1px solid var(--marriplan-border)', backgroundColor: 'var(--marriplan-surface-muted)', color: 'var(--marriplan-text)', fontWeight: 600 }}>{gifts.count} itens</Badge>
               </Group>
 
               <ScrollArea h={320}>
@@ -641,9 +613,7 @@ const MarriplanDashboard: React.FC = () => {
                             </Text>
                           )}
                         </Box>
-                        <Badge variant="light" color={getStatusColor(gift.status)} size="sm">
-                          {getStatusLabel(gift.status)}
-                        </Badge>
+                        <MarriplanStatusBadge kind="gift" status={gift.status} />
                       </Group>
                     </Paper>
                   ))}
