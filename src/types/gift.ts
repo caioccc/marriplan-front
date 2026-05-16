@@ -11,6 +11,9 @@ export interface Gift {
   status: 'available' | 'purchased' | 'reserved';
   purchased_by?: string;
   purchase_date?: string;
+  reserved_by?: string;
+  reserved_message?: string;
+  reserved_at?: string | null;
   product_code?: string;
   created_at?: string;
   updated_at?: string;

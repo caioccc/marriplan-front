@@ -60,11 +60,13 @@ export default function WeddingProfileOnboardingForm({
   const form = useForm({
     initialValues: {
       nome_noivo: initial.nome_noivo ?? '',
+      telefone_noivo: initial.telefone_noivo ?? '',
       email_noivo: initial.email_noivo ?? '',
       descricao_noivo: initial.descricao_noivo ?? '',
       facebook_noivo: initial.facebook_noivo ?? '',
       instagram_noivo: initial.instagram_noivo ?? '',
       nome_noiva: initial.nome_noiva ?? '',
+      telefone_noiva: initial.telefone_noiva ?? '',
       email_noiva: initial.email_noiva ?? '',
       descricao_noiva: initial.descricao_noiva ?? '',
       facebook_noiva: initial.facebook_noiva ?? '',
@@ -87,7 +89,9 @@ export default function WeddingProfileOnboardingForm({
     },
     validate: {
       nome_noivo: v => !v ? 'Obrigatorio' : null,
+      telefone_noivo: v => !v || v.replace(/\D/g, '').length < 10 ? 'Obrigatorio' : null,
       nome_noiva: v => !v ? 'Obrigatorio' : null,
+      telefone_noiva: v => !v || v.replace(/\D/g, '').length < 10 ? 'Obrigatorio' : null,
       data_casamento: v => !v ? 'Obrigatorio' : null,
       hora_casamento: v => !v ? 'Obrigatorio' : null,
       local: v => !v ? 'Obrigatorio' : null,
@@ -219,10 +223,10 @@ export default function WeddingProfileOnboardingForm({
   // Funcao para checar se os campos obrigatorios do step atual estao preenchidos
   function isStepValid(step: number): boolean {
     if (step === 0) {
-      return !!form.values.nome_noivo;
+      return !!form.values.nome_noivo && !!form.values.telefone_noivo;
     }
     if (step === 1) {
-      return !!form.values.nome_noiva;
+      return !!form.values.nome_noiva && !!form.values.telefone_noiva;
     }
     if (step === 2) {
       return (
@@ -239,6 +243,15 @@ export default function WeddingProfileOnboardingForm({
       <Stepper active={active} onStepClick={setActive} breakpoint="sm">
         <Stepper.Step label="Dados do noivo">
           <TextInput label="Nome do noivo" {...form.getInputProps('nome_noivo')} required mb="md" />
+          <TextInput
+            label="Telefone do noivo"
+            {...form.getInputProps('telefone_noivo')}
+            component={IMaskInput}
+            mask="(00) 00000-0000"
+            required
+            mb="md"
+            placeholder="(00) 00000-0000"
+          />
           <TextInput label="Email do noivo" {...form.getInputProps('email_noivo')} mb="md" type="email" />
           <Textarea label="Descricao do noivo" {...form.getInputProps('descricao_noivo')} minRows={4} autosize mb="md" placeholder="Idade, estilo musical, religiao, time do coracao, hobbies, profissao, formacao, temperamento etc." />
           <TextInput label="Facebook do noivo" {...form.getInputProps('facebook_noivo')} mb="md" placeholder="Link do Facebook" />
@@ -246,6 +259,15 @@ export default function WeddingProfileOnboardingForm({
         </Stepper.Step>
         <Stepper.Step label="Dados da noiva">
           <TextInput label="Nome da noiva" {...form.getInputProps('nome_noiva')} required mb="md" />
+          <TextInput
+            label="Telefone da noiva"
+            {...form.getInputProps('telefone_noiva')}
+            component={IMaskInput}
+            mask="(00) 00000-0000"
+            required
+            mb="md"
+            placeholder="(00) 00000-0000"
+          />
           <TextInput label="Email da noiva" {...form.getInputProps('email_noiva')} mb="md" type="email" />
           <Textarea label="Descricao da noiva" {...form.getInputProps('descricao_noiva')} minRows={4} autosize mb="md" placeholder="Idade, estilo musical, religiao, time do coracao, hobbies, profissao, formacao, temperamento etc." />
           <TextInput label="Facebook da noiva" {...form.getInputProps('facebook_noiva')} mb="md" placeholder="Link do Facebook" />

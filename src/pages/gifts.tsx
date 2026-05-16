@@ -163,6 +163,8 @@ const GiftsPage: NextPage = () => {
     await giftsService.updateGift(gift.id, {
       status: "available",
       purchased_by: "",
+      reserved_by: "",
+      reserved_message: "",
     });
     giftsService
       .listGifts({ page, status, search, category })
@@ -554,7 +556,7 @@ const GiftsPage: NextPage = () => {
                 title: "",
                 render: (g) => (
                   <Group gap={4}>
-                    {g.status === "available" && (
+                    {g.status !== "purchased" && (
                       <Tooltip label="Marcar como comprado">
                         <ActionIcon
                           variant="subtle"

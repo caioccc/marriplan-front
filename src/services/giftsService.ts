@@ -10,6 +10,17 @@ export const giftsService = {
     const res = await api.get('/api/gifts/', { params });
     return res.data;
   },
+  async listAllGifts({ search = '', ordering = '' }: { search?: string; ordering?: string } = {}) {
+    const params: Record<string, string> = {};
+    if (search) params.search = search;
+    if (ordering) params.ordering = ordering;
+    const { data } = await api.get('/api/gifts/all/', { params });
+    // backend returns an array of gifts; normalize to { results, count }
+    if (Array.isArray(data)) {
+      return { results: data, count: data.length };
+    }
+    return data;
+  },
   async getGift(id: string) {
     const res = await api.get(`/api/gifts/${id}/`);
     return res.data;
@@ -77,6 +88,10 @@ export const giftsService = {
     const queryString = new URLSearchParams(params).toString();
     const url = `/api/gifts/public/${token}/` + (queryString ? `?${queryString}` : '');
     const res = await api.get(url);
+    return res.data;
+  },
+  async reservePublicGift(token: string, payload: { gift_id: string; reserver_name?: string; message?: string }) {
+    const res = await api.post(`/api/gifts/public/${token}/`, payload);
     return res.data;
   },
 };

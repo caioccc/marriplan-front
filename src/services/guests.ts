@@ -1,12 +1,32 @@
 import api from './api';
 
-export async function guests_list({ page = 1, page_size = 10, search = '', ordering = '' } = {}) {
-  const params = {};
+type GuestsListParams = {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  ordering?: string;
+};
+
+type GuestsListAllParams = {
+  search?: string;
+  ordering?: string;
+};
+
+export async function guests_list({ page = 1, page_size = 10, search = '', ordering = '' }: GuestsListParams = {}) {
+  const params: Record<string, string | number> = {};
   if (page) params.page = page;
   if (page_size) params.page_size = page_size;
   if (search) params.search = search;
   if (ordering) params.ordering = ordering;
   const { data } = await api.get('/api/guests/', { params });
+  return data;
+}
+
+export async function guests_list_all({ search = '', ordering = '' }: GuestsListAllParams = {}) {
+  const params: Record<string, string> = {};
+  if (search) params.search = search;
+  if (ordering) params.ordering = ordering;
+  const { data } = await api.get('/api/guests/all/', { params });
   return data;
 }
 
@@ -46,7 +66,7 @@ export async function guests_import(file: File) {
   });
 }
 
-export async function guests_export(format: 'csv' | 'xlsx' | 'pdf' = 'csv', { search = '', ordering = '' } = {}) {
+export async function guests_export(format: 'csv' | 'xlsx' | 'pdf' = 'csv', { search = '', ordering = '' }: GuestsListAllParams = {}) {
   const params: any = { format };
   // if (search) params.search = search;
   // if (ordering) params.ordering = ordering;

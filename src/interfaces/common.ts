@@ -5,11 +5,13 @@ export interface WeddingProfile {
   created_at: string;
   updated_at: string;
   nome_noivo: string;
+  telefone_noivo: string;
   descricao_noivo: string;
   facebook_noivo: string;
   instagram_noivo: string;
   email_noivo: string;
   nome_noiva: string;
+  telefone_noiva: string;
   descricao_noiva: string;
   facebook_noiva: string;
   instagram_noiva: string;

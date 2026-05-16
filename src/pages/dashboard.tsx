@@ -8,7 +8,7 @@ import { MarriplanStatusBadge } from '@/components/MarriplanStatusBadge';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchChecklistTasks } from '@/services/checklist';
 import { giftsService } from '@/services/giftsService';
-import { guests_list } from '@/services/guests';
+import { guests_list_all } from '@/services/guests';
 import { ChecklistTask } from '@/types/checklist';
 import { Avatar, Badge, Box, Button, Card, Center, Container, Divider, Group, Loader, Paper, Progress, RingProgress, ScrollArea, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import {
@@ -27,7 +27,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 interface Guest {
   id: string;
   name: string;
-  status: 'confirmed' | 'pending' | 'declined';
+  status_presenca: 'Pending' | 'Confirmed' | 'Refused';
   plusOne: boolean;
   avatar?: string;
 }
@@ -80,11 +80,11 @@ interface GiftsResponse {
 const MarriplanDashboard: React.FC = () => {
   const [guests, setGuests] = useState<GuestsResponse>({ results: [], count: 0 });
   const [gifts, setGifts] = useState<GiftsResponse>({ results: [], count: 0 });
+  const [allGifts, setAllGifts] = useState<GiftsResponse>({ results: [], count: 0 });
   const [loadingGuests, setLoadingGuests] = useState(false);
   const [loadingGifts, setLoadingGifts] = useState(false);
   const [loadingChecklist, setLoadingChecklist] = useState(false);
   const [checklistTasks, setChecklistTasks] = useState<ChecklistTask[]>([]);
-  const [guestPage, setGuestPage] = useState(0);
   const [giftPage, setGiftPage] = useState(0);
   const { user } = useAuth();
   const [countdown, setCountdown] = useState<CountdownState>({
@@ -127,7 +127,8 @@ const MarriplanDashboard: React.FC = () => {
     }
     // Convidados
     const totalGuests = guests.count;
-    const confirmedGuests = guests.results.filter(g => g.status === 'confirmed').length;
+    console.log('Total de convidados:', guests);
+    const confirmedGuests = guests.results.filter(g => g.status_presenca === 'Confirmed').length;
     weddingOverview = {
       date: weddingDate ? weddingDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }) : '-',
       daysRemaining,
@@ -171,11 +172,11 @@ const MarriplanDashboard: React.FC = () => {
     async function fetchGuests() {
       setLoadingGuests(true);
       try {
-        const data = await guests_list({ page: 1, page_size: 10 });
+        const data = await guests_list_all();
         const mappedGuests = (data.results || []).map((g: any) => ({
           id: g.id,
           name: g.name,
-          status: g.status || 'pending',
+          status_presenca: g.status_presenca || 'Pending',
           plusOne: g.acompanhantes && g.acompanhantes > 0,
           avatar: g.avatar,
         }));
@@ -197,6 +198,8 @@ const MarriplanDashboard: React.FC = () => {
       setLoadingGifts(true);
       try {
         const res = await giftsService.listGifts({ page: 1 });
+        const resAll = await giftsService.listAllGifts();
+        setAllGifts(Array.isArray(resAll) ? { results: resAll, count: resAll.length } : resAll);
         setGifts(res);
       } catch (e) {
         console.error(e);
@@ -227,20 +230,18 @@ const MarriplanDashboard: React.FC = () => {
   const loadMoreGuests = async () => {
     setLoadingGuests(true);
     try {
-      const nextPage = guestPage + 1;
-      const data = await guests_list({ page: nextPage + 1, page_size: 10 });
+      const data = await guests_list_all();
       const mappedGuests = (data.results || []).map((g: any) => ({
         id: g.id,
         name: g.name,
-        status: g.status || 'pending',
+        status_presenca: g.status_presenca || 'Pending',
         plusOne: g.acompanhantes && g.acompanhantes > 0,
         avatar: g.avatar,
       }));
-      setGuests(prev => ({
-        results: [...prev.results, ...mappedGuests],
-        count: data.count
-      }));
-      setGuestPage(nextPage);
+      setGuests({
+        results: mappedGuests,
+        count: data.count,
+      });
     } catch (e) {
       console.error(e);
       // erro silencioso
@@ -289,8 +290,9 @@ const MarriplanDashboard: React.FC = () => {
     ? Math.round((weddingOverview.confirmedGuests / weddingOverview.totalGuests) * 100)
     : 0;
 
-  const giftsPurchased = gifts.results.filter(gift => gift.status === 'purchased').length;
-  const giftsProgress = gifts.count > 0 ? Math.round((giftsPurchased / gifts.count) * 100) : 0;
+  const giftsPurchased = allGifts.results.filter(gift => gift.status === 'purchased').length;
+  const giftsReserved = allGifts.results.filter(gift => gift.status === 'reserved').length;
+  const giftsProgress = allGifts.count > 0 ? Math.round((giftsPurchased / allGifts.count) * 100) : 0;
 
   const checklistSections = useMemo(() => {
     const total = Math.max(checklistStats.total, 1);
@@ -427,7 +429,7 @@ const MarriplanDashboard: React.FC = () => {
               <Group justify="space-between" align="flex-start">
                 <Stack gap={6}>
                   <Text size="xs" c={palette.warmGray} fw={600} tt="uppercase" style={{ letterSpacing: 1 }}>
-                    Convidados
+                    Convidados confirmados
                   </Text>
                   <Text size="lg" fw={600} c={palette.ink}>{weddingOverview.confirmedGuests} confirmados</Text>
                   <Text size="xs" c={palette.warmGray}>{weddingOverview.totalGuests} convidados totais</Text>
@@ -444,6 +446,7 @@ const MarriplanDashboard: React.FC = () => {
                     Lista de presentes
                   </Text>
                   <Text size="lg" fw={600} c={palette.ink}>{giftsPurchased} comprados</Text>
+                  <Text size="xs" c={palette.warmGray}>{giftsReserved} reservados</Text>
                   <Text size="xs" c={palette.warmGray}>{gifts.count} itens cadastrados</Text>
                 </Stack>
                 <IconGift size={24} color={palette.roseGold} />
@@ -522,7 +525,8 @@ const MarriplanDashboard: React.FC = () => {
                 <Progress
                   radius="xl"
                   size="lg"
-                  sections={checklistSections}
+                  value={checklistStats.progress}
+                  color={palette.roseGold}
                 />
                 <Group justify="space-between">
                   <Text size="sm" c={palette.warmGray}>Concluido</Text>
@@ -574,11 +578,13 @@ const MarriplanDashboard: React.FC = () => {
                     </Center>
                   )}
 
-                  <Center>
-                    <Button variant="subtle" color="dark" onClick={loadMoreGuests} disabled={loadingGuests}>
-                      Carregar mais convidados
-                    </Button>
-                  </Center>
+                  {guests.results.length < guests.count && (
+                    <Center>
+                      <Button variant="subtle" color="dark" onClick={loadMoreGuests} disabled={loadingGuests}>
+                        Carregar mais convidados
+                      </Button>
+                    </Center>
+                  )}
                 </Stack>
               </ScrollArea>
             </Card>
