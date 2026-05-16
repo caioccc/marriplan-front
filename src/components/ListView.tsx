@@ -1,6 +1,6 @@
-import { SimpleGrid } from '@mantine/core';
-import { ItemCard } from './ItemCard';
-import React from 'react';
+import { SimpleGrid } from "@mantine/core";
+import React from "react";
+import { ItemCard } from "./ItemCard";
 
 interface ListViewProps<T> {
   items: T[];
@@ -12,10 +12,18 @@ interface ListViewProps<T> {
   fallbackIcon?: React.ReactNode;
 }
 
-export function ListView<T>({ items, renderContent, renderActions, renderStatus, getImageUrl, getItemId, fallbackIcon }: ListViewProps<T>) {
+export function ListView<T>({
+  items,
+  renderContent,
+  renderActions,
+  renderStatus,
+  getImageUrl,
+  getItemId,
+  fallbackIcon,
+}: ListViewProps<T>) {
   return (
     <SimpleGrid cols={1} spacing="lg">
-      {items.map(item => (
+      {items.map((item) => (
         <ItemCard
           key={getItemId(item)}
           item={item}

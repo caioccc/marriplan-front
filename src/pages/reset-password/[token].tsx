@@ -1,12 +1,13 @@
 import {useRouter} from 'next/router';
 import {useState} from 'react';
-import {Button, Group, Paper, PasswordInput, Text, ThemeIcon, Loader} from '@mantine/core';
+import {Button, Group, Loader, PasswordInput, Stack, Text, ThemeIcon} from '@mantine/core';
 import {IconCheck, IconX, IconLogin, IconKey, IconRefresh} from '@tabler/icons-react';
 import HomeBaseLayout from '@/components/Layout/_HomeBaseLayout';
 import {hasLength, isNotEmpty, useForm} from '@mantine/form';
 import {resetPassword} from '@/services/user';
 import {useTranslation} from 'react-i18next';
 import axios from 'axios';
+import {authInputStyles, primaryButtonStyles, softButtonStyles} from '@/styles/marriplanStyles';
 
 const ResetPasswordTokenPage = () => {
     const router = useRouter();
@@ -55,8 +56,11 @@ const ResetPasswordTokenPage = () => {
     };
 
     return (
-        <HomeBaseLayout title="Nova senha">
-            <Paper p="lg" radius="md" withBorder mt="xl" style={{maxWidth: 400, margin: '0 auto'}}>
+        <HomeBaseLayout
+            title="Nova senha"
+            description="Defina uma nova senha com o visual premium da plataforma."
+        >
+            <Stack gap="lg">
                 <Text mb="md" size="sm" color="dimmed">
                     Informe uma nova senha para sua conta. Após redefinir, você poderá acessar normalmente com a nova
                     senha.
@@ -68,43 +72,44 @@ const ResetPasswordTokenPage = () => {
                     </Group>
                 )}
                 {success ? (
-                    <Group align="center">
-                        <ThemeIcon color="green" size="lg" radius="xl">
+                    <Stack align="center" gap="sm">
+                        <ThemeIcon size="lg" radius="xl" style={{ background: 'var(--marriplan-champagne)', color: 'var(--marriplan-rose)' }}>
                             <IconCheck size={20}/>
                         </ThemeIcon>
-                        <Text color="green">Senha redefinida com sucesso! Redirecionando...</Text>
-                    </Group>
+                        <Text ta="center" style={{ color: 'var(--marriplan-text)' }}>Senha redefinida com sucesso! Redirecionando...</Text>
+                    </Stack>
                 ) : error ? (
-                    <Group align="center" style={{flexDirection: 'column'}}>
-                        <ThemeIcon color="red" size="lg" radius="xl">
+                    <Stack align="center" gap="sm">
+                        <ThemeIcon size="lg" radius="xl" style={{ background: 'rgba(181, 139, 122, 0.16)', color: 'var(--marriplan-rose)' }}>
                             <IconX size={20}/>
                         </ThemeIcon>
-                        <Text color="red">{error}</Text>
-                        <Group mt="md">
+                        <Text ta="center" style={{ color: 'var(--marriplan-rose)' }}>{error}</Text>
+                        <Group mt="md" grow>
                             <Button
-                                color="gray"
-                                variant="outline"
+                                variant="default"
                                 leftSection={<IconLogin size={18}/>}
                                 onClick={() => router.push('/login')}
+                                styles={softButtonStyles}
                             >
                                 Ir para login
                             </Button>
                             <Button
-                                color="blue"
-                                variant="outline"
+                                variant="default"
                                 leftSection={<IconRefresh size={18}/>}
                                 onClick={handleTryAgain}
+                                styles={softButtonStyles}
                             >
                                 Tentar novamente
                             </Button>
                         </Group>
-                    </Group>
+                    </Stack>
                 ) : (
                     <form onSubmit={form.onSubmit(handleSubmit)}>
                         <PasswordInput
                             label="Nova senha"
                             {...form.getInputProps('password')}
                             required
+                            styles={authInputStyles}
                             disabled={loading}
                         />
                         <PasswordInput
@@ -112,32 +117,33 @@ const ResetPasswordTokenPage = () => {
                             {...form.getInputProps('confirmPassword')}
                             required
                             mt="md"
+                            styles={authInputStyles}
                             disabled={loading}
                         />
                         <Group mt="md" grow>
                             <Button
-                                color="gray"
-                                variant="outline"
+                                variant="default"
                                 leftSection={<IconLogin size={18}/>}
                                 type="button"
                                 onClick={() => router.push('/login')}
                                 disabled={loading}
+                                styles={softButtonStyles}
                             >
                                 Voltar
                             </Button>
                             <Button
                                 type="submit"
-                                color="blue"
                                 loading={loading}
                                 leftSection={<IconKey size={18}/>}
                                 disabled={loading}
+                                styles={primaryButtonStyles}
                             >
                                 Redefinir senha
                             </Button>
                         </Group>
                     </form>
                 )}
-            </Paper>
+            </Stack>
         </HomeBaseLayout>
     );
 };

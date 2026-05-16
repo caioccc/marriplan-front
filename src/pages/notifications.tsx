@@ -1,20 +1,20 @@
-import { useEffect, useState } from "react";
-import { DataTable } from "mantine-datatable";
-import { Button, Group, Box, Text, Title, Tooltip } from "@mantine/core";
-import BaseLayout from "@/components/Layout/_BaseLayout";
 import { AnimatedTargetDot } from "@/components/AnimatedTargetDot";
-import { IconBell, IconEye, IconEyeOff, IconTrash } from "@tabler/icons-react";
+import BaseLayout from "@/components/Layout/_BaseLayout";
+import { PAGE_SIZE, PAGES_SIZES, truncate } from "@/lib/utils";
 import {
   fetchNotifications,
-  markAsRead,
-  markAsUnread,
   markAllAsRead,
   markAllAsUnread,
-  removeNotification,
+  markAsRead,
+  markAsUnread,
   removeAllNotifications,
+  removeNotification,
 } from "@/services/notifications";
-import { PAGE_SIZE, PAGES_SIZES, truncate } from "@/lib/utils";
 import { primaryButtonStyles, softButtonStyles } from "@/styles";
+import { Box, Button, Group, Text, Title, Tooltip } from "@mantine/core";
+import { IconBell, IconEye, IconEyeOff, IconTrash } from "@tabler/icons-react";
+import { DataTable } from "mantine-datatable";
+import { useEffect, useState } from "react";
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);

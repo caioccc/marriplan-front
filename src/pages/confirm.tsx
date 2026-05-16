@@ -1,28 +1,42 @@
-import { guests_partial_update, guests_read } from '@/services/guests';
-import { Button, Container, Group, Modal, Stack, Text, Title, Center, Loader, Card, Badge } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import { IconCheck, IconX } from '@tabler/icons-react';
-import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
-import { primaryButtonStyles, softButtonStyles } from '@/styles';
+import { guests_partial_update, guests_read } from "@/services/guests";
+import { primaryButtonStyles, softButtonStyles } from "@/styles";
+import {
+  Badge,
+  Button,
+  Card,
+  Center,
+  Container,
+  Group,
+  Loader,
+  Modal,
+  Stack,
+  Text,
+  Title,
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { IconCheck, IconX } from "@tabler/icons-react";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
 interface Guest {
   id: number;
   name: string;
-  status_presenca?: 'Pending' | 'Confirmed' | 'Refused';
+  status_presenca?: "Pending" | "Confirmed" | "Refused";
 }
 
 export default function ConfirmPage() {
   const router = useRouter();
   const { guest_id } = router.query;
-  
+
   const [guest, setGuest] = useState<Guest | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<'Confirmed' | 'Refused' | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<
+    "Confirmed" | "Refused" | null
+  >(null);
 
   useEffect(() => {
     if (!guest_id) return;
@@ -34,8 +48,10 @@ export default function ConfirmPage() {
         const data = await guests_read(Number(guest_id));
         setGuest(data);
       } catch (err: any) {
-        console.error('Erro ao carregar convidado:', err);
-        setError('Convidado não encontrado. O link pode estar expirado ou inválido.');
+        console.error("Erro ao carregar convidado:", err);
+        setError(
+          "Convidado não encontrado. O link pode estar expirado ou inválido.",
+        );
       } finally {
         setLoading(false);
       }
@@ -44,40 +60,47 @@ export default function ConfirmPage() {
     loadGuest();
   }, [guest_id]);
 
-  const handleConfirm = async (status: 'Confirmed' | 'Refused') => {
+  const handleConfirm = async (status: "Confirmed" | "Refused") => {
     if (!guest) return;
 
     setSubmitting(true);
     setProcessing(false);
     try {
       await guests_partial_update(guest.id, { status_presenca: status });
-      
+
       // Recarregar dados
       const updated = await guests_read(guest.id);
       setGuest(updated);
-      
+
       notifications.show({
-        title: status === 'Confirmed' ? 'Presença Confirmada!' : 'Presença Recusada',
-        message: status === 'Confirmed' 
-          ? 'Obrigado! Sua presença foi confirmada. Esperamos você! 🥂'
-          : 'Entendemos. Suas informações foram atualizadas.',
-        color: status === 'Confirmed' ? 'green' : 'gray',
-        icon: status === 'Confirmed' ? <IconCheck size={18} /> : <IconX size={18} />,
+        title:
+          status === "Confirmed" ? "Presença Confirmada!" : "Presença Recusada",
+        message:
+          status === "Confirmed"
+            ? "Obrigado! Sua presença foi confirmada. Esperamos você! 🥂"
+            : "Entendemos. Suas informações foram atualizadas.",
+        color: status === "Confirmed" ? "green" : "gray",
+        icon:
+          status === "Confirmed" ? (
+            <IconCheck size={18} />
+          ) : (
+            <IconX size={18} />
+          ),
       });
-      
+
       setShowConfirmModal(false);
       setSelectedStatus(null);
       // mostrar loader global enquanto redireciona
       setProcessing(true);
       setTimeout(() => {
-        router.push('/guests/thank-you');
+        router.push("/guests/thank-you");
       }, 1200);
     } catch (err: any) {
-      console.error('Erro ao atualizar presença:', err);
+      console.error("Erro ao atualizar presença:", err);
       notifications.show({
-        title: 'Erro',
-        message: 'Falha ao atualizar sua presença. Por favor, tente novamente.',
-        color: 'red',
+        title: "Erro",
+        message: "Falha ao atualizar sua presença. Por favor, tente novamente.",
+        color: "red",
       });
     } finally {
       setSubmitting(false);
@@ -86,7 +109,7 @@ export default function ConfirmPage() {
 
   if (loading) {
     return (
-      <Center style={{ height: '100dvh' }}>
+      <Center style={{ height: "100dvh" }}>
         <Stack align="center" gap="md">
           <Loader size="lg" />
           <Text>Carregando...</Text>
@@ -97,7 +120,7 @@ export default function ConfirmPage() {
 
   if (processing) {
     return (
-      <Center style={{ height: '100dvh' }}>
+      <Center style={{ height: "100dvh" }}>
         <Stack align="center" gap="md">
           <Loader size="lg" />
           <Text>Processando sua confirmação...</Text>
@@ -112,12 +135,14 @@ export default function ConfirmPage() {
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Stack align="center" gap="md">
             <IconX size={48} color="var(--marriplan-rose)" />
-            <Title order={2} ta="center">Oops!</Title>
+            <Title order={2} ta="center">
+              Oops!
+            </Title>
             <Text ta="center" c="dimmed">
-              {error || 'Convidado não encontrado.'}
+              {error || "Convidado não encontrado."}
             </Text>
-            <Button 
-              onClick={() => router.push('/')} 
+            <Button
+              onClick={() => router.push("/")}
               styles={primaryButtonStyles}
             >
               Voltar ao Início
@@ -129,15 +154,15 @@ export default function ConfirmPage() {
   }
 
   const statusColors: Record<string, string> = {
-    'Pending': 'yellow',
-    'Confirmed': 'green',
-    'Refused': 'red',
+    Pending: "yellow",
+    Confirmed: "green",
+    Refused: "red",
   };
 
   const statusLabels: Record<string, string> = {
-    'Pending': 'Pendente',
-    'Confirmed': 'Confirmado',
-    'Refused': 'Recusado',
+    Pending: "Pendente",
+    Confirmed: "Confirmado",
+    Refused: "Recusado",
   };
 
   return (
@@ -145,21 +170,19 @@ export default function ConfirmPage() {
       <Card shadow="sm" padding="lg" radius="md" withBorder>
         <Stack gap="lg">
           {/* Header */}
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ textAlign: "center" }}>
             <Title order={1} mb="xs">
               Confirme Sua Presença
             </Title>
-            <Text c="dimmed">
-              Estamos felizes em tê-lo conosco! 💕
-            </Text>
+            <Text c="dimmed">Estamos felizes em tê-lo conosco! 💕</Text>
           </div>
 
           {/* Guest Info */}
-          <Card 
-            shadow="xs" 
-            padding="md" 
-            radius="md" 
-            style={{ backgroundColor: 'var(--marriplan-surface)' }}
+          <Card
+            shadow="xs"
+            padding="md"
+            radius="md"
+            style={{ backgroundColor: "var(--marriplan-surface)" }}
           >
             <Stack gap="sm">
               <Group justify="space-between">
@@ -168,12 +191,12 @@ export default function ConfirmPage() {
               </Group>
               <Group justify="space-between">
                 <Text fw={500}>Status Atual</Text>
-                <Badge 
-                  size="lg" 
-                  variant="light" 
-                  color={statusColors[guest.status_presenca || 'Pending']}
+                <Badge
+                  size="lg"
+                  variant="light"
+                  color={statusColors[guest.status_presenca || "Pending"]}
                 >
-                  {statusLabels[guest.status_presenca || 'Pending']}
+                  {statusLabels[guest.status_presenca || "Pending"]}
                 </Badge>
               </Group>
             </Stack>
@@ -191,11 +214,11 @@ export default function ConfirmPage() {
                 size="lg"
                 leftSection={<IconCheck size={20} />}
                 onClick={() => {
-                  setSelectedStatus('Confirmed');
+                  setSelectedStatus("Confirmed");
                   setShowConfirmModal(true);
                 }}
-                disabled={guest.status_presenca === 'Confirmed'}
-                loading={submitting && selectedStatus === 'Confirmed'}
+                disabled={guest.status_presenca === "Confirmed"}
+                loading={submitting && selectedStatus === "Confirmed"}
               >
                 Confirmo minha Presença
               </Button>
@@ -204,11 +227,11 @@ export default function ConfirmPage() {
                 size="lg"
                 leftSection={<IconX size={20} />}
                 onClick={() => {
-                  setSelectedStatus('Refused');
+                  setSelectedStatus("Refused");
                   setShowConfirmModal(true);
                 }}
-                disabled={guest.status_presenca === 'Refused'}
-                loading={submitting && selectedStatus === 'Refused'}
+                disabled={guest.status_presenca === "Refused"}
+                loading={submitting && selectedStatus === "Refused"}
               >
                 Não Posso Ir
               </Button>
@@ -216,17 +239,18 @@ export default function ConfirmPage() {
           </Stack>
 
           {/* Additional Info */}
-          <div 
-            style={{ 
-              padding: '12px 16px', 
-              backgroundColor: 'var(--marriplan-surface)',
-              borderRadius: '8px',
-              border: '1px solid var(--marriplan-border)'
+          <div
+            style={{
+              padding: "12px 16px",
+              backgroundColor: "var(--marriplan-surface)",
+              borderRadius: "8px",
+              border: "1px solid var(--marriplan-border)",
             }}
           >
             <Text size="sm" c="dimmed">
-              💡 Dica: Se você tiver alguma dúvida ou necessidade especial (alergias, acompanhantes, etc.), 
-              não hesite em entrar em contato conosco!
+              💡 Dica: Se você tiver alguma dúvida ou necessidade especial
+              (alergias, acompanhantes, etc.), não hesite em entrar em contato
+              conosco!
             </Text>
           </div>
 
@@ -241,17 +265,20 @@ export default function ConfirmPage() {
       <Modal
         opened={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}
-        title={selectedStatus === 'Confirmed' ? 'Confirmar Presença' : 'Confirmar Recusa'}
+        title={
+          selectedStatus === "Confirmed"
+            ? "Confirmar Presença"
+            : "Confirmar Recusa"
+        }
         centered
         size="sm"
         overlayProps={{ blur: 2 }}
       >
         <Stack gap="md">
           <Text>
-            {selectedStatus === 'Confirmed' 
-              ? 'Você tem certeza que quer confirmar sua presença?'
-              : 'Você tem certeza que não poderá comparecer?'
-            }
+            {selectedStatus === "Confirmed"
+              ? "Você tem certeza que quer confirmar sua presença?"
+              : "Você tem certeza que não poderá comparecer?"}
           </Text>
           <Group grow>
             <Button
@@ -263,12 +290,14 @@ export default function ConfirmPage() {
               Voltar
             </Button>
             <Button
-              color={selectedStatus === 'Confirmed' ? 'green' : 'red'}
+              color={selectedStatus === "Confirmed" ? "green" : "red"}
               onClick={() => selectedStatus && handleConfirm(selectedStatus)}
               styles={primaryButtonStyles}
               loading={submitting}
             >
-              {selectedStatus === 'Confirmed' ? 'Sim, Confirmar' : 'Sim, Recusar'}
+              {selectedStatus === "Confirmed"
+                ? "Sim, Confirmar"
+                : "Sim, Recusar"}
             </Button>
           </Group>
         </Stack>

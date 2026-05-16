@@ -1,24 +1,22 @@
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { ProfileModal } from "@/components/ProfileModal";
-import { SettingsModal } from "@/components/SettingsModal";
 import { useAuth } from '@/contexts/AuthContext';
-import { AppShell, Avatar, Box, Burger, Group, Indicator, Menu, NavLink, Progress, Stack, Text, ThemeIcon, Title } from '@mantine/core';
-import { useDisclosure, useMediaQuery } from '@mantine/hooks';
+import { AppShell, Avatar, Box, Group, Indicator, Menu, NavLink, Progress, Stack, Text, ThemeIcon } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import {
     IconAlertCircle,
     IconBell,
     IconCheck,
     IconChecklist,
     IconChevronDown,
-    IconCreditCard,
+    IconBriefcase,
     IconGift,
     IconHome2,
+    IconLayoutSidebarLeftCollapse,
+    IconLayoutSidebarLeftExpand,
     IconLogout,
-    IconReportAnalytics,
-    IconSettings,
     IconUser,
     IconUserCheck,
-    IconWorldWww
 } from '@tabler/icons-react';
 import { useRouter } from 'next/router';
 import { ReactNode, useState } from 'react';
@@ -30,12 +28,23 @@ interface BaseLayoutProps {
 export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
     const router = useRouter();
     const { logout, user } = useAuth();
-    // Altere o valor inicial de opened para true para manter o menu sempre aberto
-    const [opened, { toggle }] = useDisclosure(true);
-    // const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+    const [opened, setOpened] = useState(false);
     const [profileModalOpen, setProfileModalOpen] = useState(false);
-
     const isMobile = useMediaQuery('(max-width: 768px)');
+
+    const toggleSidebar = () => {
+        setOpened((current) => !current);
+    };
+
+    const handleSidebarNavigation = (path: string) => {
+        if (isMobile) {
+            setOpened(false);
+        }
+
+        if (router.pathname !== path) {
+            router.push(path);
+        }
+    };
 
     const handleLogout = async () => {
         logout();
@@ -70,13 +79,16 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
     }
 
     const progressTone = profileProgress === 100 ? 'var(--marriplan-rose)' : 'var(--marriplan-gold)';
+    const sidebarWidth = opened ? 248 : 72;
+    const collapsedSidebar = !opened;
     const navLinkStyles = {
         root: {
             borderRadius: 12,
-            padding: '10px 12px',
+            padding: opened ? '10px 12px' : '10px 8px',
             color: 'var(--marriplan-text)',
             transition: 'all 180ms ease',
             fontWeight: 500,
+            justifyContent: opened ? 'flex-start' : 'center',
             '&:hover': {
                 backgroundColor: 'rgba(242, 230, 216, 0.6)',
             },
@@ -88,9 +100,15 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
         label: {
             fontWeight: 500,
             letterSpacing: '0.01em',
+            display: opened ? 'block' : 'none',
         },
         section: {
             color: 'var(--marriplan-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginInlineEnd: opened ? 8 : 0,
+            width: collapsedSidebar ? '100%' : 'auto',
         },
     } as const;
     const menuStyles = {
@@ -116,9 +134,10 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
 
     return (
         <AppShell
+            layout="alt"
             padding="md"
             header={{ height: 60 }}
-            navbar={{ width: 248, breakpoint: 'sm', collapsed: { mobile: !opened, desktop: !opened } }}
+            navbar={{ width: sidebarWidth, breakpoint: 'sm', collapsed: { mobile: !opened } }}
             styles={{
                 main: {
                     background: 'var(--marriplan-bg)',
@@ -129,48 +148,55 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
             <AppShell.Header
                 p="md"
                 style={{
+                    display: 'flex',
+                    alignItems: 'center',
                     background: 'rgba(255, 251, 247, 0.9)',
                     borderBottom: '1px solid var(--marriplan-border)',
                     backdropFilter: 'blur(10px)',
                 }}
             >
-                <Group justify="space-between" w="100%">
-                    {/* Logo à esquerda */}
-                    <Group>
-                        {
-                            isMobile && (
-                                <Burger opened={opened} onClick={toggle} aria-label="Toggle navigation" />
-                            )
-                        }
-                        <Title
-                            order={2}
+                <Group justify="space-between" align="center" w="100%" h="100%">
+                    <Group gap="sm" wrap="nowrap" align="center" h="100%">
+                        <Box
+                            component="button"
+                            type="button"
+                            onClick={toggleSidebar}
+                            aria-label={opened ? 'Fechar sidebar' : 'Abrir sidebar'}
                             style={{
-                                color: 'var(--marriplan-text)',
-                                fontFamily: '"Montserrat", "Manrope", sans-serif',
-                                letterSpacing: '0.02em',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                height: '100%',
+                                gap: 10,
+                                cursor: 'pointer',
                             }}
                         >
-                            <Group gap="xs">
-                                {
-                                    !isMobile && (
-                                        <img
-                                            src="/logo-marri.png"
-                                            alt="Logo Marriplan"
-                                            width={32}
-                                            height={32}
-                                            style={{ cursor: 'pointer', borderRadius: 10, boxShadow: '0 8px 18px rgba(70, 56, 43, 0.14)' }}
-                                            onClick={toggle}
-                                        />
-                                    )
-                                }
+                            <ThemeIcon
+                                variant="light"
+                                size="md"
+                                style={{
+                                    backgroundColor: 'var(--marriplan-champagne)',
+                                    color: 'var(--marriplan-rose)',
+                                }}
+                            >
+                                {opened ? <IconLayoutSidebarLeftCollapse size={18} /> : <IconLayoutSidebarLeftExpand size={18} />}
+                            </ThemeIcon>
+                            <Box
+                                component="img"
+                                src="/logo-marri.png"
+                                alt="Logo Marriplan"
+                                width={28}
+                                height={28}
+                                style={{ borderRadius: 10, boxShadow: '0 8px 18px rgba(70, 56, 43, 0.14)' }}
+                            />
+                            <Text fw={700} size="xl" style={{ letterSpacing: '0.02em' }}>
                                 Marriplan
-                            </Group>
-                        </Title>
+                            </Text>
+                        </Box>
                     </Group>
 
 
                     {/* Ícones e menu à direita */}
-                    <Group>
+                    <Group align="center" h="100%">
                         <NotificationsBell />
                         <Menu shadow="xl" width={300} position="bottom-end" withArrow styles={menuStyles}>
                             <Menu.Target>
@@ -285,43 +311,58 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
 
             <AppShell.Navbar
                 withBorder={false}
-                p="md"
+                p={opened ? 'md' : 'xs'}
                 style={{
                     overflowY: 'auto',
                     background: 'var(--marriplan-surface)',
                     borderRight: '1px solid var(--marriplan-border)',
+                    alignItems: opened ? 'stretch' : 'center',
                 }}
             >
-                <Stack gap="xs">
-                    <Text size="xs" fw={600} style={{ color: 'var(--marriplan-muted)', letterSpacing: '0.12em' }}>
-                        MENU
-                    </Text>
+                <Stack gap="xs" style={{ width: '100%' }}>
+                    {opened && (
+                        <Text size="xs" fw={600} style={{ color: 'var(--marriplan-muted)', letterSpacing: '0.12em' }}>
+                            MENU
+                        </Text>
+                    )}
                     <NavLink
-                        label="Início"
+                        label={opened ? 'Início' : ''}
                         leftSection={<IconHome2 size={18} />} // Ícone de dashboard
                         active={router.pathname === '/dashboard'}
-                        onClick={() => router.push('/dashboard')}
+                        onClick={() => handleSidebarNavigation('/dashboard')}
+                        aria-label="Início"
                         styles={navLinkStyles}
                     />
                     <NavLink
-                        label="Checklist de Casamento"
+                        label={opened ? 'Checklist de Casamento' : ''}
                         leftSection={<IconChecklist size={18} />} // Ícone de checklist
                         active={router.pathname === '/checklist'}
-                        onClick={() => router.push('/checklist')}
+                        onClick={() => handleSidebarNavigation('/checklist')}
+                        aria-label="Checklist de Casamento"
                         styles={navLinkStyles}
                     />
                     <NavLink
-                        label="Meus Convidados"
+                        label={opened ? 'Meus Convidados' : ''}
                         leftSection={<IconUser size={18} />} // Ícone de usuário
                         active={router.pathname === '/guests'}
-                        onClick={() => router.push('/guests')}
+                        onClick={() => handleSidebarNavigation('/guests')}
+                        aria-label="Meus Convidados"
                         styles={navLinkStyles}
                     />
                     <NavLink
-                        label="Lista de Presentes"
+                        label={opened ? 'Meus Fornecedores' : ''}
+                        leftSection={<IconBriefcase size={18} />}
+                        active={router.pathname === '/meus-fornecedores'}
+                        onClick={() => handleSidebarNavigation('/meus-fornecedores')}
+                        aria-label="Meus Fornecedores"
+                        styles={navLinkStyles}
+                    />
+                    <NavLink
+                        label={opened ? 'Lista de Presentes' : ''}
                         leftSection={<IconGift size={18} />} // Ícone de presente
                         active={router.pathname === '/gifts'}
-                        onClick={() => router.push('/gifts')}
+                        onClick={() => handleSidebarNavigation('/gifts')}
+                        aria-label="Lista de Presentes"
                         styles={navLinkStyles}
                     />
 
@@ -335,10 +376,11 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                 </NavLink> */}
 
                     <NavLink
-                        label="Notificações"
+                        label={opened ? 'Notificações' : ''}
                         leftSection={<IconBell size={18} />}
                         active={router.pathname === '/notifications'}
-                        onClick={() => router.push('/notifications')}
+                        onClick={() => handleSidebarNavigation('/notifications')}
+                        aria-label="Notificações"
                         styles={navLinkStyles}
                     />
                 {/* <NavLink
@@ -349,16 +391,19 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                 /> */}
 
                     <NavLink
-                        label="Sair"
-                        leftSection={<IconLogout size={18} />}
+                        label={opened ? 'Sair' : ''}
+                        leftSection={<IconLogout size={18} stroke={2.2} />}
                         onClick={handleLogout}
+                        aria-label="Sair"
                         styles={{
                             root: {
                                 borderRadius: 12,
-                                padding: '10px 12px',
+                                padding: opened ? '10px 12px' : '10px 8px',
                                 color: '#b4534f',
                                 transition: 'all 180ms ease',
                                 fontWeight: 500,
+                                display: 'flex',
+                                justifyContent: opened ? 'flex-start' : 'center',
                                 '&:hover': {
                                     backgroundColor: 'rgba(180, 83, 79, 0.08)',
                                 },
@@ -366,9 +411,15 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                             label: {
                                 fontWeight: 500,
                                 color: '#b4534f',
+                                display: opened ? 'block' : 'none',
                             },
                             section: {
                                 color: '#b4534f',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                marginInlineEnd: opened ? 8 : 0,
+                                width: !opened ? '100%' : 'auto',
                             },
                         }}
                     />

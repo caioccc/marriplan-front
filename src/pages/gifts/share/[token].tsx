@@ -1,39 +1,36 @@
 import PublicGiftListLayout from "@/components/Layout/PublicGiftListLayout";
-import api from "@/services/api";
 import PublicGiftReserveModal from "@/components/PublicGiftReserveModal";
+import api from "@/services/api";
+import { giftsService } from "@/services/giftsService";
+import { Gift } from "@/types/gift";
 import {
-  Box,
-  Group,
-  Title,
-  Text,
   Badge,
-  Image,
-  Card,
+  Box,
   Button,
+  Card,
   Checkbox,
-  Stack,
+  Divider,
+  Group,
+  Image,
   Loader,
   Modal,
   Pagination,
-  Switch,
-  Divider,
+  RangeSlider,
   ScrollArea,
   SegmentedControl,
+  Stack,
+  Switch,
+  Text,
+  Title,
   Tooltip,
-  RangeSlider,
 } from "@mantine/core";
-import { IconExternalLink } from "@tabler/icons-react";
-import { giftsService } from "@/services/giftsService";
-import { Gift } from "@/types/gift";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
 import { useMediaQuery } from "@mantine/hooks";
 import {
-  IconClock,
-  IconSortAscending,
-  IconSortDescending,
-  IconCalendar,
+  IconCalendar, IconClock, IconExternalLink, IconSortAscending,
+  IconSortDescending
 } from "@tabler/icons-react";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
 const STATUS_LABELS: Record<string, string> = {
   available: "Disponível",

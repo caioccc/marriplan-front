@@ -1,9 +1,9 @@
-import BaseLayout from '@/components/Layout/_BaseLayout';
-import GuestTable from '@/components/GuestTable';
+import GuestTable from "@/components/GuestTable";
+import BaseLayout from "@/components/Layout/_BaseLayout";
 
 export default function GuestsPage() {
   return (
-    <BaseLayout title="Convidados">
+    <BaseLayout>
       <GuestTable />
     </BaseLayout>
   );

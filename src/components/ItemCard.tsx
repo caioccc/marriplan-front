@@ -1,6 +1,6 @@
-import { Card, Image, Flex, Box, Menu, ActionIcon } from '@mantine/core';
-import { IconDotsVertical, IconPhoto } from '@tabler/icons-react';
-import React, { useState } from 'react';
+import { ActionIcon, Box, Card, Flex, Image, Menu } from "@mantine/core";
+import { IconDotsVertical, IconPhoto } from "@tabler/icons-react";
+import React, { useState } from "react";
 
 interface ItemCardProps<T> {
   item: T;
@@ -9,7 +9,7 @@ interface ItemCardProps<T> {
   renderActions: (item: T) => React.ReactNode;
   renderStatus?: (item: T) => React.ReactNode;
   fallbackIcon?: React.ReactNode;
-  layout?: 'horizontal' | 'vertical';
+  layout?: "horizontal" | "vertical";
 }
 
 export function ItemCard<T>({
@@ -19,7 +19,7 @@ export function ItemCard<T>({
   renderActions,
   renderStatus,
   fallbackIcon,
-  layout = 'horizontal',
+  layout = "horizontal",
 }: ItemCardProps<T>) {
   const [imageError, setImageError] = useState(false);
 
@@ -31,27 +31,30 @@ export function ItemCard<T>({
     <Flex
       justify="center"
       align="center"
-      w={layout === 'horizontal' ? 100 : '100%'}
-      h={layout === 'horizontal' ? 100 : 160}
+      w={layout === "horizontal" ? 100 : "100%"}
+      h={layout === "horizontal" ? 100 : 160}
       bg="gray.1"
-      style={{ borderRadius: 'var(--mantine-radius-md)' }}
+      style={{ borderRadius: "var(--mantine-radius-md)" }}
     >
-      {fallbackIcon || <IconPhoto size={48} color="var(--mantine-color-gray-5)" />}
+      {fallbackIcon || (
+        <IconPhoto size={48} color="var(--mantine-color-gray-5)" />
+      )}
     </Flex>
   );
 
-  const imageContent = imageUrl && !imageError ? (
-    <Image
-      src={imageUrl}
-      height={layout === 'horizontal' ? 100 : 160}
-      width={layout === 'horizontal' ? 100 : 'auto'}
-      radius="md"
-      fit="cover"
-      onError={handleImageError}
-    />
-  ) : (
-    imagePlaceholder
-  );
+  const imageContent =
+    imageUrl && !imageError ? (
+      <Image
+        src={imageUrl}
+        height={layout === "horizontal" ? 100 : 160}
+        width={layout === "horizontal" ? 100 : "auto"}
+        radius="md"
+        fit="cover"
+        onError={handleImageError}
+      />
+    ) : (
+      imagePlaceholder
+    );
 
   const menu = (
     <Menu withinPortal position="bottom-end" shadow="sm">
@@ -65,22 +68,27 @@ export function ItemCard<T>({
   );
 
   const cardStyle = {
-    background: 'var(--marriplan-surface)',
-    border: '1px solid var(--marriplan-border)',
-    boxShadow: '0 16px 32px rgba(70, 56, 43, 0.08)',
-    transition: 'transform 180ms ease, box-shadow 180ms ease',
+    background: "var(--marriplan-surface)",
+    border: "1px solid var(--marriplan-border)",
+    boxShadow: "0 16px 32px rgba(70, 56, 43, 0.08)",
+    transition: "transform 180ms ease, box-shadow 180ms ease",
   } as const;
 
-  if (layout === 'vertical') {
+  if (layout === "vertical") {
     return (
-      <Card padding="lg" radius="lg" withBorder style={{ ...cardStyle, position: 'relative' }}>
-        <Box style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 1 }}>
+      <Card
+        padding="lg"
+        radius="lg"
+        withBorder
+        style={{ ...cardStyle, position: "relative" }}
+      >
+        <Box
+          style={{ position: "absolute", top: "8px", right: "8px", zIndex: 1 }}
+        >
           {menu}
         </Box>
         <Flex direction="column" gap="xs">
-          <Card.Section>
-            {imageContent}
-          </Card.Section>
+          <Card.Section>{imageContent}</Card.Section>
           <Box mt="sm">{renderContent(item)}</Box>
         </Flex>
       </Card>
@@ -93,7 +101,11 @@ export function ItemCard<T>({
         <Box w={100} h={100} style={{ flexShrink: 0 }}>
           {imageContent}
         </Box>
-        <Flex direction="column" justify="space-between" style={{ flex: 1, minHeight: 100 }}>
+        <Flex
+          direction="column"
+          justify="space-between"
+          style={{ flex: 1, minHeight: 100 }}
+        >
           <Flex justify="space-between" align="flex-start" gap="md">
             <Box style={{ flex: 1 }}>{renderContent(item)}</Box>
             {menu}

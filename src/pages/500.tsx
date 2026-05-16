@@ -1,15 +1,8 @@
-import ErrorPage from '@/components/ErrorPage'
-import React from 'react'
-
+import ErrorPage from "@/components/ErrorPage";
+import React from "react";
 
 const UnexpectedErrorPage = () => {
+  return <ErrorPage title={"500"} message={"Ocorreu um erro inesperado"} />;
+};
 
-    return (
-        <ErrorPage
-            title={'500'}
-            message={'Ocorreu um erro inesperado'}
-        />
-    )
-}
-
-export default UnexpectedErrorPage
+export default UnexpectedErrorPage;

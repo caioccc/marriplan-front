@@ -1,4 +1,4 @@
-import { Skeleton } from "@/components/ui/skeleton"
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function LoadingProgress() {
   return (
@@ -9,5 +9,5 @@ export function LoadingProgress() {
         <Skeleton className="h-4 w-[200px]" />
       </div>
     </div>
-  )
+  );
 }

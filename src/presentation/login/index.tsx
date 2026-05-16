@@ -1,6 +1,6 @@
 import type {NextPage} from 'next'
 import {useState} from 'react'
-import {Button, Group, PasswordInput, Text, TextInput, Divider, Anchor} from '@mantine/core';
+import {Anchor, Button, Divider, Group, PasswordInput, Stack, Text, TextInput} from '@mantine/core';
 import {IconLogin, IconUserPlus} from '@tabler/icons-react';
 import HomeBaseLayout from '@/components/Layout/_HomeBaseLayout'
 import {useAuth} from '@/contexts/AuthContext'
@@ -10,6 +10,7 @@ import {useForm, zodResolver} from '@mantine/form';
 import {z} from 'zod';
 import {useTranslation} from 'react-i18next';
 import {GoogleLoginButton} from '@/components/GoogleLoginButton';
+import {authInputStyles, primaryButtonStyles, softButtonStyles} from '@/styles/marriplanStyles';
 
 const LoginContent: NextPage = () => {
     const [isLoading, setIsLoading] = useState(false)
@@ -58,51 +59,57 @@ const LoginContent: NextPage = () => {
     }
 
     return (
-        <HomeBaseLayout title={t('login.page_title')}>
+        <HomeBaseLayout
+            title={t('login.page_title')}
+            description="Entre com sua conta para continuar com a experiência Marriplan."
+        >
             <form onSubmit={form.onSubmit(handleLogin)}>
-                <TextInput
-                    label={t('login.email')}
-                    placeholder={t('login.email_placeholder')}
-                    {...form.getInputProps('email')}
-                    required
-                />
+                <Stack gap="md">
+                    <TextInput
+                        label={t('login.email')}
+                        placeholder={t('login.email_placeholder')}
+                        {...form.getInputProps('email')}
+                        styles={authInputStyles}
+                        required
+                    />
 
-                <PasswordInput
-                    label={t('login.password')}
-                    placeholder={t('login.password_placeholder')}
-                    mt="md"
-                    {...form.getInputProps('password')}
-                    required
-                />
+                    <PasswordInput
+                        label={t('login.password')}
+                        placeholder={t('login.password_placeholder')}
+                        {...form.getInputProps('password')}
+                        styles={authInputStyles}
+                        required
+                    />
+                </Stack>
 
-                <Group justify="center" mt="xl">
+                <Group justify="center" mt="xl" grow>
                     <Button
-                        leftSection={<IconUserPlus size={18}/>}
-                        variant="outline"
-                        color="gray"
+                        leftSection={<IconUserPlus size={18}/>} 
+                        variant="default"
                         onClick={goToRegister}
+                        styles={softButtonStyles}
                     >
                         {t('login.register')}
                     </Button>
                     <Button
-                        rightSection={<IconLogin size={18}/>}
+                        rightSection={<IconLogin size={18}/>} 
                         variant="filled"
-                        color="blue"
                         type="submit"
                         loading={isLoading}
+                        styles={primaryButtonStyles}
                     >
                         {t('login.login')}
                     </Button>
                 </Group>
             </form>
 
-            <Divider label={t('login.or_social')} my="lg"/>
+            <Divider label={t('login.or_social')} my="lg" labelPosition="center" styles={{ label: { color: 'var(--marriplan-muted)' } }} />
 
             <Group justify="center">
                 <GoogleLoginButton/>
             </Group>
 
-            <Text size="sm" mt={16} className="mt-8 text-center text-gray-500">
+            <Text size="sm" mt="md" ta="center" style={{ color: 'var(--marriplan-muted)' }}>
                 {t('login.or_create_account')}
             </Text>
             <Anchor
@@ -114,7 +121,9 @@ const LoginContent: NextPage = () => {
                     display: 'block',
                     textAlign: 'center',
                     margin: '16px auto 0 auto',
-                    width: 'fit-content'
+                    width: 'fit-content',
+                    color: 'var(--marriplan-rose)',
+                    fontWeight: 600,
                 }}
             >
                 Esqueci minha senha

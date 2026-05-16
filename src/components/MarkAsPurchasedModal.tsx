@@ -1,5 +1,12 @@
-import { useState } from 'react';
-import { Modal, Button, TextInput, Switch, Select, Group, Text } from '@mantine/core';
+import {
+  Button,
+  Group,
+  Modal,
+  Select,
+  Switch,
+  TextInput
+} from "@mantine/core";
+import { useState } from "react";
 
 interface MarkAsPurchasedModalProps {
   opened: boolean;
@@ -8,37 +15,60 @@ interface MarkAsPurchasedModalProps {
   guests?: { id: string; name: string }[];
 }
 
-export function MarkAsPurchasedModal({ opened, onClose, onConfirm, guests = [] }: MarkAsPurchasedModalProps) {
+export function MarkAsPurchasedModal({
+  opened,
+  onClose,
+  onConfirm,
+  guests = [],
+}: MarkAsPurchasedModalProps) {
   const [useCustomName, setUseCustomName] = useState(false);
-  const [customName, setCustomName] = useState('');
+  const [customName, setCustomName] = useState("");
   const [selectedGuest, setSelectedGuest] = useState<string | null>(null);
 
   const handleConfirm = () => {
     if (useCustomName && customName) {
       onConfirm(customName);
     } else if (!useCustomName && selectedGuest) {
-      const guest = guests.find(g => g.id == selectedGuest);
-      console.log('Selected guest:', guest, 'Selected guest ID:', selectedGuest, 'guests', guests);
-      onConfirm(guest?.name || '');
+      const guest = guests.find((g) => g.id == selectedGuest);
+      console.log(
+        "Selected guest:",
+        guest,
+        "Selected guest ID:",
+        selectedGuest,
+        "guests",
+        guests,
+      );
+      onConfirm(guest?.name || "");
     }
     onClose();
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Marcar como comprado" centered>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Marcar como comprado"
+      centered
+    >
       <Group mb="md">
         <Switch
           label="Preencher nome manualmente"
           checked={useCustomName}
-          onChange={e => setUseCustomName(e.currentTarget.checked)}
+          onChange={(e) => setUseCustomName(e.currentTarget.checked)}
         />
       </Group>
       {useCustomName ? (
-        <TextInput label="Nome de quem comprou" value={customName} onChange={e => setCustomName(e.currentTarget.value)} required mb="md" />
+        <TextInput
+          label="Nome de quem comprou"
+          value={customName}
+          onChange={(e) => setCustomName(e.currentTarget.value)}
+          required
+          mb="md"
+        />
       ) : (
         <Select
           label="Selecione o convidado"
-          data={guests.map(g => ({ value: String(g.id), label: g.name }))}
+          data={guests.map((g) => ({ value: String(g.id), label: g.name }))}
           value={selectedGuest}
           onChange={setSelectedGuest}
           required
@@ -46,8 +76,15 @@ export function MarkAsPurchasedModal({ opened, onClose, onConfirm, guests = [] }
         />
       )}
       <Group justify="flex-end">
-        <Button variant="default" onClick={onClose}>Cancelar</Button>
-        <Button onClick={handleConfirm} disabled={useCustomName ? !customName : !selectedGuest}>Confirmar</Button>
+        <Button variant="default" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button
+          onClick={handleConfirm}
+          disabled={useCustomName ? !customName : !selectedGuest}
+        >
+          Confirmar
+        </Button>
       </Group>
     </Modal>
   );

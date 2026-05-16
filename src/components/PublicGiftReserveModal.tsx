@@ -1,12 +1,15 @@
-import { Button, Group, Modal, Textarea, TextInput } from '@mantine/core';
-import { useEffect, useState } from 'react';
+import { Button, Group, Modal, Textarea, TextInput } from "@mantine/core";
+import { useEffect, useState } from "react";
 
 type PublicGiftReserveModalProps = {
   opened: boolean;
   giftName?: string;
   loading?: boolean;
   onClose: () => void;
-  onConfirm: (payload: { reserver_name: string; message: string }) => Promise<void> | void;
+  onConfirm: (payload: {
+    reserver_name: string;
+    message: string;
+  }) => Promise<void> | void;
 };
 
 export default function PublicGiftReserveModal({
@@ -16,18 +19,23 @@ export default function PublicGiftReserveModal({
   onClose,
   onConfirm,
 }: PublicGiftReserveModalProps) {
-  const [reserverName, setReserverName] = useState('');
-  const [message, setMessage] = useState('');
+  const [reserverName, setReserverName] = useState("");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     if (opened) {
-      setReserverName('');
-      setMessage('');
+      setReserverName("");
+      setMessage("");
     }
   }, [opened]);
 
   return (
-    <Modal opened={opened} onClose={onClose} title={`Reservar ${giftName || 'presente'}`} centered>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={`Reservar ${giftName || "presente"}`}
+      centered
+    >
       <TextInput
         label="Seu nome"
         placeholder="Como você quer ser identificado"

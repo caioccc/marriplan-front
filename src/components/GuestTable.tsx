@@ -1,14 +1,14 @@
-import { ListView } from "@/components/ListView";
 import { GalleryView } from "@/components/GalleryView";
 import ImportGuestsModal from "@/components/ImportGuestsModal";
+import { ListView } from "@/components/ListView";
 import {
   guests_create,
   guests_delete,
   guests_export,
+  guests_generate_confirmation_link,
   guests_list,
   guests_partial_update,
   guests_update,
-  guests_generate_confirmation_link,
 } from "@/services/guests";
 import {
   ActionIcon,
@@ -20,8 +20,8 @@ import {
   Modal,
   RangeSlider,
   rem,
-  Select,
   SegmentedControl,
+  Select,
   Stack,
   Text,
   TextInput,
@@ -40,6 +40,7 @@ import {
   IconFileTypePdf,
   IconFilter,
   IconLayoutGrid,
+  IconLink,
   IconList,
   IconMail,
   IconPlus,
@@ -49,10 +50,8 @@ import {
   IconUser,
 } from "@tabler/icons-react";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
-import { IconLink } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 
-import { Pagination } from "@mantine/core";
 import {
   actionIconDangerStyles,
   actionIconEditStyles,
@@ -61,6 +60,7 @@ import {
   segmentedTabsStyles,
   softButtonStyles,
 } from "@/styles";
+import { Pagination } from "@mantine/core";
 
 interface Guest {
   id: number;
@@ -569,7 +569,7 @@ export default function GuestTable() {
                         </ActionIcon>
                       </Tooltip>
                     )}
-                    {guest.whatsapp && (
+                    {guest.whatsapp && guest.status_presenca === "Pending" && (
                       <Tooltip label="Enviar RSVP por WhatsApp">
                         <ActionIcon
                           variant="subtle"
@@ -602,33 +602,36 @@ export default function GuestTable() {
                         </ActionIcon>
                       </Tooltip>
                     )}
-                    <Tooltip label="Gerar link de confirmação">
-                      <ActionIcon
-                        size="sm"
-                        variant="light"
-                        color="blue"
-                        onClick={async () => {
-                          try {
-                            const res = await guests_generate_confirmation_link(
-                              guest.id,
-                            );
-                            setConfirmationData({
-                              confirmation_url: res.confirmation_url,
-                              whatsapp_link: res.whatsapp_link,
-                              token: res.token,
-                            });
-                            setConfirmationModalOpen(true);
-                          } catch (err) {
-                            notifications.show({
-                              color: "red",
-                              message: "Erro ao gerar link de confirmação.",
-                            });
-                          }
-                        }}
-                      >
-                        <IconLink size={16} />
-                      </ActionIcon>
-                    </Tooltip>
+                    {guest.status_presenca !== "Pending" && (
+                      <Tooltip label="Gerar link de confirmação">
+                        <ActionIcon
+                          size="sm"
+                          variant="light"
+                          color="blue"
+                          onClick={async () => {
+                            try {
+                              const res =
+                                await guests_generate_confirmation_link(
+                                  guest.id,
+                                );
+                              setConfirmationData({
+                                confirmation_url: res.confirmation_url,
+                                whatsapp_link: res.whatsapp_link,
+                                token: res.token,
+                              });
+                              setConfirmationModalOpen(true);
+                            } catch (err) {
+                              notifications.show({
+                                color: "red",
+                                message: "Erro ao gerar link de confirmação.",
+                              });
+                            }
+                          }}
+                        >
+                          <IconLink size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                    )}
                     {guest.email && (
                       <Tooltip label="Enviar RSVP por Email">
                         <ActionIcon

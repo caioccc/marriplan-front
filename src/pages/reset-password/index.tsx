@@ -1,11 +1,12 @@
 import {useState} from 'react';
-import {Button, Group, Paper, Text, TextInput, ThemeIcon} from '@mantine/core';
+import {Button, Group, Stack, Text, TextInput, ThemeIcon} from '@mantine/core';
 import {IconCheck, IconLogin, IconMailForward, IconRefresh, IconX} from '@tabler/icons-react';
 import HomeBaseLayout from '@/components/Layout/_HomeBaseLayout';
 import {isEmail, isNotEmpty, useForm} from '@mantine/form';
 import {sendResetPasswordEmail} from '@/services/user';
 import {useTranslation} from 'react-i18next';
 import {useRouter} from 'next/router';
+import {authInputStyles, primaryButtonStyles, softButtonStyles} from '@/styles/marriplanStyles';
 
 const ResetPasswordPage = () => {
     const [sent, setSent] = useState(false);
@@ -42,84 +43,88 @@ const ResetPasswordPage = () => {
     };
 
     return (
-        <HomeBaseLayout title="Alterar senha">
-            <Paper p="lg" radius="md" withBorder mt="xl" style={{maxWidth: 400, margin: '0 auto'}}>
+        <HomeBaseLayout
+            title="Alterar senha"
+            description="Receba um link para redefinir sua senha usando os tons suaves da marca."
+        >
+            <Stack gap="lg">
                 <Text mb="md" size="sm" color="dimmed">
                     Informe seu e-mail para receber um link de redefinição de senha. Caso o e-mail informado exista em nossa base, você receberá as instruções.
                 </Text>
                 {sent ? (
-                    <Group align="center" spacing="sm" style={{flexDirection: 'column'}}>
-                        <ThemeIcon color="green" size="lg" radius="xl">
+                    <Stack align="center" gap="sm">
+                        <ThemeIcon size="lg" radius="xl" style={{ background: 'var(--marriplan-champagne)', color: 'var(--marriplan-rose)' }}>
                             <IconCheck size={20}/>
                         </ThemeIcon>
-                        <Text>
+                        <Text ta="center" style={{ color: 'var(--marriplan-text)' }}>
                             Se o e-mail informado existir, você receberá um link para redefinir sua senha.
                         </Text>
                         <Button
                             mt="md"
-                            color="blue"
-                            variant="outline"
+                            variant="default"
                             leftSection={<IconLogin size={18}/>}
                             onClick={() => router.push('/login')}
+                            styles={softButtonStyles}
                         >
                             Voltar para login
                         </Button>
-                    </Group>
+                    </Stack>
                 ) : error ? (
-                    <Group align="center" spacing="sm" style={{flexDirection: 'column'}}>
-                        <ThemeIcon color="red" size="lg" radius="xl">
+                    <Stack align="center" gap="sm">
+                        <ThemeIcon size="lg" radius="xl" style={{ background: 'rgba(181, 139, 122, 0.16)', color: 'var(--marriplan-rose)' }}>
                             <IconX size={20}/>
                         </ThemeIcon>
-                        <Text color="red">{error}</Text>
-                        <Group mt="md">
+                        <Text ta="center" style={{ color: 'var(--marriplan-rose)' }}>{error}</Text>
+                        <Group mt="md" grow>
                             <Button
-                                color="blue"
-                                variant="outline"
+                                variant="default"
                                 leftSection={<IconRefresh size={18}/>}
                                 onClick={handleTryAgain}
+                                styles={softButtonStyles}
                             >
                                 Tentar novamente
                             </Button>
                             <Button
-                                color="gray"
-                                variant="outline"
+                                variant="default"
                                 leftSection={<IconLogin size={18}/>}
                                 onClick={() => router.push('/login')}
+                                styles={softButtonStyles}
                             >
                                 Voltar para login
                             </Button>
                         </Group>
-                    </Group>
+                    </Stack>
                 ) : (
                     <form onSubmit={form.onSubmit(handleSubmit)}>
                         <TextInput
                             label="E-mail"
                             placeholder="Seu e-mail"
                             {...form.getInputProps('email')}
+                            styles={authInputStyles}
                             required
                         />
                         <Group mt="md" grow>
                             <Button
-                                color="gray"
-                                variant="outline"
+                                variant="default"
                                 leftSection={<IconLogin size={18}/>}
                                 onClick={() => router.push('/login')}
                                 type="button"
+                                styles={softButtonStyles}
                             >
                                 Voltar
                             </Button>
                             <Button
                                 type="submit"
-                                color="blue"
                                 loading={loading}
                                 leftSection={<IconMailForward size={18}/>}
+                                styles={primaryButtonStyles}
                             >
                                 Enviar link
                             </Button>
                         </Group>
                     </form>
                 )}
-            </Paper>
+            </Stack>
         </HomeBaseLayout>
     );
 };

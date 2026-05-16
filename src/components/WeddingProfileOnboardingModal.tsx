@@ -1,12 +1,12 @@
-import { Modal } from '@mantine/core';
-import WeddingProfileOnboardingForm from './WeddingProfileOnboardingForm';
+import { Modal } from "@mantine/core";
+import WeddingProfileOnboardingForm from "./WeddingProfileOnboardingForm";
 
 type WeddingProfileOnboardingModalProps = {
   opened: boolean;
   onClose: () => void;
   onComplete: () => void;
   disableClose?: boolean;
-}
+};
 
 export default function WeddingProfileOnboardingModal({
   opened,

@@ -119,15 +119,15 @@ const GiftsPage: NextPage = () => {
       case "reserved":
         return "Reservado";
     }
-    return "Disponível"
-  } 
+    return "Disponível";
+  }
 
   async function fetchAllGifts() {
     let currentPage = 1;
     let results: Gift[] = [];
     let count = 0;
     while (true) {
-      const data = await giftsService.listGifts({ page: currentPage});
+      const data = await giftsService.listGifts({ page: currentPage });
       if (currentPage === 1) count = data.count || 0;
       results = results.concat(data.results || []);
       if (!data.results?.length || results.length >= count) break;
@@ -339,17 +339,10 @@ const GiftsPage: NextPage = () => {
 
         autoTable(doc, {
           startY: 26,
-          head: [
-            [
-              "Nome",
-              "Valor",
-              "Descrição",
-              "Status",
-            ],
-          ],
+          head: [["Nome", "Valor", "Descrição", "Status"]],
           body,
           styles: { fontSize: 9 },
-          headStyles: { fillColor: [246, 238, 228], textColor: '#000' },
+          headStyles: { fillColor: [246, 238, 228], textColor: "#000" },
           theme: "grid",
         });
 

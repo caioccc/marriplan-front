@@ -41,6 +41,26 @@ export const softButtonStyles = {
   },
 } as const;
 
+export const authInputStyles = {
+  input: {
+    borderRadius: 12,
+    backgroundColor: 'var(--marriplan-surface)',
+    borderColor: 'var(--marriplan-border)',
+    color: 'var(--marriplan-text)',
+    transition: 'border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease',
+  },
+  label: {
+    color: 'var(--marriplan-text)',
+    fontWeight: 600,
+  },
+  description: {
+    color: 'var(--marriplan-muted)',
+  },
+  error: {
+    color: 'var(--marriplan-rose)',
+  },
+} as const;
+
 export const actionIconStyles = {
   root: {
     backgroundColor: 'transparent',

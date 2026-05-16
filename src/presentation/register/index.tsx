@@ -1,6 +1,6 @@
 import type {NextPage} from 'next'
 import {useState} from 'react'
-import {Button, Group, PasswordInput, TextInput} from '@mantine/core'
+import {Button, Group, PasswordInput, Stack, TextInput} from '@mantine/core'
 import {hasLength, isEmail, isNotEmpty, useForm} from '@mantine/form'
 import {IconArrowBackUp, IconUserPlus} from '@tabler/icons-react'
 import {useRouter} from 'next/router'
@@ -8,6 +8,7 @@ import HomeBaseLayout from '@/components/Layout/_HomeBaseLayout'
 import {useAuth} from '@/contexts/AuthContext'
 import {useToast} from '@/hooks/use-toast'
 import {useTranslation} from 'react-i18next'
+import {authInputStyles, primaryButtonStyles, softButtonStyles} from '@/styles/marriplanStyles'
 
 type FormValues = {
     name: string
@@ -34,10 +35,10 @@ const RegisterContent: NextPage = () => {
             name: (value) =>
                 isNotEmpty(t('register.name_required'))(value) ||
                 hasLength({min: 2, max: 50}, t('register.name_length'))(value),
-            email: (value, values) =>
+            email: (value) =>
                 isNotEmpty(t('register.email_required'))(value) ||
                 isEmail(t('register.email_invalid'))(value),
-            password: (value, values) =>
+            password: (value) =>
                 isNotEmpty(t('register.password_required'))(value) ||
                 hasLength({min: 6}, t('register.password_length'))(value),
             confirm_password: (value, values) =>
@@ -46,7 +47,7 @@ const RegisterContent: NextPage = () => {
         },
     })
 
-    const handleRegister = (values: FormValues, event?: React.FormEvent<HTMLFormElement>) => {
+    const handleRegister = (values: FormValues) => {
         setIsLoading(true)
         register({
             name: values.name,
@@ -78,54 +79,60 @@ const RegisterContent: NextPage = () => {
     }
 
     return (
-        <HomeBaseLayout title={t('register.title')}>
+        <HomeBaseLayout
+            title={t('register.title')}
+            description="Crie seu acesso na plataforma."
+        >
             <form onSubmit={form.onSubmit(handleRegister)}>
-                <TextInput
-                    label={t('register.name_label')}
-                    placeholder={t('register.name_placeholder')}
-                    required
-                    {...form.getInputProps('name')}
-                />
+                <Stack gap="md">
+                    <TextInput
+                        label={t('register.name_label')}
+                        placeholder={t('register.name_placeholder')}
+                        required
+                        {...form.getInputProps('name')}
+                        styles={authInputStyles}
+                    />
 
-                <TextInput
-                    label={t('register.email_label')}
-                    placeholder={t('register.email_placeholder')}
-                    required
-                    mt="md"
-                    {...form.getInputProps('email')}
-                />
+                    <TextInput
+                        label={t('register.email_label')}
+                        placeholder={t('register.email_placeholder')}
+                        required
+                        {...form.getInputProps('email')}
+                        styles={authInputStyles}
+                    />
 
-                <PasswordInput
-                    label={t('register.password_label')}
-                    placeholder={t('register.password_placeholder')}
-                    required
-                    mt="md"
-                    {...form.getInputProps('password')}
-                />
+                    <PasswordInput
+                        label={t('register.password_label')}
+                        placeholder={t('register.password_placeholder')}
+                        required
+                        {...form.getInputProps('password')}
+                        styles={authInputStyles}
+                    />
 
-                <PasswordInput
-                    label={t('register.confirm_password_label')}
-                    placeholder={t('register.confirm_password_placeholder')}
-                    required
-                    mt="md"
-                    {...form.getInputProps('confirm_password')}
-                />
+                    <PasswordInput
+                        label={t('register.confirm_password_label')}
+                        placeholder={t('register.confirm_password_placeholder')}
+                        required
+                        {...form.getInputProps('confirm_password')}
+                        styles={authInputStyles}
+                    />
+                </Stack>
 
-                <Group justify="center" mt="xl">
+                <Group justify="center" mt="xl" grow>
                     <Button
-                        leftSection={<IconArrowBackUp size={18}/>}
-                        variant="outline"
-                        color="gray"
+                        leftSection={<IconArrowBackUp size={18}/>} 
+                        variant="default"
                         onClick={goToLogin}
+                        styles={softButtonStyles}
                     >
                         {t('register.back_to_login')}
                     </Button>
                     <Button
-                        leftSection={<IconUserPlus size={18}/>}
+                        leftSection={<IconUserPlus size={18}/>} 
                         type="submit"
                         variant="filled"
-                        color="blue"
                         loading={isLoading}
+                        styles={primaryButtonStyles}
                     >
                         {t('register.submit')}
                     </Button>

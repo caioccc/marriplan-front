@@ -1,10 +1,21 @@
-import { guests_confirm_token, guests_confirm_verify } from '@/services/guests';
-import { Button, Container, Group, Modal, Stack, Text, Title, Center, Loader, Card, Badge } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import { IconCheck, IconX } from '@tabler/icons-react';
-import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
-import { primaryButtonStyles, softButtonStyles } from '@/styles';
+import { guests_confirm_token, guests_confirm_verify } from "@/services/guests";
+import { primaryButtonStyles, softButtonStyles } from "@/styles";
+import {
+    Button,
+    Card,
+    Center,
+    Container,
+    Group,
+    Loader,
+    Modal,
+    Stack,
+    Text,
+    Title
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import { IconCheck, IconX } from "@tabler/icons-react";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
 interface GuestTokenInfo {
   guest_name: string;
@@ -21,7 +32,9 @@ export default function ConfirmByTokenPage() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState<'Confirmed' | 'Refused' | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<
+    "Confirmed" | "Refused" | null
+  >(null);
 
   useEffect(() => {
     if (!token) return;
@@ -31,14 +44,17 @@ export default function ConfirmByTokenPage() {
         setError(null);
         const data = await guests_confirm_verify(String(token));
         if (!data.valid) {
-          setError('Link inválido ou expirado.');
+          setError("Link inválido ou expirado.");
           setGuestInfo(null);
         } else {
-          setGuestInfo({ guest_name: data.guest_name, guest_id: data.guest_id });
+          setGuestInfo({
+            guest_name: data.guest_name,
+            guest_id: data.guest_id,
+          });
         }
       } catch (err: any) {
         console.error(err);
-        setError('Link inválido ou expirado.');
+        setError("Link inválido ou expirado.");
         setGuestInfo(null);
       } finally {
         setLoading(false);
@@ -47,27 +63,40 @@ export default function ConfirmByTokenPage() {
     verify();
   }, [token]);
 
-  const handleConfirm = async (status: 'Confirmed' | 'Refused') => {
+  const handleConfirm = async (status: "Confirmed" | "Refused") => {
     if (!token) return;
     setSubmitting(true);
     setProcessing(false);
     try {
       await guests_confirm_token(String(token), status);
       notifications.show({
-        title: status === 'Confirmed' ? 'Presença Confirmada!' : 'Presença Recusada',
-        message: status === 'Confirmed' ? 'Obrigado! Sua presença foi confirmada. Esperamos você! 🥂' : 'Entendemos. Suas informações foram atualizadas.',
-        color: status === 'Confirmed' ? 'green' : 'gray',
-        icon: status === 'Confirmed' ? <IconCheck size={18} /> : <IconX size={18} />,
+        title:
+          status === "Confirmed" ? "Presença Confirmada!" : "Presença Recusada",
+        message:
+          status === "Confirmed"
+            ? "Obrigado! Sua presença foi confirmada. Esperamos você! 🥂"
+            : "Entendemos. Suas informações foram atualizadas.",
+        color: status === "Confirmed" ? "green" : "gray",
+        icon:
+          status === "Confirmed" ? (
+            <IconCheck size={18} />
+          ) : (
+            <IconX size={18} />
+          ),
       });
       setShowConfirmModal(false);
       // mostra um loader global enquanto redireciona
       setProcessing(true);
       setTimeout(() => {
-        router.push('/guests/thank-you');
+        router.push("/guests/thank-you");
       }, 1200);
     } catch (err: any) {
-      console.error('Erro ao confirmar:', err);
-      notifications.show({ title: 'Erro', message: 'Falha ao atualizar sua presença. Tente novamente.', color: 'red' });
+      console.error("Erro ao confirmar:", err);
+      notifications.show({
+        title: "Erro",
+        message: "Falha ao atualizar sua presença. Tente novamente.",
+        color: "red",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -75,7 +104,7 @@ export default function ConfirmByTokenPage() {
 
   if (loading) {
     return (
-      <Center style={{ height: '100dvh' }}>
+      <Center style={{ height: "100dvh" }}>
         <Stack align="center" gap="md">
           <Loader size="lg" />
           <Text>Carregando...</Text>
@@ -86,7 +115,7 @@ export default function ConfirmByTokenPage() {
 
   if (processing) {
     return (
-      <Center style={{ height: '100dvh' }}>
+      <Center style={{ height: "100dvh" }}>
         <Stack align="center" gap="md">
           <Loader size="lg" />
           <Text>Processando sua confirmação...</Text>
@@ -101,9 +130,18 @@ export default function ConfirmByTokenPage() {
         <Card shadow="sm" padding="lg" radius="md" withBorder>
           <Stack align="center" gap="md">
             <IconX size={48} color="var(--marriplan-rose)" />
-            <Title order={2} ta="center">Oops!</Title>
-            <Text ta="center" c="dimmed">{error || 'Link inválido.'}</Text>
-            <Button onClick={() => router.push('/')} styles={primaryButtonStyles}>Voltar ao Início</Button>
+            <Title order={2} ta="center">
+              Oops!
+            </Title>
+            <Text ta="center" c="dimmed">
+              {error || "Link inválido."}
+            </Text>
+            <Button
+              onClick={() => router.push("/")}
+              styles={primaryButtonStyles}
+            >
+              Voltar ao Início
+            </Button>
           </Stack>
         </Card>
       </Container>
@@ -114,12 +152,19 @@ export default function ConfirmByTokenPage() {
     <Container size="sm" py={60}>
       <Card shadow="sm" padding="lg" radius="md" withBorder>
         <Stack gap="lg">
-          <div style={{ textAlign: 'center' }}>
-            <Title order={1} mb="xs">Confirme Sua Presença</Title>
+          <div style={{ textAlign: "center" }}>
+            <Title order={1} mb="xs">
+              Confirme Sua Presença
+            </Title>
             <Text c="dimmed">Estamos felizes em tê-lo conosco! 💕</Text>
           </div>
 
-          <Card shadow="xs" padding="md" radius="md" style={{ backgroundColor: 'var(--marriplan-surface)' }}>
+          <Card
+            shadow="xs"
+            padding="md"
+            radius="md"
+            style={{ backgroundColor: "var(--marriplan-surface)" }}
+          >
             <Stack gap="sm">
               <Group justify="space-between">
                 <Text fw={500}>Nome</Text>
@@ -129,29 +174,80 @@ export default function ConfirmByTokenPage() {
           </Card>
 
           <Stack gap="md">
-            <Text ta="center" c="dimmed" size="sm">Por favor, confirme sua presença no nosso casamento:</Text>
+            <Text ta="center" c="dimmed" size="sm">
+              Por favor, confirme sua presença no nosso casamento:
+            </Text>
 
             <Group grow>
-              <Button color="green" size="lg" leftSection={<IconCheck size={20} />} onClick={() => { setSelectedStatus('Confirmed'); setShowConfirmModal(true); }} loading={submitting && selectedStatus === 'Confirmed'}>
+              <Button
+                color="green"
+                size="lg"
+                leftSection={<IconCheck size={20} />}
+                onClick={() => {
+                  setSelectedStatus("Confirmed");
+                  setShowConfirmModal(true);
+                }}
+                loading={submitting && selectedStatus === "Confirmed"}
+              >
                 Confirmo minha Presença
               </Button>
-              <Button color="red" size="lg" leftSection={<IconX size={20} />} onClick={() => { setSelectedStatus('Refused'); setShowConfirmModal(true); }} loading={submitting && selectedStatus === 'Refused'}>
+              <Button
+                color="red"
+                size="lg"
+                leftSection={<IconX size={20} />}
+                onClick={() => {
+                  setSelectedStatus("Refused");
+                  setShowConfirmModal(true);
+                }}
+                loading={submitting && selectedStatus === "Refused"}
+              >
                 Não Posso Ir
               </Button>
             </Group>
           </Stack>
 
-          <Text ta="center" size="xs" c="dimmed">Obrigado por confirmar sua presença com a gente! 🎉</Text>
+          <Text ta="center" size="xs" c="dimmed">
+            Obrigado por confirmar sua presença com a gente! 🎉
+          </Text>
         </Stack>
       </Card>
 
-      <Modal opened={showConfirmModal} onClose={() => setShowConfirmModal(false)} title={selectedStatus === 'Confirmed' ? 'Confirmar Presença' : 'Confirmar Recusa'} centered size="sm" overlayProps={{ blur: 2 }}>
+      <Modal
+        opened={showConfirmModal}
+        onClose={() => setShowConfirmModal(false)}
+        title={
+          selectedStatus === "Confirmed"
+            ? "Confirmar Presença"
+            : "Confirmar Recusa"
+        }
+        centered
+        size="sm"
+        overlayProps={{ blur: 2 }}
+      >
         <Stack gap="md">
-          <Text>{selectedStatus === 'Confirmed' ? 'Você tem certeza que quer confirmar sua presença?' : 'Você tem certeza que não poderá comparecer?'}</Text>
+          <Text>
+            {selectedStatus === "Confirmed"
+              ? "Você tem certeza que quer confirmar sua presença?"
+              : "Você tem certeza que não poderá comparecer?"}
+          </Text>
           <Group grow>
-            <Button variant="default" onClick={() => setShowConfirmModal(false)} styles={softButtonStyles} disabled={submitting}>Voltar</Button>
-            <Button color={selectedStatus === 'Confirmed' ? 'green' : 'red'} onClick={() => selectedStatus && handleConfirm(selectedStatus)} styles={primaryButtonStyles} loading={submitting}>
-              {selectedStatus === 'Confirmed' ? 'Sim, Confirmar' : 'Sim, Recusar'}
+            <Button
+              variant="default"
+              onClick={() => setShowConfirmModal(false)}
+              styles={softButtonStyles}
+              disabled={submitting}
+            >
+              Voltar
+            </Button>
+            <Button
+              color={selectedStatus === "Confirmed" ? "green" : "red"}
+              onClick={() => selectedStatus && handleConfirm(selectedStatus)}
+              styles={primaryButtonStyles}
+              loading={submitting}
+            >
+              {selectedStatus === "Confirmed"
+                ? "Sim, Confirmar"
+                : "Sim, Recusar"}
             </Button>
           </Group>
         </Stack>
