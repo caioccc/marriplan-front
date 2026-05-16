@@ -402,7 +402,7 @@ const ChatContent: NextPage = () => {
                                 display: 'flex',
                                 flexDirection: 'column',
                                 position: 'relative',
-                                height: 'calc(100vh - 60px)', // altura dinâmica
+                                height: 'calc(100dvh - 60px)', // altura dinâmica
                             }}
                         >
                             {/* Header fixo */}

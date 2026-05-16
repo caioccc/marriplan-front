@@ -122,7 +122,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
             styles={{
                 main: {
                     background: 'var(--marriplan-bg)',
-                    minHeight: '100vh',
+                    minHeight: '100dvh',
                 },
             }}
         >

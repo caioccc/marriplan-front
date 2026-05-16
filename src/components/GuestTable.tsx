@@ -1,9 +1,10 @@
 import { ListView } from '@/components/ListView';
 import { GalleryView } from '@/components/GalleryView';
 import ImportGuestsModal from '@/components/ImportGuestsModal';
-import { guests_create, guests_delete, guests_download_model, guests_export, guests_import, guests_list, guests_update } from '@/services/guests';
+import { guests_create, guests_delete, guests_export, guests_list, guests_partial_update, guests_update, guests_generate_confirmation_link } from '@/services/guests';
 import {
   ActionIcon,
+  Badge,
   Button,
   Checkbox,
   Group,
@@ -18,12 +19,12 @@ import {
   TextInput,
   Title,
   Tooltip,
-  useMantineTheme,
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
-import { IconBrandWhatsapp, IconCards, IconDotsVertical, IconDownload, IconEdit, IconFileTypePdf, IconFilter, IconLayoutGrid, IconList, IconMail, IconPlus, IconSearch, IconTrash, IconUpload, IconUser } from '@tabler/icons-react';
+import { IconBrandWhatsapp, IconCards, IconCheck, IconDotsVertical, IconDownload, IconEdit, IconFileTypePdf, IconFilter, IconLayoutGrid, IconList, IconMail, IconPlus, IconSearch, IconTrash, IconUpload, IconUser } from '@tabler/icons-react';
 import { DataTable, type DataTableSortStatus } from 'mantine-datatable';
+import { IconLink } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 
 import { Pagination } from '@mantine/core';
@@ -39,6 +40,7 @@ interface Guest {
   alergias?: string;
   acompanhantes?: number;
   observacoes?: string;
+  status_presenca?: 'Pending' | 'Confirmed' | 'Refused';
 }
 
 function validateEmail(email: string) {
@@ -49,7 +51,6 @@ export default function GuestTable() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Guest | null>(null);
-  const [importing, setImporting] = useState(false);
   const [exporting, setExporting] = useState<'csv' | 'xlsx' | 'pdf' | null>(null);
   const [page, setPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
@@ -63,7 +64,10 @@ export default function GuestTable() {
   const [companionsRange, setCompanionsRange] = useState<[number, number]>([0, 10]);
   const [whatsappFilter, setWhatsappFilter] = useState<'all' | 'with' | 'without'>('all');
   const [allergyFilter, setAllergyFilter] = useState<'all' | 'with' | 'without'>('all');
-  const theme = useMantineTheme();
+  const [presencaModalOpen, setPresencaModalOpen] = useState(false);
+  const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
+  const [confirmationModalOpen, setConfirmationModalOpen] = useState(false);
+  const [confirmationData, setConfirmationData] = useState<{confirmation_url?: string, whatsapp_link?: string, token?: string} | null>(null);
 
   const maxCompanionsValue = Math.max(10, ...guests.map(g => g.acompanhantes ?? 0));
   const rangeIsDefault = companionsRange[0] === 0 && companionsRange[1] === maxCompanionsValue;
@@ -94,6 +98,7 @@ export default function GuestTable() {
       alergias: '',
       acompanhantes: '',
       observacoes: '',
+      status_presenca: '',
     },
     validate: {
       name: value => value.trim() ? null : 'Nome obrigatório',
@@ -150,7 +155,7 @@ export default function GuestTable() {
 
   function handleAdd() {
     setEditing(null);
-    form.setValues({ name: '', phone: '', hasWhatsapp: false, whatsapp: '', email: '', alergias: '', acompanhantes: '', observacoes: '' });
+    form.setValues({ name: '', phone: '', hasWhatsapp: false, whatsapp: '', email: '', alergias: '', acompanhantes: '', observacoes: '', status_presenca: '' });
     setModalOpen(true);
   }
 
@@ -165,12 +170,13 @@ export default function GuestTable() {
       alergias: guest.alergias || '',
       acompanhantes: guest.acompanhantes?.toString() || '',
       observacoes: guest.observacoes || '',
+      status_presenca: guest.status_presenca || '',
     });
     setModalOpen(true);
   }
 
   async function handleSubmit(values: typeof form.values) {
-    const payload = {
+    const payload: Record<string, string | number | null | undefined> = {
       name: values.name,
       phone: values.phone,
       whatsapp: values.hasWhatsapp ? values.whatsapp : '',
@@ -179,6 +185,9 @@ export default function GuestTable() {
       acompanhantes: values.acompanhantes === '' ? null : Number(values.acompanhantes),
       observacoes: values.observacoes,
     };
+    if (values.status_presenca) {
+      payload.status_presenca = values.status_presenca;
+    }
     if (editing) {
       const updated = await guests_update(editing.id, payload);
       setGuests(guests => guests.map(g => g.id === editing.id ? updated : g));
@@ -214,11 +223,10 @@ export default function GuestTable() {
 
         const doc = new jsPDF('p', 'mm', 'a4');
         doc.setFontSize(14);
-        doc.text('Lista de convidados', 14, 18);
+        doc.text('Lista de Convidados', 14, 18);
 
         const body = (data.results || []).map(g => ([
           g.name,
-          g.phone,
           g.whatsapp || '-',
           g.email || '-',
           g.acompanhantes ?? '-',
@@ -227,7 +235,7 @@ export default function GuestTable() {
 
         autoTable(doc, {
           startY: 26,
-          head: [['Nome', 'Telefone', 'WhatsApp', 'Email', 'Acompanhantes', 'Alergias']],
+          head: [['Nome', 'WhatsApp', 'Email', 'Acompanhantes', 'Alergias']],
           body,
           styles: { fontSize: 9 },
           headStyles: { fillColor: [246, 238, 228], textColor: '#000' },
@@ -279,7 +287,7 @@ export default function GuestTable() {
   const derivedTotalRecords = filtersActive ? filteredGuests.length : totalRecords;
 
   return (
-    <Stack spacing="md">
+    <Stack gap="md">
       <Group justify="space-between" mb="md">
         <Title order={2}>Meus Convidados</Title>
         <Button leftSection={<IconFileTypePdf size={18} />} styles={softButtonStyles} onClick={() => handleExport('pdf')} loading={exporting === 'pdf'}>
@@ -352,7 +360,6 @@ export default function GuestTable() {
       {viewMode === 'table' && (
         <DataTable
           className="guest-table"
-          withBorder
           borderRadius="xl"
           highlightOnHover
           verticalSpacing="sm"
@@ -362,21 +369,61 @@ export default function GuestTable() {
           columns={[
             { accessor: 'name', title: 'Nome', width: 140, sortable: true },
             { accessor: 'phone', title: 'Telefone', width: 110, sortable: true },
-            { accessor: 'whatsapp', title: 'WhatsApp', width: 110, render: g => g.whatsapp ? g.whatsapp : '-', textAlign: 'center', sortable: true },
+            { accessor: 'whatsapp', title: 'WhatsApp', width: 110, render: (g) => (g as Guest).whatsapp ? (g as Guest).whatsapp : '-', textAlign: 'center', sortable: true },
             { accessor: 'email', title: 'Email', width: 160, sortable: true },
-            { accessor: 'acompanhantes', title: 'Acompanhantes', width: 80, render: g => g.acompanhantes ?? '-', sortable: true },
+            { accessor: 'acompanhantes', title: 'Acompanhantes', width: 80, render: (g) => (g as Guest).acompanhantes ?? '-', sortable: true },
+            {
+              accessor: 'status_presenca',
+              title: 'Status',
+              width: 120,
+              render: (record: Record<string, unknown>) => {
+                const guest = record as Guest;
+                const statusColors: Record<string, string> = {
+                  'Pending': 'yellow',
+                  'Confirmed': 'green',
+                  'Refused': 'red',
+                };
+                const statusLabels: Record<string, string> = {
+                  'Pending': 'Pendente',
+                  'Confirmed': 'Confirmado',
+                  'Refused': 'Recusado',
+                };
+                return (
+                  <Badge size="sm" variant="light" color={statusColors[guest.status_presenca || ''] || 'gray'}>
+                    {statusLabels[guest.status_presenca || ''] || 'Desconhecido'}
+                  </Badge>
+                );
+              },
+            },
             {
               accessor: 'actions',
               title: '',
               width: 130,
-              render: (g: Guest) => (
+              render: (g: Record<string, unknown>) => {
+                const guest = g as Guest;
+                return (
                 <Group gap={4}>
-                  {g.whatsapp && (
+                  {guest.status_presenca === 'Pending' && (
+                  <Tooltip label="Confirmar Presença">
+                    <ActionIcon
+                      size="sm"
+                      variant="light"
+                      color="blue"
+                      onClick={() => {
+                        setSelectedGuest(guest);
+                        setPresencaModalOpen(true);
+                      }}
+                    >
+                      <IconCheck size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                  )}
+                  {guest.whatsapp && (
                     <ActionIcon
                       variant="subtle"
                       color="green"
                       component="a"
-                      href={`https://wa.me/55${g.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Por gentileza, confirme sua presença no nosso casamento respondendo esta mensagem ou pelo site. O convite formal será enviado via papelaria. Obrigado!')}`}
+                      href={`https://wa.me/55${guest.whatsapp.replace(/\D/g, '')}?text=${encodeURIComponent('Olá! Por gentileza, confirme sua presença no nosso casamento respondendo esta mensagem ou pelo site. O convite formal será enviado via papelaria. Obrigado!')}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       title="Enviar RSVP por WhatsApp"
@@ -384,28 +431,47 @@ export default function GuestTable() {
                       <IconBrandWhatsapp size={18} />
                     </ActionIcon>
                   )}
-                  {g.email && (
+                  <Tooltip label="Gerar link de confirmação">
+                    <ActionIcon
+                      size="sm"
+                      variant="light"
+                      color="blue"
+                      onClick={async () => {
+                        try {
+                          const res = await guests_generate_confirmation_link(guest.id);
+                          setConfirmationData({ confirmation_url: res.confirmation_url, whatsapp_link: res.whatsapp_link, token: res.token });
+                          setConfirmationModalOpen(true);
+                        } catch (err) {
+                          notifications.show({ color: 'red', message: 'Erro ao gerar link de confirmação.' });
+                        }
+                      }}
+                    >
+                      <IconLink size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                  {guest.email && (
                     <ActionIcon
                       variant="subtle"
                       color="gray"
                       component="a"
-                      href={`mailto:${g.email}?subject=${encodeURIComponent('Confirmação de Presença - Casamento')}&body=${encodeURIComponent('Olá! Por gentileza, confirme sua presença no nosso casamento respondendo este e-mail ou pelo site. O convite formal será enviado via papelaria. Obrigado!')}`}
+                      href={`mailto:${guest.email}?subject=${encodeURIComponent('Confirmação de Presença - Casamento')}&body=${encodeURIComponent('Olá! Por gentileza, confirme sua presença no nosso casamento respondendo este e-mail ou pelo site. O convite formal será enviado via papelaria. Obrigado!')}`}
                       title="Enviar RSVP por Email"
                     >
                       <IconMail size={18} />
                     </ActionIcon>
                   )}
-                  <ActionIcon variant="subtle" styles={actionIconEditStyles} onClick={() => handleEdit(g)}>
+                  <ActionIcon variant="subtle" styles={actionIconEditStyles} onClick={() => handleEdit(guest)}>
                     <IconEdit size={18} />
                   </ActionIcon>
-                  <ActionIcon variant="subtle" styles={actionIconDangerStyles} onClick={() => handleDelete(g.id)}>
+                  <ActionIcon variant="subtle" styles={actionIconDangerStyles} onClick={() => handleDelete(guest.id)}>
                     <IconTrash size={18} />
                   </ActionIcon>
                 </Group>
-              ),
+                );
+              }
             },
           ]}
-          records={paginatedGuests}
+          records={paginatedGuests as unknown as Record<string, unknown>[]}
           totalRecords={derivedTotalRecords}
           page={page}
           onPageChange={setPage}
@@ -413,7 +479,7 @@ export default function GuestTable() {
           onRecordsPerPageChange={setRecordsPerPage}
           sortStatus={sortStatus}
           onSortStatusChange={setSortStatus}
-          rowStyle={() => ({ background: theme.colorScheme === 'dark' ? theme.colors.dark[7] : '#f8f9fa' })}
+          rowStyle={() => ({ background: '#f8f9fa' })}
           styles={{
             table: { fontSize: rem(15) },
           }}
@@ -423,11 +489,38 @@ export default function GuestTable() {
           paginationText={({ from, to, totalRecords }) => `${from}–${to} de ${totalRecords}`}
         />
       )}
+      <Modal opened={confirmationModalOpen} onClose={() => setConfirmationModalOpen(false)} title="Link de Confirmação" centered>
+        <Stack gap="sm">
+          <Text size="sm">Link criado. Você pode copiar e colar na sua mensagem do WhatsApp ou abrir direto no WhatsApp abaixo.</Text>
+          <Text size="sm" style={{ wordBreak: 'break-all' }}>{confirmationData?.confirmation_url}</Text>
+          <Group>
+            <Button
+              styles={softButtonStyles}
+              onClick={async () => {
+                if (!confirmationData?.confirmation_url) return;
+                try {
+                  await navigator.clipboard.writeText(confirmationData.confirmation_url);
+                  notifications.show({ color: 'green', message: 'Link copiado para a área de transferência.' });
+                } catch {
+                  notifications.show({ color: 'red', message: 'Falha ao copiar. Copie manualmente.' });
+                }
+              }}
+            >
+              Copiar link
+            </Button>
+            {confirmationData?.whatsapp_link && (
+              <Button component="a" target="_blank" rel="noopener noreferrer" href={confirmationData.whatsapp_link} styles={primaryButtonStyles}>
+                Abrir WhatsApp
+              </Button>
+            )}
+          </Group>
+        </Stack>
+      </Modal>
       {viewMode === 'cards' && (
         <ListView
           items={paginatedGuests}
           getItemId={(g) => g.id}
-          getImageUrl={(g) => undefined} // Convidados não têm imagem, então é undefined
+          getImageUrl={() => undefined} // Convidados não têm imagem, então é undefined
           fallbackIcon={<IconUser size={48} color="var(--mantine-color-gray-5)" />}
           renderContent={(g) => (
             <>
@@ -484,7 +577,7 @@ export default function GuestTable() {
         <GalleryView
           items={paginatedGuests}
           getItemId={(g) => g.id}
-          getImageUrl={(g) => undefined} // Convidados não têm imagem, então é undefined
+          getImageUrl={() => undefined} // Convidados não têm imagem, então é undefined
           fallbackIcon={<IconUser size={48} color="var(--mantine-color-gray-5)" />}
           renderContent={(g) => (
             <Stack gap="xs">
@@ -638,6 +731,17 @@ export default function GuestTable() {
               placeholder="Observações adicionais"
               styles={inputStyles}
             />
+            <Select
+              label="Status de Presença"
+              placeholder="Selecione o status"
+              data={[
+                { value: 'Pending', label: 'Pendente' },
+                { value: 'Confirmed', label: 'Confirmado' },
+                { value: 'Refused', label: 'Recusado' },
+              ]}
+              {...form.getInputProps('status_presenca')}
+              styles={inputStyles}
+            />
             <Group justify="flex-end" mt="md">
               <Button variant="default" onClick={() => setModalOpen(false)} type="button" styles={softButtonStyles}>
                 Cancelar
@@ -713,6 +817,80 @@ export default function GuestTable() {
               Aplicar
             </Button>
           </Group>
+        </Stack>
+      </Modal>
+      <Modal
+        opened={presencaModalOpen}
+        onClose={() => setPresencaModalOpen(false)}
+        title="Confirmar Presença do Convidado"
+        centered
+        size="sm"
+        overlayProps={{ blur: 2 }}
+      >
+        <Stack>
+          {selectedGuest && (
+            <>
+              <Text fw={500} size="lg">{selectedGuest.name}</Text>
+              <Text size="sm" c="dimmed">Selecione o status de presença:</Text>
+              <Group grow>
+                <Button
+                  color="green"
+                  onClick={async () => {
+                    try {
+                      await guests_partial_update(selectedGuest.id, { status_presenca: 'Confirmed' });
+                      notifications.show({ title: 'Sucesso', message: 'Presença confirmada', color: 'green' });
+                      setPresencaModalOpen(false);
+                      // Recarregar lista
+                      const ordering = sortStatus.columnAccessor ? `${sortStatus.direction === 'desc' ? '-' : ''}${sortStatus.columnAccessor}` : '';
+                      const data = await guests_list({
+                        page,
+                        page_size: recordsPerPage,
+                        search,
+                        ordering,
+                      });
+                      setGuests(data.results || []);
+                      setTotalRecords(data.count || 0);
+                    } catch {
+                      notifications.show({ title: 'Erro', message: 'Falha ao confirmar presença', color: 'red' });
+                    }
+                  }}
+                >
+                  Confirmar
+                </Button>
+                <Button
+                  color="red"
+                  onClick={async () => {
+                    try {
+                      await guests_partial_update(selectedGuest.id, { status_presenca: 'Refused' });
+                      notifications.show({ title: 'Sucesso', message: 'Presença recusada', color: 'red' });
+                      setPresencaModalOpen(false);
+                      // Recarregar lista
+                      const ordering = sortStatus.columnAccessor ? `${sortStatus.direction === 'desc' ? '-' : ''}${sortStatus.columnAccessor}` : '';
+                      const data = await guests_list({
+                        page,
+                        page_size: recordsPerPage,
+                        search,
+                        ordering,
+                      });
+                      setGuests(data.results || []);
+                      setTotalRecords(data.count || 0);
+                    } catch {
+                      notifications.show({ title: 'Erro', message: 'Falha ao recusar presença', color: 'red' });
+                    }
+                  }}
+                >
+                  Recusar
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={() => setPresencaModalOpen(false)}
+                  styles={softButtonStyles}
+                >
+                  Cancelar
+                </Button>
+              </Group>
+            </>
+          )}
         </Stack>
       </Modal>
       <ImportGuestsModal

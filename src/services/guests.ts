@@ -57,3 +57,18 @@ export async function guests_export(format: 'csv' | 'xlsx' | 'pdf' = 'csv', { se
     responseType: 'blob',
   });
 }
+
+export async function guests_generate_confirmation_link(id: number) {
+  const { data } = await api.post(`/api/guests/${id}/generate-confirmation-link/`);
+  return data;
+}
+
+export async function guests_confirm_verify(token: string) {
+  const { data } = await api.get(`/api/guests/confirm/${token}/verify/`);
+  return data;
+}
+
+export async function guests_confirm_token(token: string, status: 'Confirmed' | 'Refused') {
+  const { data } = await api.post(`/api/guests/confirm/${token}/`, { status });
+  return data;
+}

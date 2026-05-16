@@ -326,7 +326,7 @@ const GiftsPage: NextPage = () => {
 
         const doc = new jsPDF("p", "mm", "a4");
         doc.setFontSize(14);
-        doc.text("Lista de convidados", 14, 18);
+        doc.text("Lista de Presentes", 14, 18);
 
         const body = (data.results || []).map((g) => [
           g.name,

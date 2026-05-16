@@ -86,7 +86,7 @@ export default function WeddingLanding({ data }: { data: any }) {
   const style = themeStyles[theme] || themeStyles.classico;
 
   return (
-    <Box style={{ fontFamily: font || 'inherit', background: style.bg, minHeight: '100vh', transition: 'background 0.6s' }}>
+    <Box style={{ fontFamily: font || 'inherit', background: style.bg, minHeight: '100dvh', transition: 'background 0.6s' }}>
       {/* HERO */}
       {
         coverPhoto && coverPhoto.url && (

@@ -26,7 +26,7 @@ export default function PublicGiftListLayout({ children, search, onSearch, filte
       styles={{
         main: {
           background: 'var(--marriplan-bg)',
-          minHeight: '100vh',
+          minHeight: '100dvh',
         },
       }}
     >

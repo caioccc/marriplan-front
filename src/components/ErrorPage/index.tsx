@@ -13,7 +13,7 @@ const ErrorPage = ({ title, message, ...props }: ErrorPageProps) => {
 
     return (
         <div className="w-screen h-screen flex flex-col bg-white overflow-hidden" {...props}>
-            <div className="flex flex-col w-full h-[90vh] justify-center px-[4.5rem] md:px-[3rem] sm:px-[1rem]">
+            <div className="flex flex-col w-full h-[90dvh] justify-center px-[4.5rem] md:px-[3rem] sm:px-[1rem]">
                 <div className="flex flex-col gap-12 max-w-[17rem] z-10 md:mt-20 sm:mt-10">
                     <div className="flex flex-col gap-4">
                         <h1
