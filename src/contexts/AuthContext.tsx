@@ -20,6 +20,7 @@ import {
 import api from '../services/api'
 
 const unprotectedRoutes = [
+    '/',
     '/login',
     '/register',
     '/404',
