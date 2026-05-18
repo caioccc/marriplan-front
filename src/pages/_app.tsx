@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import "@/translate/i18n";
 import "@mantine/core/styles.css";
+import "@mantine/carousel/styles.css";
 import "mantine-datatable/styles.layer.css";
 
 import { appWithTranslation } from "next-i18next";
@@ -35,7 +36,7 @@ const MyApp = (props: AppProps) => {
         />
       </Head>
       <main>
-        <MantineProvider withGlobalStyles withNormalizeCSS>
+        <MantineProvider>
           <ThemeProvider theme={{ mode: "light" }}>
             <AuthProvider>
               <GoogleOAuthProvider

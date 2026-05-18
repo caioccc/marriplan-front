@@ -496,12 +496,6 @@ export default function GuestTable() {
           columns={[
             { accessor: "name", title: "Nome", width: 140, sortable: true },
             {
-              accessor: "phone",
-              title: "Telefone",
-              width: 110,
-              sortable: true,
-            },
-            {
               accessor: "whatsapp",
               title: "WhatsApp",
               width: 110,

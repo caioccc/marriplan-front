@@ -1,18 +1,21 @@
-import BaseLayout from '@/components/Layout/_BaseLayout';
-import { SupplierCard } from '@/components/SupplierCard';
+import BaseLayout from "@/components/Layout/_BaseLayout";
+import { SupplierCard } from "@/components/SupplierCard";
+import { SupplierFormModal } from "@/components/SupplierFormModal";
 import {
-  createSupplier,
   listSupplierCategories,
   listSuppliers,
+  selectSupplierForWedding,
   Supplier,
   SupplierCategory,
-} from '@/services/suppliers';
-import { inputStyles, primaryButtonStyles, softButtonStyles } from '@/styles';
+  updateWeddingSupplier,
+  uploadSupplierContract,
+} from "@/services/suppliers";
+import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
   Badge,
-  Box,
   Button,
   Card,
+  Checkbox,
   Group,
   Loader,
   Modal,
@@ -24,58 +27,67 @@ import {
   TextInput,
   Textarea,
   Title,
-} from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import { IconPlus, IconSearch } from '@tabler/icons-react';
-import { DataTable } from 'mantine-datatable';
-import { useRouter } from 'next/router';
-import { useEffect, useMemo, useState } from 'react';
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import {
+  IconArrowLeft,
+  IconPaperclip,
+  IconPlus,
+  IconSearch,
+} from "@tabler/icons-react";
+import { DataTable } from "mantine-datatable";
+import { useRouter } from "next/router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const VIEW_OPTIONS = [
-  { value: 'cards', label: 'Cards' },
-  { value: 'list', label: 'Lista' },
+  { value: "cards", label: "Cards" },
+  { value: "list", label: "Lista" },
 ];
+
+function formatCurrencyInput(value: string) {
+  return value.replace(/[^\d,.-]/g, "").replace(",", ".");
+}
+
+const initialWeddingSupplierForm = {
+  status: "QUOTING" as const,
+  is_favorite: false,
+  estimated_price: "",
+  negotiated_price: "",
+  paid_amount: "",
+  notes: "",
+};
 
 export default function SuppliersMarketplacePage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const contractInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState<Supplier[]>([]);
   const [categories, setCategories] = useState<SupplierCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    category_id: '',
-    name: '',
-    company_name: '',
-    description: '',
-    phone: '',
-    cnpj: '',
-    whatsapp: '',
-    email: '',
-    instagram: '',
-    website: '',
-    city: '',
-    state: '',
-    cover_image_url: '',
-  });
+  const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [supplierModalOpen, setSupplierModalOpen] = useState(false);
+  const [supplierModalMode, setSupplierModalMode] = useState<"create" | "edit">("create");
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addingSupplier, setAddingSupplier] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
+    null,
+  );
+  const [contractFile, setContractFile] = useState<File | null>(null);
+  const [weddingForm, setWeddingForm] = useState(initialWeddingSupplierForm);
 
   const categoryOptions = useMemo(
     () => [
-      { value: '', label: 'Todas as categorias' },
+      { value: "", label: "Todas as categorias" },
       ...categories.map((item) => ({ value: item.slug, label: item.name })),
     ],
-    [categories],
-  );
-
-  const categoryFormOptions = useMemo(
-    () => categories.map((item) => ({ value: String(item.id), label: item.name })),
     [categories],
   );
 
@@ -92,7 +104,7 @@ export default function SuppliersMarketplacePage() {
             category,
             city,
             state,
-            ordering: '-is_featured,name',
+            ordering: "-is_featured,name",
           }),
           listSupplierCategories(),
         ]);
@@ -110,73 +122,136 @@ export default function SuppliersMarketplacePage() {
     };
   }, [page, search, category, city, state]);
 
-  const handleCreateSupplier = async () => {
-    if (!form.category_id || !form.name.trim()) {
-      notifications.show({ color: 'red', message: 'Selecione uma categoria e informe o nome.' });
+  const handleOpenCreateSupplier = () => {
+    setEditingSupplier(null);
+    setSupplierModalMode("create");
+    setSupplierModalOpen(true);
+  };
+
+  const handleOpenEditSupplier = (supplier: Supplier) => {
+    setEditingSupplier(supplier);
+    setSupplierModalMode("edit");
+    setSupplierModalOpen(true);
+  };
+
+  const handleSavedSupplier = (savedSupplier: Supplier) => {
+    if (supplierModalMode === "create") {
+      router.push(`/fornecedores/${savedSupplier.id}`);
       return;
     }
-    setSaving(true);
+
+    setItems((currentItems) =>
+      currentItems.map((item) =>
+        item.id === savedSupplier.id ? { ...item, ...savedSupplier } : item,
+      ),
+    );
+  };
+
+  const handleOpenAddModal = (supplier: Supplier) => {
+    setSelectedSupplier(supplier);
+    setWeddingForm(initialWeddingSupplierForm);
+    setContractFile(null);
+    setAddModalOpen(true);
+  };
+
+  const handleAddToWedding = async () => {
+    if (!selectedSupplier) return;
+
+    setAddingSupplier(true);
     try {
-      const created = await createSupplier({
-        ...form,
-        status: 'PENDING',
-        is_featured: false,
-        category_id: Number(form.category_id),
+      let relation = await selectSupplierForWedding({
+        supplier_id: selectedSupplier.id,
+        status: weddingForm.status,
+        is_favorite: weddingForm.is_favorite,
+        estimated_price: formatCurrencyInput(weddingForm.estimated_price),
+        negotiated_price: formatCurrencyInput(weddingForm.negotiated_price),
+        paid_amount: formatCurrencyInput(weddingForm.paid_amount),
+        notes: weddingForm.notes,
       });
+
+      if (contractFile) {
+        const uploaded = await uploadSupplierContract(contractFile);
+        relation = await updateWeddingSupplier(relation.id, {
+          contract_file_url: uploaded.url,
+          contract_file_public_id: uploaded.public_id,
+        });
+      }
+
       notifications.show({
-        color: 'green',
-        message: 'Fornecedor criado com status pendente.',
+        color: "green",
+        message: relation.contract_file_url
+          ? "Fornecedor adicionado ao casamento com contrato anexado."
+          : "Fornecedor adicionado ao casamento com sucesso.",
       });
-      setModalOpen(false);
-      setForm({
-        category_id: '',
-        name: '',
-        company_name: '',
-        description: '',
-        phone: '',
-        cnpj: '',
-        whatsapp: '',
-        email: '',
-        instagram: '',
-        website: '',
-        city: '',
-        state: '',
-        cover_image_url: '',
-      });
-      router.push(`/fornecedores/${created.id}`);
+      setAddModalOpen(false);
+      router.push("/meus-fornecedores");
     } catch (error) {
       notifications.show({
-        color: 'red',
-        message: 'Não foi possível criar o fornecedor.',
+        color: "red",
+        message: "Não foi possível adicionar este fornecedor ao seu casamento.",
       });
     } finally {
-      setSaving(false);
+      setAddingSupplier(false);
     }
   };
 
   const tableRows = items.map((supplier) => ({
     ...supplier,
-    category_name: supplier.category_detail?.name || '-',
-    location: [supplier.city, supplier.state].filter(Boolean).join(' • ') || '-',
+    category_name: supplier.category_detail?.name || "-",
+    location:
+      [supplier.city, supplier.state].filter(Boolean).join(" • ") || "-",
   }));
 
   return (
     <BaseLayout title="Fornecedores">
       <Stack gap="lg" py="md">
-        <Card radius="xl" p="xl" withBorder style={{ background: 'linear-gradient(135deg, #fffdf9 0%, #f6eee4 100%)' }}>
-          <Group justify="space-between" align="flex-start" wrap="wrap" gap="md">
+        <Card
+          radius="xl"
+          p="xl"
+          withBorder
+          style={{
+            background: "linear-gradient(135deg, #fffdf9 0%, #f6eee4 100%)",
+          }}
+        >
+          <Group
+            justify="space-between"
+            align="flex-start"
+            wrap="wrap"
+            gap="md"
+          >
             <Stack gap={4} style={{ maxWidth: 640 }}>
-              <Text size="xs" tt="uppercase" fw={700} c="dimmed" style={{ letterSpacing: 1.2 }}>
+              <Text
+                size="xs"
+                tt="uppercase"
+                fw={700}
+                c="dimmed"
+                style={{ letterSpacing: 1.2 }}
+              >
                 Marketplace do casal
               </Text>
               <Title order={2}>Fornecedores do Marriplan</Title>
               <Text c="dimmed">
-                Busque fornecedores aprovados, descubra novos parceiros e adicione ao casamento com poucos cliques.
+                Busque fornecedores aprovados, descubra novos parceiros e
+                adicione ao casamento com poucos cliques.
               </Text>
             </Stack>
-            <Button leftSection={<IconPlus size={18} />} styles={primaryButtonStyles} onClick={() => setModalOpen(true)}>
-              Novo fornecedor
-            </Button>
+            <Group gap="xs">
+              <Button
+                variant="default"
+                styles={softButtonStyles}
+                leftSection={<IconArrowLeft size={18} />}
+                onClick={() => router.back()}
+              >
+                Voltar
+              </Button>
+              <Button
+                leftSection={<IconPlus size={18} />}
+                styles={primaryButtonStyles}
+                onClick={handleOpenCreateSupplier}
+              >
+                Novo fornecedor
+              </Button>
+            </Group>
           </Group>
         </Card>
 
@@ -199,7 +274,7 @@ export default function SuppliersMarketplacePage() {
                 data={categoryOptions}
                 value={category}
                 onChange={(value) => {
-                  setCategory(value || '');
+                  setCategory(value || "");
                   setPage(1);
                 }}
                 styles={inputStyles}
@@ -230,18 +305,6 @@ export default function SuppliersMarketplacePage() {
               <Text size="sm" c="dimmed">
                 {total} fornecedores encontrados
               </Text>
-              <Group gap="xs">
-                {VIEW_OPTIONS.map((option) => (
-                  <Button
-                    key={option.value}
-                    variant={viewMode === option.value ? 'filled' : 'default'}
-                    onClick={() => setViewMode(option.value as 'cards' | 'list')}
-                    styles={viewMode === option.value ? primaryButtonStyles : softButtonStyles}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </Group>
             </Group>
           </Stack>
         </Card>
@@ -260,21 +323,27 @@ export default function SuppliersMarketplacePage() {
               </Badge>
               <Title order={4}>Nada encontrado</Title>
               <Text c="dimmed" ta="center" maw={460}>
-                Ajuste os filtros ou cadastre um novo fornecedor para começar a montar seu catálogo.
+                Ajuste os filtros ou cadastre um novo fornecedor para começar a
+                montar seu catálogo.
               </Text>
-              <Button leftSection={<IconPlus size={18} />} onClick={() => setModalOpen(true)}>
+              <Button
+                leftSection={<IconPlus size={18} />}
+                  onClick={handleOpenCreateSupplier}
+              >
                 Cadastrar fornecedor
               </Button>
             </Stack>
           </Card>
-        ) : viewMode === 'cards' ? (
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+        ) : viewMode === "cards" ? (
+          <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }} spacing="lg">
             {items.map((supplier) => (
               <SupplierCard
                 key={supplier.id}
                 supplier={supplier}
                 onView={(item) => router.push(`/fornecedores/${item.id}`)}
-                onAdd={(item) => router.push(`/fornecedores/${item.id}`)}
+                onAdd={handleOpenAddModal}
+                onEdit={handleOpenEditSupplier}
+                canEdit={supplier.created_by_user === user?.id}
               />
             ))}
           </SimpleGrid>
@@ -283,24 +352,31 @@ export default function SuppliersMarketplacePage() {
             <DataTable
               records={tableRows}
               columns={[
-                { accessor: 'name', title: 'Fornecedor' },
-                { accessor: 'category_name', title: 'Categoria' },
-                { accessor: 'location', title: 'Cidade/Estado' },
+                { accessor: "name", title: "Fornecedor" },
+                { accessor: "category_name", title: "Categoria" },
+                { accessor: "location", title: "Cidade/Estado" },
                 {
-                  accessor: 'status',
-                  title: 'Status',
+                  accessor: "status",
+                  title: "Status",
                   render: (record) => (
-                    <Badge color={record.status === 'APPROVED' ? 'green' : 'yellow'} variant="light">
-                      {record.status === 'APPROVED' ? 'Aprovado' : 'Pendente'}
+                    <Badge
+                      color={record.status === "APPROVED" ? "green" : "yellow"}
+                      variant="light"
+                    >
+                      {record.status === "APPROVED" ? "Aprovado" : "Pendente"}
                     </Badge>
                   ),
                 },
                 {
-                  accessor: 'actions',
-                  title: '',
+                  accessor: "actions",
+                  title: "",
                   render: (record) => (
-                    <Button size="xs" variant="light" onClick={() => router.push(`/fornecedores/${record.id}`)}>
-                      Abrir
+                    <Button
+                      size="xs"
+                      variant="light"
+                      onClick={() => handleOpenAddModal(record)}
+                    >
+                      Adicionar ao casamento
                     </Button>
                   ),
                 },
@@ -311,49 +387,168 @@ export default function SuppliersMarketplacePage() {
 
         {total > 12 ? (
           <Group justify="center">
-            <Pagination value={page} onChange={setPage} total={Math.max(1, Math.ceil(total / 12))} />
+            <Pagination
+              value={page}
+              onChange={setPage}
+              total={Math.max(1, Math.ceil(total / 12))}
+            />
           </Group>
         ) : null}
       </Stack>
 
-      <Modal opened={modalOpen} onClose={() => setModalOpen(false)} title="Novo fornecedor" centered size="lg">
+      <SupplierFormModal
+        opened={supplierModalOpen}
+        mode={supplierModalMode}
+        supplier={editingSupplier}
+        categories={categories}
+        onClose={() => setSupplierModalOpen(false)}
+        onSaved={handleSavedSupplier}
+      />
+
+      <Modal
+        opened={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        title={
+          selectedSupplier
+            ? `Adicionar ${selectedSupplier.name}`
+            : "Adicionar fornecedor"
+        }
+        centered
+        size="lg"
+      >
         <Stack gap="md">
-          <Select
-            label="Categoria"
-            data={categoryFormOptions}
-            value={form.category_id}
-            onChange={(value) => setForm((prev) => ({ ...prev, category_id: value || '' }))}
-            required
+          <Group grow align="flex-start" wrap="wrap">
+            <Select
+              label="Status"
+              data={[
+                { value: "QUOTING", label: "Cotando" },
+                { value: "NEGOTIATING", label: "Negociando" },
+                { value: "HIRED", label: "Contratado" },
+                { value: "PAID", label: "Pago" },
+                { value: "CANCELED", label: "Cancelado" },
+              ]}
+              value={weddingForm.status}
+              onChange={(value) =>
+                setWeddingForm((prev) => ({
+                  ...prev,
+                  status: (value || "QUOTING") as typeof weddingForm.status,
+                }))
+              }
+              styles={inputStyles}
+            />
+            <Checkbox
+              mt={28}
+              label="Favorito"
+              checked={weddingForm.is_favorite}
+              onChange={(event) =>
+                setWeddingForm((prev) => ({
+                  ...prev,
+                  is_favorite: event.currentTarget.checked,
+                }))
+              }
+            />
+          </Group>
+
+          <Group grow align="flex-start" wrap="wrap">
+            <TextInput
+              label="Valor estimado"
+              value={weddingForm.estimated_price}
+              onChange={(event) =>
+                setWeddingForm((prev) => ({
+                  ...prev,
+                  estimated_price: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+            <TextInput
+              label="Valor negociado"
+              value={weddingForm.negotiated_price}
+              onChange={(event) =>
+                setWeddingForm((prev) => ({
+                  ...prev,
+                  negotiated_price: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+            <TextInput
+              label="Valor pago"
+              value={weddingForm.paid_amount}
+              onChange={(event) =>
+                setWeddingForm((prev) => ({
+                  ...prev,
+                  paid_amount: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+          </Group>
+
+          <Textarea
+            label="Observações"
+            minRows={4}
+            value={weddingForm.notes}
+            onChange={(event) =>
+              setWeddingForm((prev) => ({
+                ...prev,
+                notes: event.currentTarget.value,
+              }))
+            }
             styles={inputStyles}
           />
-          <Group grow align="flex-start" wrap="wrap">
-            <TextInput label="Nome" value={form.name} onChange={(event) => setForm((prev) => ({ ...prev, name: event.currentTarget.value }))} required styles={inputStyles} />
-            <TextInput label="Empresa" value={form.company_name} onChange={(event) => setForm((prev) => ({ ...prev, company_name: event.currentTarget.value }))} styles={inputStyles} />
-          </Group>
-          <Textarea label="Descrição" minRows={3} value={form.description} onChange={(event) => setForm((prev) => ({ ...prev, description: event.currentTarget.value }))} styles={inputStyles} />
-          <Group grow align="flex-start" wrap="wrap">
-            <TextInput label="Telefone" value={form.phone} onChange={(event) => setForm((prev) => ({ ...prev, phone: event.currentTarget.value }))} styles={inputStyles} />
-            <TextInput label="WhatsApp" value={form.whatsapp} onChange={(event) => setForm((prev) => ({ ...prev, whatsapp: event.currentTarget.value }))} styles={inputStyles} />
-          </Group>
-          <Group grow align="flex-start" wrap="wrap">
-            <TextInput label="E-mail" value={form.email} onChange={(event) => setForm((prev) => ({ ...prev, email: event.currentTarget.value }))} styles={inputStyles} />
-            <TextInput label="CNPJ" value={form.cnpj} onChange={(event) => setForm((prev) => ({ ...prev, cnpj: event.currentTarget.value }))} styles={inputStyles} />
-          </Group>
-          <Group grow align="flex-start" wrap="wrap">
-            <TextInput label="Instagram" value={form.instagram} onChange={(event) => setForm((prev) => ({ ...prev, instagram: event.currentTarget.value }))} styles={inputStyles} />
-            <TextInput label="Website" value={form.website} onChange={(event) => setForm((prev) => ({ ...prev, website: event.currentTarget.value }))} styles={inputStyles} />
-          </Group>
-          <Group grow align="flex-start" wrap="wrap">
-            <TextInput label="Cidade" value={form.city} onChange={(event) => setForm((prev) => ({ ...prev, city: event.currentTarget.value }))} styles={inputStyles} />
-            <TextInput label="Estado" value={form.state} onChange={(event) => setForm((prev) => ({ ...prev, state: event.currentTarget.value }))} styles={inputStyles} />
-          </Group>
-          <TextInput label="Imagem de capa" placeholder="URL da imagem (opcional)" value={form.cover_image_url} onChange={(event) => setForm((prev) => ({ ...prev, cover_image_url: event.currentTarget.value }))} styles={inputStyles} />
+
+          <Card
+            radius="lg"
+            withBorder
+            p="md"
+            style={{ background: "rgba(246,238,228,0.45)" }}
+          >
+            <Stack gap="sm">
+              <Group justify="space-between" align="center" wrap="wrap">
+                <Group gap="xs">
+                  <IconPaperclip size={16} />
+                  <Text fw={600}>Contrato opcional</Text>
+                </Group>
+                <Button
+                  variant="default"
+                  onClick={() => contractInputRef.current?.click()}
+                >
+                  Escolher arquivo
+                </Button>
+              </Group>
+              <input
+                ref={contractInputRef}
+                type="file"
+                accept="application/pdf,image/*"
+                style={{ display: "none" }}
+                onChange={(event) =>
+                  setContractFile(event.currentTarget.files?.[0] || null)
+                }
+              />
+              <Text size="sm" c="dimmed">
+                Envie PDF ou imagem para salvar junto com o fornecedor no seu
+                casamento.
+              </Text>
+              {contractFile ? (
+                <Badge color="blue" variant="light">
+                  {contractFile.name}
+                </Badge>
+              ) : null}
+            </Stack>
+          </Card>
+
           <Group justify="flex-end">
-            <Button variant="default" styles={softButtonStyles} onClick={() => setModalOpen(false)}>
+            <Button variant="default" styles={softButtonStyles} onClick={() => setAddModalOpen(false)}>
               Cancelar
             </Button>
-            <Button loading={saving} styles={primaryButtonStyles} onClick={handleCreateSupplier}>
-              Criar fornecedor
+            <Button
+              loading={addingSupplier}
+              styles={primaryButtonStyles}
+              onClick={handleAddToWedding}
+              disabled={addingSupplier || !selectedSupplier}
+            >
+              Adicionar ao casamento
             </Button>
           </Group>
         </Stack>

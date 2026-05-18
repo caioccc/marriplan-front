@@ -25,6 +25,7 @@ export type Supplier = {
   cover_image_url?: string;
   cover_image_public_id?: string;
   status?: 'APPROVED' | 'PENDING';
+  visibility?: 'GLOBAL' | 'SOLO';
   is_featured?: boolean;
   created_by_user?: number | null;
   created_at?: string;
