@@ -16,16 +16,14 @@ export function ImageDropzone({
   value = [],
   onChange,
   onRemove,
-  loading = false,
   maxSizeMB = 10,
-  accept = "image/*",
   label = "Adicionar Imagem",
   title = "",
 }) {
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
-  const onDrop = async (acceptedFiles, rejectedFiles) => {
+  const onDrop = async (acceptedFiles) => {
     setError("");
     const validFiles = acceptedFiles.filter(
       (f) => f.size <= maxSizeMB * 1024 * 1024 && !f.name.endsWith(".svg"),

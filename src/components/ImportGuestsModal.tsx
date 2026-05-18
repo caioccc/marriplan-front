@@ -47,7 +47,6 @@ export default function ImportGuestsModal({
   onSuccess,
 }: ImportGuestsModalProps) {
   const [active, setActive] = useState(0);
-  const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [columns, setColumns] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
@@ -55,14 +54,12 @@ export default function ImportGuestsModal({
   const [importError, setImportError] = useState<string | null>(null);
   const [finalizeError, setFinalizeError] = useState<any[] | null>(null);
   const [success, setSuccess] = useState(false);
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   // Sempre que o modal abrir, resetar para a primeira etapa e limpar estados
   useEffect(() => {
     if (opened) {
       setActive(0);
-      setFile(null);
       setImporting(false);
       setColumns([]);
       setMapping({});
@@ -105,7 +102,6 @@ export default function ImportGuestsModal({
     setImporting(true);
     try {
       const file = files[0];
-      setFile(file);
       const data = await file.arrayBuffer();
       const isCsv =
         file.type.includes("csv") || file.name.toLowerCase().endsWith(".csv");
@@ -287,7 +283,6 @@ export default function ImportGuestsModal({
             <Button
               mt="md"
               onClick={() => setActive(1)}
-              disabled={loading}
               styles={primaryButtonStyles}
             >
               Avançar

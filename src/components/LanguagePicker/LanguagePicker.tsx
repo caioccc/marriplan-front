@@ -7,7 +7,7 @@ import classes from './LanguagePicker.module.css';
 export function LanguagePicker() {
     const {t, i18n} = useTranslation();
 
-    const setLanguage = (_option: MenuOption) => {
+    const setLanguage = () => {
         const forcedOption = langMenu[0];
         i18n.changeLanguage(forcedOption.key);
         setSelected(forcedOption);

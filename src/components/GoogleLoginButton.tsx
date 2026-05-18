@@ -9,7 +9,7 @@ export function GoogleLoginButton() {
   const { setUser } = useAuth();
   const router = useRouter();
 
-  const handleSuccess = async (credentialResponse: any) => {
+  const handleSuccess = async (credentialResponse: { credential?: string }) => {
     const { credential } = credentialResponse;
     if (credential) {
       try {

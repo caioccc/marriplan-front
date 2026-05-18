@@ -3,7 +3,7 @@ import { Gift } from '@/types/gift';
 
 export const giftsService = {
   async listGifts({ page = 1, status = '', search = '', category = '' }) {
-    const params: any = { page };
+    const params: Record<string, string | number> = { page };
     if (status) params.status = status;
     if (search) params.search = search;
     if (category) params.category = category;

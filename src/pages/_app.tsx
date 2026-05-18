@@ -3,6 +3,7 @@ import "@/translate/i18n";
 import "@mantine/core/styles.css";
 import "@mantine/carousel/styles.css";
 import "mantine-datatable/styles.layer.css";
+import '@mantine/notifications/styles.css';
 
 import { appWithTranslation } from "next-i18next";
 import type { AppProps } from "next/app";
@@ -14,6 +15,7 @@ import { AuthProvider, ProtectedRoute } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { MantineProvider } from "@mantine/core";
+import { Notifications } from "@mantine/notifications";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const MyApp = (props: AppProps) => {
@@ -37,6 +39,7 @@ const MyApp = (props: AppProps) => {
       </Head>
       <main>
         <MantineProvider>
+          <Notifications position="top-right" zIndex={10000} />
           <ThemeProvider theme={{ mode: "light" }}>
             <AuthProvider>
               <GoogleOAuthProvider

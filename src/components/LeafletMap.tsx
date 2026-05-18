@@ -9,9 +9,9 @@ import {
 interface LeafletMapProps {
   mapPosition: [number, number] | null;
   setMapPosition: (pos: [number, number]) => void;
-  reverseGeocode: (lat: number, lng: number) => Promise<any>;
-  form: any;
-  L: any;
+  reverseGeocode: (lat: number, lng: number) => Promise<Record<string, unknown>>;
+  form: Record<string, unknown>;
+  L: Record<string, unknown>;
 }
 
 const LeafletMapComponent: React.FC<LeafletMapProps> = ({
@@ -23,7 +23,7 @@ const LeafletMapComponent: React.FC<LeafletMapProps> = ({
 }) => {
   function LocationMarker() {
     // useMapEvents deve ser chamado sempre
-    const mapEvents = useMapEvents({
+    useMapEvents({
       click(e) {
         setMapPosition([e.latlng.lat, e.latlng.lng]);
         reverseGeocode(e.latlng.lat, e.latlng.lng).then((addr) => {

@@ -53,7 +53,7 @@ export function Enable2FAModal({ opened, onClose, onEnabled }) {
       await enable2FA(values.otp);
       onEnabled();
       onClose();
-    } catch (e) {
+    } catch {
       setError("Código inválido. Tente novamente.");
     } finally {
       setLoading(false);

@@ -1,6 +1,8 @@
 import BaseLayout from "@/components/Layout/_BaseLayout";
+import PageSectionHeader from "@/components/PageSectionHeader";
 import { SupplierCard } from "@/components/SupplierCard";
 import { SupplierFormModal } from "@/components/SupplierFormModal";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   listSupplierCategories,
   listSuppliers,
@@ -24,9 +26,9 @@ import {
   SimpleGrid,
   Stack,
   Text,
-  TextInput,
   Textarea,
-  Title,
+  TextInput,
+  Title
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import {
@@ -35,10 +37,8 @@ import {
   IconPlus,
   IconSearch,
 } from "@tabler/icons-react";
-import { DataTable } from "mantine-datatable";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 
 const VIEW_OPTIONS = [
   { value: "cards", label: "Cards" },
@@ -73,7 +73,9 @@ export default function SuppliersMarketplacePage() {
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
-  const [supplierModalMode, setSupplierModalMode] = useState<"create" | "edit">("create");
+  const [supplierModalMode, setSupplierModalMode] = useState<"create" | "edit">(
+    "create",
+  );
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [addingSupplier, setAddingSupplier] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
@@ -136,7 +138,11 @@ export default function SuppliersMarketplacePage() {
 
   const handleSavedSupplier = (savedSupplier: Supplier) => {
     if (supplierModalMode === "create") {
-      router.push(`/fornecedores/${savedSupplier.id}`);
+      router.push(`/meus-fornecedores/fornecedores/${savedSupplier.id}`);
+      notifications.show({
+        color: "green",
+        message: "Fornecedor criado com sucesso!",
+      });
       return;
     }
 
@@ -185,7 +191,7 @@ export default function SuppliersMarketplacePage() {
       });
       setAddModalOpen(false);
       router.push("/meus-fornecedores");
-    } catch (error) {
+    } catch {
       notifications.show({
         color: "red",
         message: "Não foi possível adicionar este fornecedor ao seu casamento.",
@@ -203,38 +209,13 @@ export default function SuppliersMarketplacePage() {
   }));
 
   return (
-    <BaseLayout title="Fornecedores">
+    <BaseLayout>
       <Stack gap="lg" py="md">
-        <Card
-          radius="xl"
-          p="xl"
-          withBorder
-          style={{
-            background: "linear-gradient(135deg, #fffdf9 0%, #f6eee4 100%)",
-          }}
-        >
-          <Group
-            justify="space-between"
-            align="flex-start"
-            wrap="wrap"
-            gap="md"
-          >
-            <Stack gap={4} style={{ maxWidth: 640 }}>
-              <Text
-                size="xs"
-                tt="uppercase"
-                fw={700}
-                c="dimmed"
-                style={{ letterSpacing: 1.2 }}
-              >
-                Marketplace do casal
-              </Text>
-              <Title order={2}>Fornecedores do Marriplan</Title>
-              <Text c="dimmed">
-                Busque fornecedores aprovados, descubra novos parceiros e
-                adicione ao casamento com poucos cliques.
-              </Text>
-            </Stack>
+        <PageSectionHeader
+          eyebrow="Marketplace do casal"
+          title="Fornecedores do Marriplan"
+          description="Busque fornecedores aprovados, descubra novos parceiros e adicione ao casamento com poucos cliques."
+          actions={
             <Group gap="xs">
               <Button
                 variant="default"
@@ -252,8 +233,8 @@ export default function SuppliersMarketplacePage() {
                 Novo fornecedor
               </Button>
             </Group>
-          </Group>
-        </Card>
+          }
+        />
 
         <Card radius="xl" p="md" withBorder>
           <Stack gap="md">
@@ -328,61 +309,27 @@ export default function SuppliersMarketplacePage() {
               </Text>
               <Button
                 leftSection={<IconPlus size={18} />}
-                  onClick={handleOpenCreateSupplier}
+                onClick={handleOpenCreateSupplier}
               >
                 Cadastrar fornecedor
               </Button>
             </Stack>
           </Card>
-        ) : viewMode === "cards" ? (
+        ) : (
           <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }} spacing="lg">
             {items.map((supplier) => (
               <SupplierCard
                 key={supplier.id}
                 supplier={supplier}
-                onView={(item) => router.push(`/fornecedores/${item.id}`)}
+                onView={(item) =>
+                  router.push(`/meus-fornecedores/fornecedores/${item.id}`)
+                }
                 onAdd={handleOpenAddModal}
                 onEdit={handleOpenEditSupplier}
                 canEdit={supplier.created_by_user === user?.id}
               />
             ))}
           </SimpleGrid>
-        ) : (
-          <Card radius="xl" p="sm" withBorder>
-            <DataTable
-              records={tableRows}
-              columns={[
-                { accessor: "name", title: "Fornecedor" },
-                { accessor: "category_name", title: "Categoria" },
-                { accessor: "location", title: "Cidade/Estado" },
-                {
-                  accessor: "status",
-                  title: "Status",
-                  render: (record) => (
-                    <Badge
-                      color={record.status === "APPROVED" ? "green" : "yellow"}
-                      variant="light"
-                    >
-                      {record.status === "APPROVED" ? "Aprovado" : "Pendente"}
-                    </Badge>
-                  ),
-                },
-                {
-                  accessor: "actions",
-                  title: "",
-                  render: (record) => (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      onClick={() => handleOpenAddModal(record)}
-                    >
-                      Adicionar ao casamento
-                    </Button>
-                  ),
-                },
-              ]}
-            />
-          </Card>
         )}
 
         {total > 12 ? (
@@ -414,7 +361,7 @@ export default function SuppliersMarketplacePage() {
             : "Adicionar fornecedor"
         }
         centered
-        size="lg"
+        size="xl"
       >
         <Stack gap="md">
           <Group grow align="flex-start" wrap="wrap">
@@ -539,7 +486,11 @@ export default function SuppliersMarketplacePage() {
           </Card>
 
           <Group justify="flex-end">
-            <Button variant="default" styles={softButtonStyles} onClick={() => setAddModalOpen(false)}>
+            <Button
+              variant="default"
+              styles={softButtonStyles}
+              onClick={() => setAddModalOpen(false)}
+            >
               Cancelar
             </Button>
             <Button

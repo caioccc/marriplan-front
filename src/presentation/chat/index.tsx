@@ -129,7 +129,7 @@ const ChatContent: NextPage = () => {
         }
     }, [editModal.open, editModal.message]);
 
-    const handleEditMessage = async (content) => {
+    const handleEditMessage = async (content: string) => {
         if (!editModal.message || !selectedSessionId) return;
         setEditMessageLoading(true);
         try {
@@ -141,9 +141,9 @@ const ChatContent: NextPage = () => {
             await updateMessage(editModal.message.id, {content: content});
 
             handleSendMessage({input: content});
-        } catch (error: any) {
+        } catch (error) {
             toast({
-                description: <p>Erro ao editar mensagem: {error?.response?.data?.detail || error.message}</p>
+                description: <p>Erro ao editar mensagem: {(error as Record<string, unknown>)?.response?.data?.detail || (error as Record<string, unknown>).message}</p>
             });
         } finally {
             setEditModal({open: false, message: null});
@@ -208,10 +208,10 @@ const ChatContent: NextPage = () => {
 
         try {
             fetchSessions();
-        } catch (error: any) {
+        } catch (error) {
             console.error('Erro ao buscar sessões:', error);
             toast({
-                description: <p>Erro ao carregar sessões: {error?.response?.data?.detail || error.message}</p>
+                description: <p>Erro ao carregar sessões: {(error as Record<string, unknown>)?.response?.data?.detail || (error as Record<string, unknown>).message}</p>
             });
             setLoadingSession(false);
         }
@@ -260,12 +260,12 @@ const ChatContent: NextPage = () => {
             toast({
                 description: <p>Nova sessão criada!</p>,
             });
-        } catch (error: any) {
+        } catch (error) {
             toast({
                 description: (
                     <>
                         <p>Erro ao criar nova sessão</p>
-                        <p>{error?.response?.data?.detail || error.message}</p>
+                        <p>{(error as Record<string, unknown>)?.response?.data?.detail || (error as Record<string, unknown>).message}</p>
                     </>
                 ),
             });
@@ -364,7 +364,7 @@ const ChatContent: NextPage = () => {
                     }
                 });
             }
-        } catch (error: any) {
+        } catch (error) {
             setMessages((prev) =>
                 prev.map((msg) =>
                     msg.id === aiMsgId
@@ -735,9 +735,9 @@ const ChatContent: NextPage = () => {
                             )
                         );
                         toast({description: <p>Título atualizado com sucesso!</p>});
-                    } catch (error: any) {
+                    } catch (error) {
                         toast({
-                            description: <p>Erro ao editar sessão: {error?.response?.data?.detail || error.message}</p>
+                            description: <p>Erro ao editar sessão: {(error as Record<string, unknown>)?.response?.data?.detail || (error as Record<string, unknown>).message}</p>
                         });
                     } finally {
                         setEditModalOpen(false);

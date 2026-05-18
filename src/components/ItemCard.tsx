@@ -46,6 +46,7 @@ export function ItemCard<T>({
     imageUrl && !imageError ? (
       <Image
         src={imageUrl}
+        alt="Item image"
         height={layout === "horizontal" ? 100 : 160}
         width={layout === "horizontal" ? 100 : "auto"}
         radius="md"

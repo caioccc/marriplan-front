@@ -25,7 +25,6 @@ import {
   Stack,
   Text,
   TextInput,
-  Title,
   Tooltip,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
@@ -61,6 +60,7 @@ import {
   softButtonStyles,
 } from "@/styles";
 import { Pagination } from "@mantine/core";
+import PageSectionHeader from "./PageSectionHeader";
 
 interface Guest {
   id: number;
@@ -387,103 +387,98 @@ export default function GuestTable() {
     : totalRecords;
 
   return (
-    <Stack gap="md">
-      <Group justify="space-between" mb="md">
-        <Title order={2}>Meus Convidados</Title>
-        <Button
-          leftSection={<IconFileTypePdf size={18} />}
-          styles={softButtonStyles}
-          onClick={() => handleExport("pdf")}
-          loading={exporting === "pdf"}
-        >
-          Exportar PDF
-        </Button>
-      </Group>
-      <Group
-        mb="md"
-        align="center"
-        justify="space-between"
-        wrap="wrap"
-        gap="sm"
-      >
-        <Group gap="sm">
-          <Button
-            leftSection={<IconPlus size={18} />}
-            onClick={handleAdd}
-            styles={primaryButtonStyles}
-          >
-            Adicionar convidado
-          </Button>
-          <Menu shadow="md" width={220} position="bottom-end">
-            <Menu.Target>
-              <Button styles={softButtonStyles} px={8} style={{ minWidth: 44 }}>
-                <IconDotsVertical size={22} />
-              </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item
-                leftSection={<IconDownload size={18} />}
-                onClick={() => setImportModalOpen(true)}
-              >
-                Baixar modelo de planilha
-              </Menu.Item>
-              <Menu.Item
-                leftSection={<IconUpload size={18} />}
-                onClick={() => setImportModalOpen(true)}
-              >
-                Importar convidados
-              </Menu.Item>
-              <Menu.Item
-                leftSection={<IconFileTypePdf size={18} />}
-                onClick={() => handleExport("pdf")}
-              >
-                Exportar PDF
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-        </Group>
-        <SegmentedControl
-          value={viewMode}
-          onChange={setViewMode}
-          data={[
-            { value: "table", label: <IconList size={16} /> },
-            { value: "cards", label: <IconCards size={16} /> },
-            { value: "gallery", label: <IconLayoutGrid size={16} /> },
-          ]}
-          styles={segmentedTabsStyles}
-        />
-      </Group>
-      <Group
-        mb="md"
-        gap="sm"
-        align="center"
-        wrap="wrap"
-        style={{
-          background: "var(--marriplan-surface)",
-          border: "1px solid var(--marriplan-border)",
-          padding: "12px 14px",
-          borderRadius: 16,
-        }}
-      >
-        <TextInput
-          leftSection={<IconSearch size={16} />}
-          placeholder="Buscar por nome, e-mail, telefone..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.currentTarget.value);
-            setPage(1);
-          }}
-          w={{ base: "100%", sm: 260 }}
-          styles={inputStyles}
-        />
-        <Button
-          leftSection={<IconFilter size={16} />}
-          styles={softButtonStyles}
-          onClick={() => setAdvancedFilterOpen(true)}
-        >
-          Filtro avançado
-        </Button>
-      </Group>
+    <Stack gap="lg" py="md">
+      <PageSectionHeader
+        eyebrow="Gestão do casamento"
+        title="Meus Convidados"
+        description="Gerencie presença, contatos e importações em uma área padronizada da aplicação."
+        actions={
+          <Group gap="sm">
+            <Button
+              leftSection={<IconPlus size={18} />}
+              onClick={handleAdd}
+              styles={primaryButtonStyles}
+            >
+              Adicionar convidado
+            </Button>
+            <Menu shadow="md" width={220} position="bottom-end">
+              <Menu.Target>
+                <Button
+                  styles={softButtonStyles}
+                  px={8}
+                  style={{ minWidth: 44 }}
+                >
+                  <IconDotsVertical size={22} />
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={<IconDownload size={18} />}
+                  onClick={() => setImportModalOpen(true)}
+                >
+                  Baixar modelo de planilha
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconUpload size={18} />}
+                  onClick={() => setImportModalOpen(true)}
+                >
+                  Importar convidados
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconFileTypePdf size={18} />}
+                  onClick={() => handleExport("pdf")}
+                >
+                  Exportar PDF
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+            <Button
+              leftSection={<IconFileTypePdf size={18} />}
+              styles={softButtonStyles}
+              onClick={() => handleExport("pdf")}
+              loading={exporting === "pdf"}
+            >
+              Exportar PDF
+            </Button>
+          </Group>
+        }
+        filters={
+          <Stack gap="sm">
+            <Group justify="space-between">
+              <Group gap="sm" align="center" wrap="wrap">
+                <TextInput
+                  leftSection={<IconSearch size={16} />}
+                  placeholder="Buscar por nome, e-mail, telefone..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.currentTarget.value);
+                    setPage(1);
+                  }}
+                  w={{ base: "100%", sm: 260 }}
+                  styles={inputStyles}
+                />
+                <Button
+                  leftSection={<IconFilter size={16} />}
+                  styles={softButtonStyles}
+                  onClick={() => setAdvancedFilterOpen(true)}
+                >
+                  Filtro avançado
+                </Button>
+              </Group>
+              <SegmentedControl
+                value={viewMode}
+                onChange={setViewMode}
+                data={[
+                  { value: "table", label: <IconList size={16} /> },
+                  { value: "cards", label: <IconCards size={16} /> },
+                  { value: "gallery", label: <IconLayoutGrid size={16} /> },
+                ]}
+                styles={segmentedTabsStyles}
+              />
+            </Group>
+          </Stack>
+        }
+      />
       {viewMode === "table" && (
         <DataTable
           className="guest-table"
@@ -584,7 +579,7 @@ export default function GuestTable() {
                                 token: res.token,
                               });
                               setConfirmationModalOpen(true);
-                            } catch (err) {
+                            } catch {
                               notifications.show({
                                 color: "red",
                                 message: "Erro ao gerar link de confirmação.",
@@ -614,7 +609,7 @@ export default function GuestTable() {
                                 token: res.token,
                               });
                               setConfirmationModalOpen(true);
-                            } catch (err) {
+                            } catch {
                               notifications.show({
                                 color: "red",
                                 message: "Erro ao gerar link de confirmação.",

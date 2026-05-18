@@ -62,10 +62,10 @@ export function SuppliersCarouselRow() {
                 compact
                 variant="dashboard"
                 onView={(supplier) =>
-                  router.push(`/fornecedores/${supplier.id}`)
+                  router.push(`/meus-fornecedores/fornecedores/${supplier.id}`)
                 }
                 onAdd={(supplier) =>
-                  router.push(`/fornecedores/${supplier.id}`)
+                  router.push(`/meus-fornecedores/fornecedores/${supplier.id}`)
                 }
               />
             </Carousel.Slide>

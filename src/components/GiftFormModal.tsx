@@ -51,7 +51,7 @@ export function GiftFormModal({
     // Adicione mais se quiser
   ];
 
-  const handleChange = (field: keyof Gift, value: any) => {
+  const handleChange = (field: keyof Gift, value: string | number | null) => {
     setForm((f) => ({ ...f, [field]: value }));
   };
 
@@ -88,8 +88,9 @@ export function GiftFormModal({
       }
       onSave(gift);
       onClose();
-    } catch (e: any) {
-      setSubmitError(e?.response?.data?.detail || "Erro ao salvar presente.");
+    } catch (e) {
+      const errorMessage = (e as Record<string, unknown>)?.response?.data?.detail || "Erro ao salvar presente.";
+      setSubmitError(String(errorMessage));
     } finally {
       setLoading(false);
     }
@@ -235,7 +236,7 @@ export function GiftFormModal({
             label: opt.label,
             icon: opt.icon,
           }))}
-          itemComponent={({ value, label, ...rest }) => (
+          itemComponent={({ value, label }) => (
             <Group>
               <span>{iconOptions.find((i) => i.value === value)?.icon}</span>
               <span>{label}</span>

@@ -34,16 +34,14 @@ const LanguageSelector = () => {
         }
         setCookie(null, 'language', locale, {path: '/'})
         localStorage.setItem('language', locale)
-    }, [i18n, language])
+    }, [i18n, language, i18n.language])
 
-    // @ts-ignore
     return (
         <Select
             data={selectOptions}
             value="pt"
             onChange={handleChange}
             disabled
-            withinPortal
             size="xs"
             className="ml-6"
             style={{width: 80}}

@@ -224,7 +224,7 @@ export default function SupplierDetailPage() {
             <Text c="dimmed">Volte ao marketplace e tente novamente.</Text>
             <Button
               leftSection={<IconArrowLeft size={18} />}
-              onClick={() => router.push("/fornecedores")}
+              onClick={() => router.push("/meus-fornecedores/fornecedores")}
             >
               Voltar
             </Button>

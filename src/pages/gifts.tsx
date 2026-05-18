@@ -1,22 +1,22 @@
 import { GalleryView } from "@/components/GalleryView";
 import { GiftFormModal } from "@/components/GiftFormModal";
-import ImportGiftsModal from "@/components/ImportGiftsModal";
+import { MarriplanStatusBadge } from "@/components/MarriplanStatusBadge";
 import BaseLayout from "@/components/Layout/_BaseLayout";
+import ImportGiftsModal from "@/components/ImportGiftsModal";
 import { ListView } from "@/components/ListView";
+import PageSectionHeader from "@/components/PageSectionHeader";
 import { MarkAsPurchasedModal } from "@/components/MarkAsPurchasedModal";
 import { giftsService } from "@/services/giftsService";
 import { guests_list } from "@/services/guests";
-import { MarriplanStatusBadge } from "@/components/MarriplanStatusBadge";
 import { Gift } from "@/types/gift";
 import {
   inputStyles,
   primaryButtonStyles,
-  softButtonStyles,
   segmentedTabsStyles,
+  softButtonStyles,
 } from "@/styles";
 import {
   ActionIcon,
-  Badge,
   Box,
   Button,
   Flex,
@@ -26,9 +26,9 @@ import {
   Pagination,
   SegmentedControl,
   Select,
+  Stack,
   Text,
   TextInput,
-  Title,
   Tooltip,
 } from "@mantine/core";
 import {
@@ -55,9 +55,7 @@ import {
 import { DataTable } from "mantine-datatable";
 import { NextPage } from "next";
 import { useEffect, useRef, useState } from "react";
-import * as XLSX from "xlsx";
 import { notifications } from "@mantine/notifications";
-
 const statusOptions = [
   { label: "Todos", value: "" },
   { label: "Disponíveis", value: "available" },
@@ -93,19 +91,13 @@ const GiftsPage: NextPage = () => {
   const [markModal, setMarkModal] = useState<{ open: boolean; gift?: Gift }>({
     open: false,
   });
-  const [guests, setGuests] = useState<{ id: string; name: string }[]>([]); // Simulação, pode buscar do backend
+  const [guests, setGuests] = useState<{ id: string; name: string }[]>([]);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [exporting, setExporting] = useState<"csv" | "xlsx" | "pdf" | null>(
     null,
-  );
-
-  const [importPreview, setImportPreview] = useState<any[]>([]);
-  const [importColumns, setImportColumns] = useState<string[]>([]);
-  const [importMapping, setImportMapping] = useState<Record<string, string>>(
-    {},
   );
   const [viewMode, setViewMode] = useState("table");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -220,10 +212,6 @@ const GiftsPage: NextPage = () => {
     }
   };
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
-
   const handleImportChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
     setImporting(true);
@@ -270,35 +258,6 @@ const GiftsPage: NextPage = () => {
     }
   };
 
-  // Função para o modal de importação: apenas leitura local
-  const handleImportGiftsFile = async (file: File) => {
-    const data = await file.arrayBuffer();
-    const workbook = XLSX.read(data, { type: "array" });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const json = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-    const [header, ...rows] = json;
-    setImportColumns(header as string[]);
-    setImportPreview(
-      rows.map((row) => {
-        const obj: Record<string, string> = {};
-        (header as string[]).forEach((col, idx) => {
-          obj[col] = row[idx] ?? "";
-        });
-        return obj;
-      }),
-    );
-    // Não faz upload aqui!
-    return {
-      columns: header as string[],
-      preview: rows.map((row) => {
-        const obj: Record<string, string> = {};
-        (header as string[]).forEach((col, idx) => {
-          obj[col] = row[idx] ?? "";
-        });
-        return obj;
-      }),
-    };
-  };
   // Função para o modal de importação: upload do arquivo final
   const handleFinalizeImport = async (file: File) => {
     const formData = new FormData();
@@ -366,160 +325,159 @@ const GiftsPage: NextPage = () => {
   }
 
   return (
-    <BaseLayout title="Lista de Presentes" loading={loading}>
+    <BaseLayout>
       <Box>
-        <Group justify="space-between" mb="md" align="center">
-          <Title order={2} style={{ letterSpacing: "0.01em" }}>
-            Lista de Presentes
-          </Title>
-          <Button
-            leftSection={<IconFileTypePdf size={18} />}
-            styles={softButtonStyles}
-            onClick={() => handleExport("pdf")}
-            loading={exporting === "pdf"}
-          >
-            Exportar PDF
-          </Button>
-        </Group>
-        <Group
-          mb="md"
-          align="center"
-          justify="space-between"
-          wrap="wrap"
-          gap="sm"
-        >
-          <Group gap="sm">
-            <Button
-              leftSection={<IconWorldPin size={18} />}
-              styles={softButtonStyles}
-              onClick={async () => {
-                const res = await giftsService.getShareToken();
-                const token = res.token;
-                setShareUrl(`${window.location.origin}/gifts/share/${token}`);
-                window.open(
-                  `${window.location.origin}/gifts/share/${token}`,
-                  "_blank",
-                );
-              }}
-            >
-              Ver Vitrine
-            </Button>
-            <Button
-              leftSection={<IconShare size={18} />}
-              styles={softButtonStyles}
-              onClick={handleShare}
-            >
-              Compartilhar lista
-            </Button>
-            <Button
-              leftSection={<IconGiftFilled size={18} />}
-              styles={primaryButtonStyles}
-              onClick={() => {
-                setEditingGift(undefined);
-                setModalOpen(true);
-              }}
-            >
-              Adicionar presente
-            </Button>
-            <Menu shadow="md" width={220} position="bottom-end">
-              <Menu.Target>
-                <Button
-                  styles={softButtonStyles}
-                  px={8}
-                  style={{ minWidth: 44 }}
+        <PageSectionHeader
+          eyebrow="Gestão do casamento"
+          title="Lista de Presentes"
+          description="Acompanhe a vitrine, compartilhe a lista e organize os presentes em um layout padronizado."
+          actions={
+            <Group gap="sm">
+              <Button
+                leftSection={<IconFileTypePdf size={18} />}
+                styles={softButtonStyles}
+                onClick={() => handleExport("pdf")}
+                loading={exporting === "pdf"}
+              >
+                Exportar PDF
+              </Button>
+              <Button
+                leftSection={<IconWorldPin size={18} />}
+                styles={softButtonStyles}
+                onClick={async () => {
+                  const res = await giftsService.getShareToken();
+                  const token = res.token;
+                  setShareUrl(`${window.location.origin}/gifts/share/${token}`);
+                  window.open(
+                    `${window.location.origin}/gifts/share/${token}`,
+                    "_blank",
+                  );
+                }}
+              >
+                Ver Vitrine
+              </Button>
+              <Button
+                leftSection={<IconShare size={18} />}
+                styles={softButtonStyles}
+                onClick={handleShare}
+              >
+                Compartilhar lista
+              </Button>
+              <Button
+                leftSection={<IconGiftFilled size={18} />}
+                styles={primaryButtonStyles}
+                onClick={() => {
+                  setEditingGift(undefined);
+                  setModalOpen(true);
+                }}
+              >
+                Adicionar presente
+              </Button>
+              <Menu shadow="md" width={220} position="bottom-end">
+                <Menu.Target>
+                  <Button
+                    styles={softButtonStyles}
+                    px={8}
+                    style={{ minWidth: 44 }}
+                  >
+                    <IconDotsVertical size={22} />
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={<IconDownload size={18} />}
+                    onClick={handleDownloadTemplate}
+                  >
+                    Baixar modelo de planilha
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconUpload size={18} />}
+                    onClick={() => setImportModalOpen(true)}
+                    disabled={importing}
+                  >
+                    Importar planilha
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconFileTypePdf size={18} />}
+                    onClick={() => handleExport("pdf")}
+                  >
+                    Exportar PDF
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+              <input
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                onChange={handleImportChange}
+              />
+            </Group>
+          }
+          filters={
+            <Stack gap="sm">
+              <Group justify="space-between">
+                <Group
+                  gap="sm"
+                  align="center"
+                  wrap="wrap"
+                  style={{
+                    background: "var(--marriplan-surface)",
+                    border: "1px solid var(--marriplan-border)",
+                    padding: "12px 14px",
+                    borderRadius: 16,
+                  }}
                 >
-                  <IconDotsVertical size={22} />
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={<IconDownload size={18} />}
-                  onClick={handleDownloadTemplate}
-                >
-                  Baixar modelo de planilha
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconUpload size={18} />}
-                  onClick={() => setImportModalOpen(true)}
-                  disabled={importing}
-                >
-                  Importar planilha
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconFileTypePdf size={18} />}
-                  onClick={() => handleExport("pdf")}
-                >
-                  Exportar PDF
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-            <input
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              ref={fileInputRef}
-              style={{ display: "none" }}
-              onChange={handleImportChange}
-            />
-          </Group>
-          <SegmentedControl
-            value={viewMode}
-            onChange={setViewMode}
-            data={[
-              { value: "table", label: <IconList size={16} /> },
-              { value: "cards", label: <IconCards size={16} /> },
-              { value: "gallery", label: <IconLayoutGrid size={16} /> },
-            ]}
-            styles={segmentedTabsStyles}
-          />
-        </Group>
-        <Group
-          mb="md"
-          gap="sm"
-          align="center"
-          wrap="wrap"
-          style={{
-            background: "var(--marriplan-surface)",
-            border: "1px solid var(--marriplan-border)",
-            padding: "12px 14px",
-            borderRadius: 16,
-          }}
-        >
-          <TextInput
-            leftSection={<IconSearch size={16} />}
-            placeholder="Buscar presente..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.currentTarget.value);
-              setPage(1);
-            }}
-            w={{ base: "100%", sm: 260 }}
-            styles={inputStyles}
-          />
-          <Select
-            placeholder="Categoria"
-            value={category}
-            onChange={(value) => {
-              setCategory(value || "");
-              setPage(1);
-            }}
-            data={categoryOptions}
-            w={{ base: "100%", sm: 200 }}
-            clearable
-            styles={inputStyles}
-          />
-          <SegmentedControl
-            data={statusOptions.map((opt) => ({
-              ...opt,
-              label: statusLabels[opt.value]?.label || opt.label,
-            }))}
-            value={status}
-            onChange={(value) => {
-              setStatus(value);
-              setPage(1);
-            }}
-            styles={segmentedTabsStyles}
-          />
-        </Group>
+                  <TextInput
+                    leftSection={<IconSearch size={16} />}
+                    placeholder="Buscar presente..."
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.currentTarget.value);
+                      setPage(1);
+                    }}
+                    w={{ base: "100%", sm: 260 }}
+                    styles={inputStyles}
+                  />
+                  <Select
+                    placeholder="Categoria"
+                    value={category}
+                    onChange={(value) => {
+                      setCategory(value || "");
+                      setPage(1);
+                    }}
+                    data={categoryOptions}
+                    w={{ base: "100%", sm: 200 }}
+                    clearable
+                    styles={inputStyles}
+                  />
+                  <SegmentedControl
+                    data={statusOptions.map((opt) => ({
+                      ...opt,
+                      label: statusLabels[opt.value]?.label || opt.label,
+                    }))}
+                    value={status}
+                    onChange={(value) => {
+                      setStatus(value);
+                      setPage(1);
+                    }}
+                    styles={segmentedTabsStyles}
+                  />
+                </Group>
+                <SegmentedControl
+                  value={viewMode}
+                  onChange={setViewMode}
+                  data={[
+                    { value: "table", label: <IconList size={16} /> },
+                    { value: "cards", label: <IconCards size={16} /> },
+                    { value: "gallery", label: <IconLayoutGrid size={16} /> },
+                  ]}
+                  styles={segmentedTabsStyles}
+                />
+              </Group>
+            </Stack>
+          }
+        />
         {viewMode === "table" && (
           <DataTable
             records={gifts}
@@ -605,7 +563,7 @@ const GiftsPage: NextPage = () => {
             recordsPerPage={10}
             minHeight={300}
             highlightOnHover
-            withBorder
+            withTableBorder
             borderRadius="xl"
             verticalSpacing="sm"
             horizontalSpacing="md"

@@ -1,7 +1,16 @@
 import BaseLayout from "@/components/Layout/_BaseLayout";
+import PageSectionHeader from "@/components/PageSectionHeader";
 import { SupplierCard } from "@/components/SupplierCard";
 import { SupplierFormModal } from "@/components/SupplierFormModal";
-import { deleteWeddingSupplier, listSupplierCategories, listWeddingSuppliers, Supplier, SupplierCategory, WeddingSupplier } from "@/services/suppliers";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  deleteWeddingSupplier,
+  listSupplierCategories,
+  listWeddingSuppliers,
+  Supplier,
+  SupplierCategory,
+  WeddingSupplier,
+} from "@/services/suppliers";
 import {
   inputStyles,
   primaryButtonStyles,
@@ -14,6 +23,7 @@ import {
   Card,
   Group,
   Loader,
+  Modal,
   Pagination,
   Select,
   SimpleGrid,
@@ -22,11 +32,10 @@ import {
   TextInput,
   Title,
   SegmentedControl,
-  Modal,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import {
   IconCards,
-  IconLayoutGrid,
   IconPlus,
   IconSearch,
   IconTable,
@@ -34,8 +43,6 @@ import {
 import { DataTable } from "mantine-datatable";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { notifications } from "@mantine/notifications";
 
 function formatCurrency(value?: string | number | null) {
   if (value === undefined || value === null || value === "")
@@ -63,10 +70,15 @@ export default function MySuppliersPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
-  const [supplierModalMode, setSupplierModalMode] = useState<"create" | "edit">("edit");
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [supplierModalMode, setSupplierModalMode] = useState<"create" | "edit">(
+    "edit",
+  );
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
+    null,
+  );
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
-  const [supplierToRemove, setSupplierToRemove] = useState<WeddingSupplier | null>(null);
+  const [supplierToRemove, setSupplierToRemove] =
+    useState<WeddingSupplier | null>(null);
   const pageSize = 12;
 
   useEffect(() => {
@@ -125,7 +137,9 @@ export default function MySuppliersPage() {
 
     try {
       await deleteWeddingSupplier(supplierToRemove.id);
-      setItems((currentItems) => currentItems.filter((item) => item.id !== supplierToRemove.id));
+      setItems((currentItems) =>
+        currentItems.filter((item) => item.id !== supplierToRemove.id),
+      );
       setTotal((currentTotal) => Math.max(0, currentTotal - 1));
       notifications.show({
         color: "green",
@@ -133,7 +147,7 @@ export default function MySuppliersPage() {
       });
       setRemoveModalOpen(false);
       setSupplierToRemove(null);
-    } catch (error) {
+    } catch {
       notifications.show({
         color: "red",
         message: "Não foi possível remover este fornecedor do casamento.",
@@ -156,124 +170,83 @@ export default function MySuppliersPage() {
   );
 
   return (
-    <BaseLayout title="Meus Fornecedores">
+    <BaseLayout>
       <Stack gap="lg" py="md">
-        <Card
-          radius="xl"
-          p="xl"
-          withBorder
-          style={{
-            background: "linear-gradient(135deg, #fffdf9 0%, #f6eee4 100%)",
-          }}
-        >
-          <Group justify="space-between" align="center" wrap="wrap" gap="md">
-            <Stack gap={4} style={{ maxWidth: 680 }}>
-              <Text
-                size="xs"
-                tt="uppercase"
-                fw={700}
-                c="dimmed"
-                style={{ letterSpacing: 1.2 }}
-              >
-                Gestão do casamento
-              </Text>
-              <Title order={2}>Meus Fornecedores</Title>
-              <Text c="dimmed">
-                Acompanhe status, valores, favoritos e contratos no mesmo lugar.
-              </Text>
-            </Stack>
-          </Group>
-          <Group justify="flex-end" mt="md">
+        <PageSectionHeader
+          eyebrow="Gestão do casamento"
+          title="Meus Fornecedores"
+          description="Acompanhe status, valores, favoritos e contratos no mesmo lugar."
+          actions={
             <Group gap="sm">
               <Button
                 variant="default"
                 styles={softButtonStyles}
-                onClick={() => router.push("/fornecedores")}
+                onClick={() => router.push("/meus-fornecedores/fornecedores")}
               >
                 Ir ao marketplace
               </Button>
               <Button
                 leftSection={<IconPlus size={18} />}
                 styles={primaryButtonStyles}
-                onClick={() => router.push("/fornecedores")}
+                onClick={() => router.push("/meus-fornecedores/fornecedores")}
               >
                 Adicionar fornecedor
               </Button>
             </Group>
-          </Group>
-        </Card>
-
-        <Card
-          radius="xl"
-          p="md"
-          withBorder
-          style={{
-            background: "var(--marriplan-surface)",
-            border: "1px solid var(--marriplan-border)",
-            padding: "12px 14px",
-            borderRadius: 16,
-          }}
-        >
-          <Group mb="md" justify="right">
-            <SegmentedControl
-              value={viewMode}
-              onChange={(value) => setViewMode(value as typeof viewMode)}
-              data={[
-                { value: "table", label: <IconTable size={16} /> },
-                { value: "cards", label: <IconCards size={16} /> },
-              ]}
-              styles={segmentedTabsStyles}
-            />
-          </Group>
-          <Group grow align="flex-end" wrap="wrap">
-            <TextInput
-              label="Buscar"
-              placeholder="Nome do fornecedor"
-              leftSection={<IconSearch size={16} />}
-              value={search}
-              onChange={(event) => {
-                setSearch(event.currentTarget.value);
-                setPage(1);
-              }}
-              styles={inputStyles}
-            />
-            <Select
-              label="Status"
-              data={[
-                { value: "", label: "Todos" },
-                { value: "QUOTING", label: "Cotando" },
-                { value: "NEGOTIATING", label: "Negociando" },
-                { value: "HIRED", label: "Contratado" },
-                { value: "PAID", label: "Pago" },
-                { value: "CANCELED", label: "Cancelado" },
-              ]}
-              value={status}
-              onChange={(value) => {
-                setStatus(value || "");
-                setPage(1);
-              }}
-              styles={inputStyles}
-            />
-            <Select
-              label="Favoritos"
-              data={[
-                { value: "all", label: "Todos" },
-                { value: "only", label: "Somente favoritos" },
-              ]}
-              value={favoriteOnly ? "only" : "all"}
-              onChange={(value) => {
-                setFavoriteOnly(value === "only");
-                setPage(1);
-              }}
-              styles={inputStyles}
-            />
-          </Group>
-          <Group justify="space-between" mt="md" wrap="wrap">
-            <Text size="sm" c="dimmed">
-              {total} fornecedores no casamento
-            </Text>
-          </Group>
-        </Card>
+          }
+          filters={
+            <Stack gap="md">
+              <Group grow align="flex-end" wrap="wrap">
+                <TextInput
+                  label="Buscar"
+                  placeholder="Nome do fornecedor"
+                  leftSection={<IconSearch size={16} />}
+                  value={search}
+                  onChange={(event) => {
+                    setSearch(event.currentTarget.value);
+                    setPage(1);
+                  }}
+                  styles={inputStyles}
+                />
+                <Select
+                  label="Status"
+                  data={[
+                    { value: "", label: "Todos" },
+                    { value: "QUOTING", label: "Cotando" },
+                    { value: "NEGOTIATING", label: "Negociando" },
+                    { value: "HIRED", label: "Contratado" },
+                    { value: "PAID", label: "Pago" },
+                    { value: "CANCELED", label: "Cancelado" },
+                  ]}
+                  value={status}
+                  onChange={(value) => {
+                    setStatus(value || "");
+                    setPage(1);
+                  }}
+                  styles={inputStyles}
+                />
+                <Select
+                  label="Favoritos"
+                  data={[
+                    { value: "all", label: "Todos" },
+                    { value: "only", label: "Somente favoritos" },
+                  ]}
+                  value={favoriteOnly ? "only" : "all"}
+                  onChange={(value) => {
+                    setFavoriteOnly(value === "only");
+                    setPage(1);
+                  }}
+                  styles={inputStyles}
+                />
+              </Group>
+              <Group justify="space-between" wrap="wrap">
+                <Text size="sm" c="dimmed">
+                  {total} fornecedores no casamento
+                </Text>
+              </Group>
+            </Stack>
+          }
+        />
 
         {loading ? (
           <Card radius="xl" p="xl" withBorder>
@@ -293,94 +266,34 @@ export default function MySuppliersPage() {
                 depois.
               </Text>
               <Button
+                style={softButtonStyles}
+                variant="default"
                 leftSection={<IconPlus size={18} />}
-                onClick={() => router.push("/fornecedores")}
+                onClick={() => router.push("/meus-fornecedores/fornecedores")}
               >
                 Ir para marketplace
               </Button>
             </Stack>
           </Card>
-        ) : viewMode === "cards" ? (
+        ) : (
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
             {items.map((item) => (
               <SupplierCard
                 key={item.id}
                 supplier={item.supplier_detail!}
                 weddingSupplier={item}
-                onView={(supplier) => router.push(`/fornecedores/${supplier.id}`)}
-                onAdd={(supplier) => router.push(`/fornecedores/${supplier.id}`)}
+                onView={(supplier) =>
+                  router.push(`/meus-fornecedores/fornecedores/${supplier.id}`)
+                }
+                onAdd={(supplier) =>
+                  router.push(`/meus-fornecedores/fornecedores/${supplier.id}`)
+                }
                 onEdit={handleOpenEditSupplier}
                 onRemove={() => handleRemoveWeddingSupplier(item)}
                 canEdit={item.supplier_detail?.created_by_user === user?.id}
               />
             ))}
           </SimpleGrid>
-        ) : (
-          <Card radius="xl" p="sm" withBorder>
-            <DataTable
-              records={rows}
-              columns={[
-                { accessor: "supplier_name", title: "Fornecedor" },
-                { accessor: "category_name", title: "Categoria" },
-                { accessor: "location", title: "Cidade/Estado" },
-                {
-                  accessor: "status",
-                  title: "Status",
-                  render: (record) => (
-                    <Badge
-                      color={
-                        record.status === "HIRED" || record.status === "PAID"
-                          ? "green"
-                          : record.status === "CANCELED"
-                          ? "red"
-                          : "yellow"
-                      }
-                      variant="light"
-                    >
-                      {record.status === "QUOTING" && "Cotando"}
-                      {record.status === "NEGOTIATING" && "Negociando"}
-                      {record.status === "HIRED" && "Contratado"}
-                      {record.status === "PAID" && "Pago"}
-                      {record.status === "CANCELED" && "Cancelado"}
-                    </Badge>
-                  ),
-                },
-                {
-                  accessor: "values",
-                  title: "Valores",
-                  render: (record) => (
-                    <Stack gap={2}>
-                      <Text size="xs" c="dimmed">
-                        {formatCurrency(record.estimated_price)}
-                      </Text>
-                      <Text size="xs" c="dimmed">
-                        {formatCurrency(record.negotiated_price)}
-                      </Text>
-                    </Stack>
-                  ),
-                },
-                {
-                  accessor: "actions",
-                  title: "",
-                  render: (record) => (
-                    <Button
-                      size="xs"
-                      variant="light"
-                      onClick={() =>
-                        router.push(
-                          `/fornecedores/${
-                            record.supplier_detail?.id || record.id
-                          }`,
-                        )
-                      }
-                    >
-                      Abrir
-                    </Button>
-                  ),
-                },
-              ]}
-            />
-          </Card>
         )}
 
         {total > pageSize ? (
@@ -414,10 +327,15 @@ export default function MySuppliersPage() {
             Tem certeza que deseja remover este fornecedor do casamento?
           </Text>
           <Text size="sm" c="dimmed">
-            Esta ação remove apenas a relação com o casamento. O fornecedor original não será excluído.
+            Esta ação remove apenas a relação com o casamento. O fornecedor
+            original não será excluído.
           </Text>
           <Group justify="flex-end">
-            <Button variant="default" styles={softButtonStyles} onClick={() => setRemoveModalOpen(false)}>
+            <Button
+              variant="default"
+              styles={softButtonStyles}
+              onClick={() => setRemoveModalOpen(false)}
+            >
               Cancelar
             </Button>
             <Button color="red" onClick={handleConfirmRemove}>

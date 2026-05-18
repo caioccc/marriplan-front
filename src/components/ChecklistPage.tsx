@@ -1,6 +1,6 @@
 //eslint-disable react-hooks/exhaustive-deps
 //eslint-disable @typescript-eslint/no-unused-vars
-/* eslint-disable @typescript-eslint/no-explicit-any */
+//eslint-disable @typescript-eslint/no-explicit-any
 //eslint no-explicit-any: "off"
 import { MarriplanStatusBadge } from "@/components/MarriplanStatusBadge";
 import {
@@ -49,6 +49,7 @@ import {
 import { useEffect, useState } from "react";
 import ChecklistTaskModal from "./ChecklistTaskModal";
 import BaseLayout from "./Layout/_BaseLayout";
+import PageSectionHeader from "./PageSectionHeader";
 
 export default function ChecklistPage() {
   const [tasks, setTasks] = useState<ChecklistTask[]>([]);
@@ -340,74 +341,61 @@ export default function ChecklistPage() {
   };
 
   return (
-    <BaseLayout title="Checklist do Casamento">
+    <BaseLayout>
       <Box maw={1180} mx="auto" px={{ base: "xs", sm: "md" }}>
-        <Group
-          mb="sm"
-          align="center"
-          justify="space-between"
-          wrap="wrap"
-          gap="sm"
-        >
-          <Title order={2} style={{ letterSpacing: "0.01em" }}>
-            Checklist de Casamento
-          </Title>
-          <Button
-            leftSection={<IconFileDownload size={18} />}
-            variant="light"
-            styles={softButtonStyles}
-            onClick={handleExportPDF}
-          >
-            Exportar PDF
-          </Button>
-        </Group>
-        <Group
-          mb="lg"
-          gap="sm"
-          align="center"
-          wrap="wrap"
-          style={{
-            background: "var(--marriplan-surface)",
-            border: "1px solid var(--marriplan-border)",
-            padding: "12px 14px",
-            borderRadius: 16,
-          }}
-        >
-          <TextInput
-            leftSection={<IconSearch size={16} />}
-            placeholder="Buscar tarefa..."
-            value={search}
-            onChange={(e) => setSearch(e.currentTarget.value)}
-            w={{ base: "100%", sm: 220 }}
-            styles={inputStyles}
-          />
-          <Select
-            data={[
-              { value: "pending", label: "Pendente" },
-              { value: "in_progress", label: "Em Andamento" },
-              { value: "done", label: "Concluído" },
-            ]}
-            value={filterStatus}
-            onChange={(v) => setFilterStatus(v || null)}
-            placeholder="Status"
-            clearable
-            w={{ base: "100%", sm: 170 }}
-            styles={inputStyles}
-          />
-          <Select
-            data={[
-              { value: "high", label: "Alta" },
-              { value: "medium", label: "Média" },
-              { value: "low", label: "Baixa" },
-            ]}
-            value={filterPriority}
-            onChange={(v) => setFilterPriority(v || null)}
-            placeholder="Prioridade"
-            clearable
-            w={{ base: "100%", sm: 170 }}
-            styles={inputStyles}
-          />
-        </Group>
+        <PageSectionHeader
+          eyebrow="Gestão do casamento"
+          title="Checklist de Casamento"
+          description="Acompanhe tarefas, prazos e prioridades em uma visão padronizada da aplicação."
+          actions={
+            <Button
+              leftSection={<IconFileDownload size={18} />}
+              variant="light"
+              styles={softButtonStyles}
+              onClick={handleExportPDF}
+            >
+              Exportar PDF
+            </Button>
+          }
+          filters={
+            <Group gap="sm" align="center" wrap="wrap">
+              <TextInput
+                leftSection={<IconSearch size={16} />}
+                placeholder="Buscar tarefa..."
+                value={search}
+                onChange={(e) => setSearch(e.currentTarget.value)}
+                w={{ base: "100%", sm: 220 }}
+                styles={inputStyles}
+              />
+              <Select
+                data={[
+                  { value: "pending", label: "Pendente" },
+                  { value: "in_progress", label: "Em Andamento" },
+                  { value: "done", label: "Concluído" },
+                ]}
+                value={filterStatus}
+                onChange={(v) => setFilterStatus(v || null)}
+                placeholder="Status"
+                clearable
+                w={{ base: "100%", sm: 170 }}
+                styles={inputStyles}
+              />
+              <Select
+                data={[
+                  { value: "high", label: "Alta" },
+                  { value: "medium", label: "Média" },
+                  { value: "low", label: "Baixa" },
+                ]}
+                value={filterPriority}
+                onChange={(v) => setFilterPriority(v || null)}
+                placeholder="Prioridade"
+                clearable
+                w={{ base: "100%", sm: 170 }}
+                styles={inputStyles}
+              />
+            </Group>
+          }
+        />
         {loading ? (
           <Loader />
         ) : (

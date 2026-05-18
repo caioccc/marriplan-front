@@ -1,3 +1,6 @@
+//eslint-disable @typescript-eslint/no-explicit-any
+//eslint-disable @typescript-eslint/no-unused-vars
+//eslint-disable react-hooks/exhaustive-deps
 import {Modal, TextInput, Button, Group} from '@mantine/core';
 import {useForm} from '@mantine/form';
 import {useEffect} from 'react';

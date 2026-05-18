@@ -1,3 +1,6 @@
+//eslint-disable @typescript-eslint/no-explicit-any
+//eslint-disable @typescript-eslint/no-unused-vars
+//eslint-disable react-hooks/exhaustive-deps
 import {useEffect, useState} from 'react';
 import {Button, Group, Loader, Modal, Overlay, Stack, Switch, Tabs, Text} from '@mantine/core';
 import {LanguagePicker} from "@/components/LanguagePicker/LanguagePicker";

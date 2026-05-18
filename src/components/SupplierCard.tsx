@@ -62,7 +62,6 @@ export function SupplierCard({
   weddingSupplier,
   compact = false,
   variant = "default",
-  onView,
   onAdd,
   onEdit,
   onRemove,
@@ -73,8 +72,6 @@ export function SupplierCard({
   const cityLabel =
     [supplier.city, supplier.state].filter(Boolean).join(" • ") ||
     "Local não informado";
-  const visibilityLabel = supplier.visibility === "SOLO" ? "Solo" : "Global";
-  const visibilityColor = supplier.visibility === "SOLO" ? "pink" : "green";
   const canShowMenu = (canEdit && !!onEdit) || !!onRemove;
   const cardHeight = compact ? 168 : 220;
 
@@ -291,9 +288,9 @@ export function SupplierCard({
             >
               {supplier.is_featured ? "Destaque" : categoryLabel}
             </Badge>
-            <Badge radius="xl" color={visibilityColor} variant="light">
+            {/* <Badge radius="xl" color={visibilityColor} variant="light">
               {visibilityLabel}
-            </Badge>
+            </Badge> */}
           </Group>
           {canShowMenu ? (
             <Menu shadow="md" width={220} position="bottom-end" withinPortal>
