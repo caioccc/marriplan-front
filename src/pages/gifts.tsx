@@ -326,7 +326,7 @@ const GiftsPage: NextPage = () => {
 
   return (
     <BaseLayout>
-      <Box>
+      <Stack gap="lg" py="md">
         <PageSectionHeader
           eyebrow="Gestão do casamento"
           title="Lista de Presentes"
@@ -417,17 +417,7 @@ const GiftsPage: NextPage = () => {
           filters={
             <Stack gap="sm">
               <Group justify="space-between">
-                <Group
-                  gap="sm"
-                  align="center"
-                  wrap="wrap"
-                  style={{
-                    background: "var(--marriplan-surface)",
-                    border: "1px solid var(--marriplan-border)",
-                    padding: "12px 14px",
-                    borderRadius: 16,
-                  }}
-                >
+                <Group gap="sm" align="center" wrap="wrap">
                   <TextInput
                     leftSection={<IconSearch size={16} />}
                     placeholder="Buscar presente..."
@@ -805,7 +795,7 @@ const GiftsPage: NextPage = () => {
             {importSuccess}
           </Text>
         )}
-      </Box>
+      </Stack>
     </BaseLayout>
   );
 };

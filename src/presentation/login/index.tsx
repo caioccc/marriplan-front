@@ -40,8 +40,8 @@ const LoginContent: NextPage = () => {
             .then((data) => {
                 setIsLoading(false);
                 if (data.require_2fa) {
-                    sessionStorage.setItem('2fa_email', values.email);
-                    sessionStorage.setItem('2fa_password', values.password);
+                    localStorage.setItem('2fa_email', values.email);
+                    localStorage.setItem('2fa_password', values.password);
                     router.push({pathname: '/2fa'});
                     return;
                 }

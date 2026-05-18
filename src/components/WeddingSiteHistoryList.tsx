@@ -3,7 +3,6 @@ import {
   WeddingSiteHistoryResponse,
 } from "@/services/weddingSiteHistory";
 import {
-  DatePickerInput,
   Group,
   Loader,
   Select,
@@ -13,6 +12,7 @@ import {
   Timeline,
   Title
 } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
 import {
   IconAlertCircle,
   IconCheck,

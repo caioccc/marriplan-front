@@ -343,293 +343,304 @@ export default function ChecklistPage() {
   return (
     <BaseLayout>
       <Box maw={1180} mx="auto" px={{ base: "xs", sm: "md" }}>
-        <PageSectionHeader
-          eyebrow="Gestão do casamento"
-          title="Checklist de Casamento"
-          description="Acompanhe tarefas, prazos e prioridades em uma visão padronizada da aplicação."
-          actions={
-            <Button
-              leftSection={<IconFileDownload size={18} />}
-              variant="light"
-              styles={softButtonStyles}
-              onClick={handleExportPDF}
+        <Stack gap="lg" py="md">
+          <PageSectionHeader
+            eyebrow="Gestão do casamento"
+            title="Checklist de Casamento"
+            description="Acompanhe tarefas, prazos e prioridades em uma visão padronizada da aplicação."
+            actions={
+              <Button
+                leftSection={<IconFileDownload size={18} />}
+                variant="light"
+                styles={softButtonStyles}
+                onClick={handleExportPDF}
+              >
+                Exportar PDF
+              </Button>
+            }
+            filters={
+              <Group gap="sm" align="center" wrap="wrap">
+                <TextInput
+                  leftSection={<IconSearch size={16} />}
+                  placeholder="Buscar tarefa..."
+                  value={search}
+                  onChange={(e) => setSearch(e.currentTarget.value)}
+                  w={{ base: "100%", sm: 220 }}
+                  styles={inputStyles}
+                />
+                <Select
+                  data={[
+                    { value: "pending", label: "Pendente" },
+                    { value: "in_progress", label: "Em Andamento" },
+                    { value: "done", label: "Concluído" },
+                  ]}
+                  value={filterStatus}
+                  onChange={(v) => setFilterStatus(v || null)}
+                  placeholder="Status"
+                  clearable
+                  w={{ base: "100%", sm: 170 }}
+                  styles={inputStyles}
+                />
+                <Select
+                  data={[
+                    { value: "high", label: "Alta" },
+                    { value: "medium", label: "Média" },
+                    { value: "low", label: "Baixa" },
+                  ]}
+                  value={filterPriority}
+                  onChange={(v) => setFilterPriority(v || null)}
+                  placeholder="Prioridade"
+                  clearable
+                  w={{ base: "100%", sm: 170 }}
+                  styles={inputStyles}
+                />
+              </Group>
+            }
+          />
+          {loading ? (
+            <Loader />
+          ) : (
+            <Tabs
+              defaultValue={PHASES[0].key}
+              variant="pills"
+              keepMounted={false}
+              styles={checklistTabsStyles}
+              className="checklist-tabs"
             >
-              Exportar PDF
-            </Button>
-          }
-          filters={
-            <Group gap="sm" align="center" wrap="wrap">
-              <TextInput
-                leftSection={<IconSearch size={16} />}
-                placeholder="Buscar tarefa..."
-                value={search}
-                onChange={(e) => setSearch(e.currentTarget.value)}
-                w={{ base: "100%", sm: 220 }}
-                styles={inputStyles}
-              />
-              <Select
-                data={[
-                  { value: "pending", label: "Pendente" },
-                  { value: "in_progress", label: "Em Andamento" },
-                  { value: "done", label: "Concluído" },
-                ]}
-                value={filterStatus}
-                onChange={(v) => setFilterStatus(v || null)}
-                placeholder="Status"
-                clearable
-                w={{ base: "100%", sm: 170 }}
-                styles={inputStyles}
-              />
-              <Select
-                data={[
-                  { value: "high", label: "Alta" },
-                  { value: "medium", label: "Média" },
-                  { value: "low", label: "Baixa" },
-                ]}
-                value={filterPriority}
-                onChange={(v) => setFilterPriority(v || null)}
-                placeholder="Prioridade"
-                clearable
-                w={{ base: "100%", sm: 170 }}
-                styles={inputStyles}
-              />
-            </Group>
-          }
-        />
-        {loading ? (
-          <Loader />
-        ) : (
-          <Tabs
-            defaultValue={PHASES[0].key}
-            variant="pills"
-            keepMounted={false}
-            styles={checklistTabsStyles}
-            className="checklist-tabs"
-          >
-            <Tabs.List mb="lg">
-              {PHASES.map((phase) => (
-                <Tabs.Tab key={phase.key} value={phase.key}>
-                  {phase.label}
-                </Tabs.Tab>
-              ))}
-            </Tabs.List>
-            {PHASES.map((phase) => {
-              const periods = getPeriodsForPhase(phase);
-              return (
-                <Tabs.Panel key={phase.key} value={phase.key}>
-                  <SimpleGrid
-                    cols={{ base: 1, sm: 2, md: 2, lg: 2, xl: 2 }}
-                    spacing="lg"
-                    verticalSpacing="lg"
-                  >
-                    {periods.map((period, idx) => {
-                      const periodTasks = filteredTasks.filter(period.test);
-                      const progress = getMonthProgress(periodTasks);
-                      const opened = openedCards[phase.key]?.[idx];
-                      return (
-                        <Card
-                          key={period.label}
-                          radius="xl"
-                          p="lg"
-                          withBorder
-                          style={{
-                            background: "var(--marriplan-surface)",
-                            borderColor: "var(--marriplan-border)",
-                            boxShadow: "var(--marriplan-shadow)",
-                          }}
-                        >
-                          <Box
-                            mb="md"
+              <Tabs.List mb="lg">
+                {PHASES.map((phase) => (
+                  <Tabs.Tab key={phase.key} value={phase.key}>
+                    {phase.label}
+                  </Tabs.Tab>
+                ))}
+              </Tabs.List>
+              {PHASES.map((phase) => {
+                const periods = getPeriodsForPhase(phase);
+                return (
+                  <Tabs.Panel key={phase.key} value={phase.key}>
+                    <SimpleGrid
+                      cols={{ base: 1, sm: 2, md: 2, lg: 2, xl: 2 }}
+                      spacing="lg"
+                      verticalSpacing="lg"
+                    >
+                      {periods.map((period, idx) => {
+                        const periodTasks = filteredTasks.filter(period.test);
+                        const progress = getMonthProgress(periodTasks);
+                        const opened = openedCards[phase.key]?.[idx];
+                        return (
+                          <Card
+                            key={period.label}
+                            radius="xl"
+                            p="lg"
+                            withBorder
                             style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "space-between",
-                              gap: 12,
+                              background: "var(--marriplan-surface)",
+                              borderColor: "var(--marriplan-border)",
+                              boxShadow: "var(--marriplan-shadow)",
                             }}
                           >
-                            <Group gap={10} align="center" wrap="nowrap">
-                              <ActionIcon
-                                variant="light"
-                                size="sm"
-                                radius="xl"
-                                onClick={() => handleToggle(phase.key, idx)}
-                                aria-label={opened ? "Fechar" : "Abrir"}
-                                visibleFrom="xs"
-                                styles={{
-                                  root: {
-                                    backgroundColor:
-                                      "var(--marriplan-champagne)",
-                                    color: "var(--marriplan-rose)",
-                                    border: "1px solid var(--marriplan-border)",
-                                  },
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    display: "inline-flex",
-                                    transform: opened
-                                      ? "rotate(90deg)"
-                                      : "rotate(0deg)",
-                                    transition: "transform 0.2s",
+                            <Box
+                              mb="md"
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 12,
+                              }}
+                            >
+                              <Group gap={10} align="center" wrap="nowrap">
+                                <ActionIcon
+                                  variant="light"
+                                  size="sm"
+                                  radius="xl"
+                                  onClick={() => handleToggle(phase.key, idx)}
+                                  aria-label={opened ? "Fechar" : "Abrir"}
+                                  visibleFrom="xs"
+                                  styles={{
+                                    root: {
+                                      backgroundColor:
+                                        "var(--marriplan-champagne)",
+                                      color: "var(--marriplan-rose)",
+                                      border:
+                                        "1px solid var(--marriplan-border)",
+                                    },
                                   }}
                                 >
-                                  <IconChevronRight size={14} />
-                                </span>
-                              </ActionIcon>
-                              <Title order={5} style={{ margin: 0 }}>
-                                {period.label}
-                              </Title>
-                            </Group>
-                            <Box style={{ flex: "0 0 auto", minWidth: 56 }}>
-                              <RingProgress
-                                size={56}
-                                thickness={6}
-                                sections={[
-                                  {
-                                    value: progress,
-                                    color: getProgressColor(progress),
-                                  },
-                                ]}
-                                label={
-                                  <Text
-                                    size="xs"
-                                    fw={700}
-                                    ta="center"
-                                    style={{ lineHeight: 1 }}
-                                  >
-                                    {progress}%
-                                  </Text>
-                                }
-                              />
-                            </Box>
-                          </Box>
-                          <Collapse in={opened} transitionDuration={200}>
-                            <Group mb="sm" justify="space-between">
-                              <Button
-                                leftSection={<IconPlus size={14} />}
-                                size="xs"
-                                styles={primaryButtonStyles}
-                                onClick={() =>
-                                  handleAddTask(periodTasks[0]?.month || 0)
-                                }
-                              >
-                                Adicionar tarefa
-                              </Button>
-                              <Text size="xs" c="dimmed">
-                                {periodTasks.length} tarefa(s)
-                              </Text>
-                            </Group>
-                            {periodTasks.length === 0 ? (
-                              <Text size="sm" c="dimmed">
-                                Nenhuma tarefa para este período.
-                              </Text>
-                            ) : (
-                              <Stack spacing={6}>
-                                {periodTasks.map((task) => (
-                                  <Group
-                                    key={task.id}
-                                    position="apart"
+                                  <span
                                     style={{
-                                      borderBottom:
-                                        "1px solid var(--marriplan-border)",
-                                      padding: "8px 6px",
+                                      display: "inline-flex",
+                                      transform: opened
+                                        ? "rotate(90deg)"
+                                        : "rotate(0deg)",
+                                      transition: "transform 0.2s",
                                     }}
                                   >
-                                    <Group>
-                                      <Checkbox
-                                        checked={task.status === "done"}
-                                        onChange={() => handleToggleDone(task)}
-                                        disabled={loadingTaskId === task.id}
-                                        size="xs"
-                                        styles={{
-                                          input: {
-                                            borderColor:
-                                              "var(--marriplan-border)",
-                                            "&:checked": {
-                                              backgroundColor:
-                                                "var(--marriplan-rose)",
+                                    <IconChevronRight size={14} />
+                                  </span>
+                                </ActionIcon>
+                                <Title order={5} style={{ margin: 0 }}>
+                                  {period.label}
+                                </Title>
+                              </Group>
+                              <Box style={{ flex: "0 0 auto", minWidth: 56 }}>
+                                <RingProgress
+                                  size={56}
+                                  thickness={6}
+                                  sections={[
+                                    {
+                                      value: progress,
+                                      color: getProgressColor(progress),
+                                    },
+                                  ]}
+                                  label={
+                                    <Text
+                                      size="xs"
+                                      fw={700}
+                                      ta="center"
+                                      style={{ lineHeight: 1 }}
+                                    >
+                                      {progress}%
+                                    </Text>
+                                  }
+                                />
+                              </Box>
+                            </Box>
+                            <Collapse in={opened} transitionDuration={200}>
+                              <Group mb="sm" justify="space-between">
+                                <Button
+                                  leftSection={<IconPlus size={14} />}
+                                  size="xs"
+                                  styles={primaryButtonStyles}
+                                  onClick={() =>
+                                    handleAddTask(periodTasks[0]?.month || 0)
+                                  }
+                                >
+                                  Adicionar tarefa
+                                </Button>
+                                <Text size="xs" c="dimmed">
+                                  {periodTasks.length} tarefa(s)
+                                </Text>
+                              </Group>
+                              {periodTasks.length === 0 ? (
+                                <Text size="sm" c="dimmed">
+                                  Nenhuma tarefa para este período.
+                                </Text>
+                              ) : (
+                                <Stack spacing={6}>
+                                  {periodTasks.map((task) => (
+                                    <Group
+                                      key={task.id}
+                                      position="apart"
+                                      style={{
+                                        borderBottom:
+                                          "1px solid var(--marriplan-border)",
+                                        padding: "8px 6px",
+                                      }}
+                                    >
+                                      <Group>
+                                        <Checkbox
+                                          checked={task.status === "done"}
+                                          onChange={() =>
+                                            handleToggleDone(task)
+                                          }
+                                          disabled={loadingTaskId === task.id}
+                                          size="xs"
+                                          styles={{
+                                            input: {
                                               borderColor:
-                                                "var(--marriplan-rose)",
+                                                "var(--marriplan-border)",
+                                              "&:checked": {
+                                                backgroundColor:
+                                                  "var(--marriplan-rose)",
+                                                borderColor:
+                                                  "var(--marriplan-rose)",
+                                              },
                                             },
-                                          },
-                                          icon: {
-                                            color: "#fff",
-                                          },
-                                        }}
-                                      />
-                                      <Text
-                                        size="sm"
-                                        c={
-                                          task.status === "done"
-                                            ? "dimmed"
-                                            : undefined
-                                        }
-                                        style={{
-                                          textDecoration:
+                                            icon: {
+                                              color: "#fff",
+                                            },
+                                          }}
+                                        />
+                                        <Text
+                                          size="sm"
+                                          c={
                                             task.status === "done"
-                                              ? "line-through"
-                                              : undefined,
-                                        }}
-                                      >
-                                        {task.description}
-                                      </Text>
-                                      <MarriplanStatusBadge
-                                        kind="checklist"
-                                        status={task.status}
-                                        size="xs"
-                                      />
-                                      {!task.is_template && (
-                                        <TooltipMantine label="Editar">
-                                          <ActionIcon
-                                            variant="subtle"
-                                            styles={actionIconEditStyles}
-                                            onClick={() => handleEditTask(task)}
-                                            disabled={loadingTaskId === task.id}
-                                            size="xs"
-                                          >
-                                            <IconEdit size={14} />
-                                          </ActionIcon>
-                                        </TooltipMantine>
-                                      )}
-                                      {!task.is_template && (
-                                        <TooltipMantine label="Excluir">
-                                          <ActionIcon
-                                            variant="subtle"
-                                            styles={actionIconDangerStyles}
-                                            onClick={() =>
-                                              handleDeleteTask(task.id)
-                                            }
-                                            disabled={loadingTaskId === task.id}
-                                            size="xs"
-                                          >
-                                            <IconTrash size={14} />
-                                          </ActionIcon>
-                                        </TooltipMantine>
+                                              ? "dimmed"
+                                              : undefined
+                                          }
+                                          style={{
+                                            textDecoration:
+                                              task.status === "done"
+                                                ? "line-through"
+                                                : undefined,
+                                          }}
+                                        >
+                                          {task.description}
+                                        </Text>
+                                        <MarriplanStatusBadge
+                                          kind="checklist"
+                                          status={task.status}
+                                          size="xs"
+                                        />
+                                        {!task.is_template && (
+                                          <TooltipMantine label="Editar">
+                                            <ActionIcon
+                                              variant="subtle"
+                                              styles={actionIconEditStyles}
+                                              onClick={() =>
+                                                handleEditTask(task)
+                                              }
+                                              disabled={
+                                                loadingTaskId === task.id
+                                              }
+                                              size="xs"
+                                            >
+                                              <IconEdit size={14} />
+                                            </ActionIcon>
+                                          </TooltipMantine>
+                                        )}
+                                        {!task.is_template && (
+                                          <TooltipMantine label="Excluir">
+                                            <ActionIcon
+                                              variant="subtle"
+                                              styles={actionIconDangerStyles}
+                                              onClick={() =>
+                                                handleDeleteTask(task.id)
+                                              }
+                                              disabled={
+                                                loadingTaskId === task.id
+                                              }
+                                              size="xs"
+                                            >
+                                              <IconTrash size={14} />
+                                            </ActionIcon>
+                                          </TooltipMantine>
+                                        )}
+                                      </Group>
+                                      {loadingTaskId === task.id && (
+                                        <Loader size={14} />
                                       )}
                                     </Group>
-                                    {loadingTaskId === task.id && (
-                                      <Loader size={14} />
-                                    )}
-                                  </Group>
-                                ))}
-                              </Stack>
-                            )}
-                          </Collapse>
-                        </Card>
-                      );
-                    })}
-                  </SimpleGrid>
-                </Tabs.Panel>
-              );
-            })}
-          </Tabs>
-        )}
-        <ChecklistTaskModal
-          opened={modalOpen}
-          onClose={() => setModalOpen(false)}
-          onSave={handleSaveTask}
-          initial={editingTask || undefined}
-        />
+                                  ))}
+                                </Stack>
+                              )}
+                            </Collapse>
+                          </Card>
+                        );
+                      })}
+                    </SimpleGrid>
+                  </Tabs.Panel>
+                );
+              })}
+            </Tabs>
+          )}
+          <ChecklistTaskModal
+            opened={modalOpen}
+            onClose={() => setModalOpen(false)}
+            onSave={handleSaveTask}
+            initial={editingTask || undefined}
+          />
+        </Stack>
       </Box>
       <style jsx global>{`
         @keyframes target-badge {
