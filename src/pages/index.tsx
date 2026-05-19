@@ -1,37 +1,16 @@
-import Head from "next/head";
-import React from "react";
-import { useRouter } from "next/router";
-import {
-  IconChecklist,
-  IconUsers,
-  IconGift,
-  IconMailOpened,
-  IconTools,
-  IconGauge,
-} from "@tabler/icons-react";
 import LandingFooter from "@/components/Footer/LandingFooter";
 import Navbar from "@/components/Header/Navbar";
-
-const mockups = [
-  {
-    label: "Desktop",
-    widthClass: "w-full max-w-[520px]",
-    heightClass: "h-[360px]",
-    accent: "from-[#f6eadf] via-[#fffaf4] to-[#f1ddd3]",
-  },
-  {
-    label: "Tablet",
-    widthClass: "w-[220px] md:w-[240px]",
-    heightClass: "h-[300px]",
-    accent: "from-[#f8f1e7] via-[#fffdf9] to-[#e7d4c7]",
-  },
-  {
-    label: "Mobile",
-    widthClass: "w-[150px] md:w-[170px]",
-    heightClass: "h-[290px]",
-    accent: "from-[#f9f3ea] via-[#fffefb] to-[#ead8c7]",
-  },
-];
+import {
+    IconChecklist,
+    IconGauge,
+    IconGift,
+    IconMailOpened,
+    IconTools,
+    IconUsers,
+} from "@tabler/icons-react";
+import Head from "next/head";
+import { useRouter } from "next/router";
+import React from "react";
 
 export default function HomePage() {
   const router = useRouter();
@@ -89,7 +68,10 @@ export default function HomePage() {
           { duration: 180, easing: "cubic-bezier(.2,.9,.3,1)" },
         );
       } catch (err) {
-        console.log("Animation not supported, navigating without animation", err);
+        console.log(
+          "Animation not supported, navigating without animation",
+          err,
+        );
       }
       setTimeout(() => {
         router.push(href);
@@ -116,16 +98,16 @@ export default function HomePage() {
             <div className="max-w-2xl">
               <div className="mb-6 inline-flex items-center gap-3 rounded-full border border-[#eadfd3] bg-white/75 px-4 py-2 shadow-[0_10px_30px_rgba(70,56,43,0.05)] backdrop-blur">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#c8b08a]" />
-                <span className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#84786b]">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.3em] text-[#84786b]">
                   SaaS premium para casamentos
                 </span>
               </div>
 
-              <h1 className="max-w-xl font-['Montserrat',sans-serif] text-5xl font-semibold tracking-[-0.04em] text-[#2f2822] sm:text-6xl lg:text-7xl">
+              <h1 className="max-w-xl font-['Montserrat',sans-serif] text-4xl font-semibold tracking-[-0.04em] text-[#2f2822] sm:text-5xl lg:text-6xl">
                 Organize seu casamento sem estresse.
               </h1>
 
-              <p className="mt-6 max-w-xl text-lg leading-8 text-[#6f6157] sm:text-xl">
+              <p className="mt-6 max-w-xl text-base leading-7 text-[#6f6157] sm:text-lg">
                 Checklist, convidados, presentes, RSVP e fornecedores em uma
                 experiência elegante e simples.
               </p>
@@ -147,7 +129,7 @@ export default function HomePage() {
                 </a>
               </div>
 
-              <div className="mt-4 text-sm text-[#6f6157]">
+              <div className="mt-4 text-xs text-[#6f6157]">
                 Já possui conta?{" "}
                 <a
                   href="/login"
@@ -158,23 +140,23 @@ export default function HomePage() {
                 </a>
               </div>
 
-              <div className="mt-10 flex flex-wrap gap-6 text-sm text-[#7d7166]">
+              <div className="mt-10 flex flex-wrap gap-6 text-xs text-[#7d7166]">
                 <div>
-                  <div className="text-2xl font-semibold text-[#2f2822]">
+                  <div className="text-xl font-semibold text-[#2f2822]">
                     + leveza
                   </div>
                   <div>Menos planilhas</div>
                 </div>
                 <div className="h-12 w-px bg-[#eadfd3]" />
                 <div>
-                  <div className="text-2xl font-semibold text-[#2f2822]">
+                  <div className="text-xl font-semibold text-[#2f2822]">
                     + clareza
                   </div>
                   <div>Tudo em um só lugar</div>
                 </div>
                 <div className="h-12 w-px bg-[#eadfd3]" />
                 <div>
-                  <div className="text-2xl font-semibold text-[#2f2822]">
+                  <div className="text-xl font-semibold text-[#2f2822]">
                     + emoção
                   </div>
                   <div>Mais momentos especiais</div>
@@ -182,103 +164,14 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[620px]">
+            <div className="relative mx-auto w-full max-w-[760px]">
               <div className="absolute inset-x-10 top-8 h-72 rounded-full bg-[#f2e6d8]/60 blur-3xl" />
-              <div className="relative rounded-[2rem] border border-white/70 bg-white/55 p-4 shadow-[0_26px_80px_rgba(70,56,43,0.12)] backdrop-blur-xl">
-                <div className="grid gap-4 lg:grid-cols-[1.35fr_0.8fr]">
-                  <div className="rounded-[1.7rem] border border-[#eadfd3] bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(250,244,238,0.95)_100%)] p-5 shadow-[0_20px_50px_rgba(70,56,43,0.08)]">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#9a8c7f]">
-                          Dashboard do casal
-                        </p>
-                        <p className="mt-2 font-['Montserrat',sans-serif] text-xl font-semibold text-[#2f2822]">
-                          Um casamento com mais calma.
-                        </p>
-                      </div>
-                      <div className="rounded-full border border-[#eadfd3] bg-white px-3 py-2 text-xs font-semibold text-[#84786b]">
-                        82% concluído
-                      </div>
-                    </div>
-
-                    <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                      {[
-                        { label: "Checklist", value: "18 tarefas" },
-                        { label: "Convidados", value: "124 confirmados" },
-                        { label: "Fornecedores", value: "9 ativos" },
-                      ].map((item) => (
-                        <div
-                          key={item.label}
-                          className="rounded-2xl border border-[#eadfd3] bg-white/90 p-4"
-                        >
-                          <div className="text-xs uppercase tracking-[0.24em] text-[#9a8c7f]">
-                            {item.label}
-                          </div>
-                          <div className="mt-2 text-lg font-semibold text-[#2f2822]">
-                            {item.value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-5 rounded-[1.5rem] border border-[#eadfd3] bg-[#fffaf6] p-4">
-                      <div className="flex items-center justify-between text-sm text-[#7d7166]">
-                        <span>Próximas etapas</span>
-                        <span className="font-semibold text-[#2f2822]">
-                          Elegante e simples
-                        </span>
-                      </div>
-                      <div className="mt-4 space-y-3">
-                        {[
-                          "Enviar convites",
-                          "Revisar RSVP",
-                          "Fechar buffet",
-                        ].map((step, index) => (
-                          <div
-                            key={step}
-                            className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-[0_10px_24px_rgba(70,56,43,0.05)]"
-                          >
-                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#f2e6d8] text-xs font-semibold text-[#84786b]">
-                              {index + 1}
-                            </div>
-                            <span className="text-sm text-[#4a3f36]">
-                              {step}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4">
-                    {mockups.map((mockup) => (
-                      <div
-                        key={mockup.label}
-                        className={`relative overflow-hidden rounded-[1.9rem] border border-[#eadfd3] bg-white p-3 shadow-[0_18px_50px_rgba(70,56,43,0.08)] ${mockup.widthClass} ${mockup.heightClass}`}
-                      >
-                        <div
-                          className={`h-full rounded-[1.5rem] bg-gradient-to-br ${mockup.accent} p-4`}
-                        >
-                          <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-[0.24em] text-[#907f71]">
-                            <span>{mockup.label}</span>
-                            <span>Marriplan</span>
-                          </div>
-                          <div className="mt-5 space-y-3">
-                            <div className="h-3 w-2/3 rounded-full bg-[#dac7b6]/70" />
-                            <div className="h-3 w-1/2 rounded-full bg-[#e6d7ca]" />
-                            <div className="mt-4 rounded-3xl border border-white/70 bg-white/70 p-4 shadow-[0_10px_24px_rgba(70,56,43,0.06)]">
-                              <div className="h-28 rounded-2xl bg-[linear-gradient(135deg,rgba(196,176,138,0.28),rgba(181,139,122,0.12))]" />
-                              <div className="mt-3 grid gap-2">
-                                <div className="h-3 w-3/4 rounded-full bg-[#d8c6b6]" />
-                                <div className="h-3 w-1/2 rounded-full bg-[#ebe0d5]" />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              <div className="relative flex items-center justify-center">
+                <img
+                  src="/mockup.png"
+                  alt="Mockup do Marriplan"
+                  className="h-auto w-full max-w-[760px] object-contain lg:scale-110 lg:origin-top"
+                />
               </div>
             </div>
           </div>
@@ -321,7 +214,7 @@ export default function HomePage() {
           <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
             <article className="rounded-[2rem] border border-[#eadfd3] bg-[linear-gradient(180deg,#fffaf6_0%,#f7efe5_100%)] p-8 shadow-[0_18px_50px_rgba(70,56,43,0.06)] lg:p-10">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-[#9a8c7f]">
-                Seção emocional
+                Um momento leve
               </p>
               <h2 className="mt-4 font-['Montserrat',sans-serif] text-3xl font-semibold tracking-[-0.03em] text-[#2f2822] sm:text-4xl">
                 Menos planilhas. Mais momentos especiais.
@@ -335,7 +228,7 @@ export default function HomePage() {
 
             <article className="rounded-[2rem] border border-[#eadfd3] bg-white/80 p-8 shadow-[0_18px_50px_rgba(70,56,43,0.06)] lg:p-10">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-[#9a8c7f]">
-                Experiência mobile
+                Experiência
               </p>
               <h2 className="mt-4 font-['Montserrat',sans-serif] text-3xl font-semibold tracking-[-0.03em] text-[#2f2822] sm:text-4xl">
                 O casamento cabe na palma da mão.

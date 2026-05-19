@@ -35,15 +35,33 @@ const PageWithTransition = ({ Component, pageProps }: AppProps) => {
     };
   }, [Component, router.events]);
 
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+
+    if (transitioning) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = previousOverflow;
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [transitioning]);
+
   const Screen = Component;
 
   return (
     <Box pos="relative" w="100%" h="100%">
-      <LoadingOverlay
-        visible={transitioning}
-        zIndex={1000}
-        overlayProps={{ radius: "sm", blur: 2 }}
-      />
+      {transitioning ? (
+        <Box pos="fixed" inset={0} w="100vw" h="100vh" style={{ zIndex: 1000 }}>
+          <LoadingOverlay
+            visible
+            zIndex={1000}
+            overlayProps={{ radius: "sm", blur: 2 }}
+          />
+        </Box>
+      ) : null}
       <Screen {...pageProps} />
       <Toaster />
     </Box>
