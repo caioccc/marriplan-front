@@ -49,6 +49,19 @@ function formatCurrencyInput(value: string) {
   return value.replace(/[^\d,.-]/g, "").replace(",", ".");
 }
 
+const paginationThemeStyles = `
+  .supplier-pagination .mantine-Pagination-control {
+    border-radius: 12px;
+    border-color: var(--marriplan-border);
+    color: var(--marriplan-text);
+  }
+  .supplier-pagination .mantine-Pagination-control[data-active] {
+    background-color: var(--marriplan-rose);
+    border-color: var(--marriplan-rose);
+    color: #fff;
+  }
+`;
+
 const initialWeddingSupplierForm = {
   status: "QUOTING" as const,
   is_favorite: false,
@@ -335,6 +348,7 @@ export default function SuppliersMarketplacePage() {
         {total > 12 ? (
           <Group justify="center">
             <Pagination
+              className="supplier-pagination"
               value={page}
               onChange={setPage}
               total={Math.max(1, Math.ceil(total / 12))}
@@ -504,6 +518,7 @@ export default function SuppliersMarketplacePage() {
           </Group>
         </Stack>
       </Modal>
+      <style>{paginationThemeStyles}</style>
     </BaseLayout>
   );
 }

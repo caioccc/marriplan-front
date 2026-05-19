@@ -1,6 +1,7 @@
 import { Supplier, WeddingSupplier } from "@/services/suppliers";
 import {
   Badge,
+  ActionIcon,
   Box,
   Button,
   Card,
@@ -8,15 +9,19 @@ import {
   Image,
   Menu,
   Stack,
+  Tooltip,
   Text,
 } from "@mantine/core";
 import {
+  IconBrandInstagram,
+  IconBrandWhatsapp,
   IconDotsVertical,
   IconEdit,
   IconHeart,
   IconMapPin,
   IconPaperclip,
-  IconSparkles,
+  IconPhone,
+  IconWorldWww,
   IconTrash,
 } from "@tabler/icons-react";
 
@@ -55,6 +60,142 @@ function getGradientBackground(name: string) {
     .split("")
     .reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return palette[hash % palette.length];
+}
+
+function normalizeExternalUrl(value?: string | null) {
+  if (!value) return "";
+
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed.replace(/^\/+/, "")}`;
+}
+
+function getInstagramUrl(instagram?: string | null) {
+  if (!instagram) return "";
+
+  const trimmed = instagram.trim();
+  if (!trimmed) return "";
+
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+
+  const handle = trimmed.replace(/^@/, "").replace(/^instagram\.com\//i, "");
+  return `https://instagram.com/${handle.replace(/^\/+/, "")}`;
+}
+
+function getWhatsAppUrl(whatsapp?: string | null) {
+  if (!whatsapp) return "";
+
+  const digits = whatsapp.replace(/\D/g, "");
+  if (!digits) return "";
+
+  return `https://wa.me/${digits}`;
+}
+
+function getPhoneUrl(phone?: string | null) {
+  if (!phone) return "";
+
+  const trimmed = phone.trim();
+  if (!trimmed) return "";
+
+  return `tel:${trimmed.replace(/\s+/g, "")}`;
+}
+
+const themeBadgeBaseStyle = {
+  textTransform: "none",
+  fontWeight: 700,
+  letterSpacing: "0.01em",
+  borderRadius: 999,
+} as const;
+
+const locationBadgeStyle = {
+  ...themeBadgeBaseStyle,
+  backgroundColor: "rgba(181, 139, 122, 0.14)",
+  color: "var(--marriplan-rose)",
+  border: "1px solid rgba(181, 139, 122, 0.24)",
+} as const;
+
+const contractBadgeStyle = {
+  ...themeBadgeBaseStyle,
+  backgroundColor: "rgba(200, 176, 138, 0.18)",
+  color: "var(--marriplan-gold)",
+  border: "1px solid rgba(200, 176, 138, 0.3)",
+} as const;
+
+const imageFrameStyle = {
+  borderRadius: 16,
+} as const;
+
+function ContactLinks({ supplier }: { supplier: Supplier }) {
+  const contactActionStyles = {
+    root: {
+      backgroundColor: "var(--marriplan-rose)",
+      color: "#fff",
+      borderRadius: 12,
+      transition: "all 160ms ease",
+      "&:hover": {
+        backgroundColor: "#a57b6c",
+      },
+      "&:focus-visible": {
+        outline: "2px solid rgba(181, 139, 122, 0.45)",
+        outlineOffset: 2,
+      },
+    },
+  } as const;
+
+  const links = [
+    {
+      href: getInstagramUrl(supplier.instagram),
+      label: "Instagram",
+      icon: IconBrandInstagram,
+      target: "_blank" as const,
+      rel: "noopener noreferrer",
+    },
+    {
+      href: getWhatsAppUrl(supplier.whatsapp),
+      label: "WhatsApp",
+      icon: IconBrandWhatsapp,
+      target: "_blank" as const,
+      rel: "noopener noreferrer",
+    },
+    {
+      href: normalizeExternalUrl(supplier.website),
+      label: "Website",
+      icon: IconWorldWww,
+      target: "_blank" as const,
+      rel: "noopener noreferrer",
+    },
+    {
+      href: getPhoneUrl(supplier.phone),
+      label: "Telefone",
+      icon: IconPhone,
+    },
+  ].filter((item) => !!item.href);
+
+  if (!links.length) return null;
+
+  return (
+    <Group gap={8} wrap="nowrap" mt="xs" justify="center">
+      {links.map(({ href, label, icon: Icon, target, rel }) => (
+        <Tooltip key={label} label={label} withArrow>
+          <ActionIcon
+            component="a"
+            href={href}
+            target={target}
+            rel={rel}
+            variant="filled"
+            styles={contactActionStyles}
+            radius="xl"
+            size="lg"
+            aria-label={label}
+          >
+            <Icon size={16} />
+          </ActionIcon>
+        </Tooltip>
+      ))}
+    </Group>
+  );
 }
 
 export function SupplierCard({
@@ -105,6 +246,7 @@ export function SupplierCard({
                 height: cardHeight,
                 objectFit: "cover",
                 display: "block",
+                ...imageFrameStyle,
               }}
             />
           ) : (
@@ -118,6 +260,7 @@ export function SupplierCard({
                 padding: 20,
                 backgroundImage:
                   "radial-gradient(circle at top right, rgba(255,255,255,0.22), transparent 40%), radial-gradient(circle at bottom left, rgba(255,255,255,0.12), transparent 30%)",
+                ...imageFrameStyle,
               }}
             >
               <Text
@@ -220,6 +363,32 @@ export function SupplierCard({
               </Text>
             </Box>
           ) : null}
+
+          {onAdd ? (
+            <Box
+              style={{
+                position: "absolute",
+                left: 12,
+                right: 12,
+                top: 12,
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              <Button
+                size="xs"
+                radius="xl"
+                onClick={() => onAdd(supplier)}
+                style={{
+                  backgroundColor: "var(--marriplan-rose)",
+                  color: "#fff",
+                  boxShadow: "0 10px 24px rgba(181, 139, 122, 0.26)",
+                }}
+              >
+                {weddingSupplier ? "Gerenciar" : "Adicionar ao casamento"}
+              </Button>
+            </Box>
+          ) : null}
         </Box>
       </Card>
     );
@@ -244,6 +413,7 @@ export function SupplierCard({
               objectFit: "cover",
               display: "block",
               filter: weddingSupplier ? "brightness(0.8)" : "none",
+              ...imageFrameStyle,
             }}
           />
         ) : (
@@ -255,6 +425,7 @@ export function SupplierCard({
               alignItems: "center",
               justifyContent: "center",
               padding: 20,
+              ...imageFrameStyle,
             }}
           >
             <Text
@@ -338,13 +509,15 @@ export function SupplierCard({
             {supplier.name}
           </Text>
           <Text size="sm" c="dimmed" lineClamp={2}>
-            {supplier.description ||
-              supplier.company_name ||
-              "Descrição em breve."}
+            {supplier.description || supplier.company_name || ""}
           </Text>
         </Stack>
         <Group gap="xs" wrap="wrap">
-          <Badge variant="light" leftSection={<IconMapPin size={12} />}>
+          <Badge
+            variant="light"
+            leftSection={<IconMapPin size={12} />}
+            style={locationBadgeStyle}
+          >
             {cityLabel}
           </Badge>
           {weddingSupplier?.is_favorite ? (
@@ -358,9 +531,9 @@ export function SupplierCard({
           ) : null}
           {weddingSupplier?.contract_file_url ? (
             <Badge
-              color="blue"
               variant="light"
               leftSection={<IconPaperclip size={12} />}
+              style={contractBadgeStyle}
             >
               Contrato
             </Badge>
@@ -394,24 +567,33 @@ export function SupplierCard({
             </Stack>
           </Group>
         ) : null}
-        <Group gap="xs" justify="space-between" wrap="wrap" mt="xs">
+        <ContactLinks supplier={supplier} />
+        {/* <Group gap="xs" justify="space-between" wrap="wrap" mt="xs">
           <Group gap={6}>
             <IconSparkles size={14} color="var(--marriplan-rose)" />
             <Text size="xs" c="dimmed" lineClamp={1}>
               {categoryLabel}
             </Text>
           </Group>
-          {/* <Group gap={6}>
+          <Group gap={6}>
             <IconCalendar size={14} color="var(--marriplan-gold)" />
             <Text size="xs" c="dimmed">{supplier.created_at ? new Date(supplier.created_at).toLocaleDateString('pt-BR') : 'Novo'}</Text>
-          </Group> */}
-        </Group>
+          </Group>
+        </Group> */}
         <Group grow mt="xs">
           {/* <Button variant="default" radius="xl" onClick={() => onView?.(supplier)}>
             Visualizar
           </Button> */}
           {onAdd ? (
-            <Button radius="xl" onClick={() => onAdd(supplier)}>
+            <Button
+              radius="xl"
+              onClick={() => onAdd(supplier)}
+              style={{
+                backgroundColor: "var(--marriplan-rose)",
+                color: "#fff",
+                boxShadow: "0 10px 24px rgba(181, 139, 122, 0.26)",
+              }}
+            >
               {weddingSupplier ? "Gerenciar" : "Adicionar ao casamento"}
             </Button>
           ) : null}

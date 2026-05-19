@@ -98,6 +98,7 @@ export type UserData = {
   id: number;
   is_2fa_enabled: boolean;
   is_email_confirmed: boolean;
+  wedding_profile?: any;
 };
 
 export type LoginResponse = {

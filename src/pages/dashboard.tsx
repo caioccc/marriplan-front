@@ -420,7 +420,7 @@ const MarriplanDashboard: React.FC = () => {
   return (
     <BaseLayout title="Dashboard">
       <Container size="xl" py="md">
-        <Stack gap="xl">
+        <Stack gap="md">
           <Card
             radius="xl"
             p="xl"

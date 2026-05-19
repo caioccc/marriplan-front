@@ -25,14 +25,14 @@ const handleFetchResponse = async (response: Response) => {
     if (response.status === 401) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = `/login?redirect=${window.location.pathname}`;
+        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}&reason=session_expired`;
         return;
     }
     if (response.status === 403) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         // window.location.href = '/403';
-        window.location.href = `/login?redirect=${window.location.pathname}`;
+        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}&reason=session_expired`;
         return;
     }
     return response;

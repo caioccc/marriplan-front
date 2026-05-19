@@ -63,6 +63,11 @@ export async function listSuppliers(params: Record<string, string | number> = {}
   return data;
 }
 
+export async function listWeddingSuppliersDashboard(params: Record<string, string | number> = {}) {
+  const { data } = await api.get('/api/wedding-suppliers/dashboard/', { params });
+  return data;
+}
+
 export async function getSupplier(id: number) {
   const { data } = await api.get(`/api/suppliers/${id}/`);
   return data;

@@ -1,5 +1,5 @@
 import type {NextPage} from 'next'
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import {Anchor, Button, Divider, Group, PasswordInput, Stack, Text, TextInput} from '@mantine/core';
 import {IconLogin, IconUserPlus} from '@tabler/icons-react';
 import HomeBaseLayout from '@/components/Layout/_HomeBaseLayout'
@@ -19,6 +19,30 @@ const LoginContent: NextPage = () => {
     const {toast} = useToast()
     const {t} = useTranslation();
 
+    useEffect(() => {
+        if (!router.isReady) {
+            return
+        }
+
+        if (router.query.reason === 'session_expired') {
+            toast({
+                title: 'Sua sessão expirou',
+                description: <p>Faça login novamente para continuar.</p>,
+            })
+
+            const query = { ...router.query }
+            delete query.reason
+            router.replace(
+                {
+                    pathname: '/login',
+                    query,
+                },
+                undefined,
+                { shallow: true }
+            )
+        }
+    }, [router, toast])
+
     const schema = z.object({
         email: z.string().email({message: t('login.email_invalid')}),
         password: z.string().min(6, {message: t('login.password_min')}),
@@ -36,6 +60,8 @@ const LoginContent: NextPage = () => {
 
     const handleLogin = (values: FormValues) => {
         setIsLoading(true);
+        // clean all localStorage
+        localStorage.clear();
         login(values)
             .then((data) => {
                 setIsLoading(false);
@@ -46,7 +72,8 @@ const LoginContent: NextPage = () => {
                     return;
                 }
                 toast({title: t('login.login_success')});
-                router.push('/dashboard');
+                const redirect = typeof router.query.redirect === 'string' ? router.query.redirect : '/dashboard'
+                router.push(redirect || '/dashboard');
             })
             .catch(() => {
                 setIsLoading(false);

@@ -58,6 +58,32 @@ const isExternalPage = (path: string) => {
     )
 }
 
+const buildLoginRedirectUrl = (redirectPath: string, reason = 'session_expired') => {
+    return `/login?redirect=${encodeURIComponent(redirectPath)}&reason=${reason}`
+}
+
+const readStoredUser = () => {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+        try {
+            return JSON.parse(storedUser)
+        } catch {
+            return undefined
+        }
+    }
+
+    const storedLocalUser = localStorage.getItem('local_user')
+    if (storedLocalUser) {
+        try {
+            return JSON.parse(storedLocalUser)
+        } catch {
+            return undefined
+        }
+    }
+
+    return undefined
+}
+
 const defaultAuthContextValues: IAuthContext = {
     isAuthenticated: false,
     loading: true,
@@ -82,35 +108,69 @@ const defaultAuthContextValues: IAuthContext = {
 const AuthContext = createContext<IAuthContext>(defaultAuthContextValues)
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-    const [user, setUser] = useState<any>()
+    const [user, setUser] = useState<any>(() => {
+        if (typeof window === 'undefined') {
+            return undefined
+        }
+
+        return readStoredUser()
+    })
     const [loading, setLoading] = useState(true)
 
     const router = useRouter()
 
+    const clearAuthStorage = () => {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        localStorage.removeItem('local_user')
+        localStorage.removeItem('settings')
+    }
+
+    const redirectToLogin = useCallback(() => {
+        const redirectPath = router.asPath || router.pathname || '/'
+        router.replace(buildLoginRedirectUrl(redirectPath))
+    }, [router])
+
     const loadUserFromCookies = useCallback(async () => {
-        try {
-            const token = localStorage.getItem('token')
-            const userSaved = localStorage.getItem('user')
-            if (token && userSaved) {
-                setLoading(false)
-                setUser(JSON.parse(userSaved))
-                // Keep current route; route guards will handle redirects.
-            } else {
-                setLoading(false)
-                localStorage.removeItem('token')
-                localStorage.removeItem('user')
-                localStorage.removeItem('settings')
-                router.push(`/login?redirect=${router.route}`)
-            }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (error) {
+        const token = localStorage.getItem('token')
+        const userSaved = readStoredUser()
+
+        if (!token) {
+            setUser(undefined)
+            clearAuthStorage()
             setLoading(false)
-            localStorage.removeItem('token')
-            localStorage.removeItem('user')
-            localStorage.removeItem('settings')
-            router.push(`/login?redirect=${router.route}`)
+            if (!isExternalPage(router.pathname)) {
+                redirectToLogin()
+            }
+            return
         }
-    }, [])
+
+        try {
+            const { data } = await api.get<UserData>('/api/auth/user/')
+            if (data) {
+                setUser(data)
+                localStorage.setItem('user', JSON.stringify(data))
+            } else if (userSaved) {
+                setUser(userSaved)
+            }
+        } catch (error: any) {
+            const status = error?.response?.status
+
+            if (status === 401) {
+                setUser(undefined)
+                clearAuthStorage()
+                if (!isExternalPage(router.pathname)) {
+                    redirectToLogin()
+                }
+            } else if (userSaved) {
+                setUser(userSaved)
+            } else {
+                setUser(undefined)
+            }
+        } finally {
+            setLoading(false)
+        }
+    }, [redirectToLogin, router.pathname])
 
 
     useEffect(() => {
@@ -119,7 +179,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         } else {
             setLoading(false)
         }
-    }, [])
+    }, [loadUserFromCookies, router.pathname])
 
     const refreshUser = useCallback(async () => {
         try {
@@ -144,7 +204,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             console.error('Error refreshing user:', error)
             setUser(undefined)
         }
-    });
+    }, [])
 
 
     const login = async (body: LoginFormData) => {
@@ -183,9 +243,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const logout = () => {
         setUser(undefined)
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        localStorage.removeItem('local_user')
+        clearAuthStorage()
         destroyCookie(null, 'redirect_route')
     }
 
@@ -249,7 +307,7 @@ export const ProtectedRoute = ({
                 router.push(onboardingRoute)
             }
         }
-    }, [isAuthenticated, loading, pathIsProtected, router.pathname, user])
+    }, [isAuthenticated, loading, pathIsProtected, router, user])
 
     if ((loading || !isAuthenticated) && pathIsProtected) {
         return (

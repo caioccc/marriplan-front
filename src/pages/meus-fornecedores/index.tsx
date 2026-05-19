@@ -14,7 +14,6 @@ import {
 import {
   inputStyles,
   primaryButtonStyles,
-  segmentedTabsStyles,
   softButtonStyles,
 } from "@/styles";
 import {
@@ -24,49 +23,29 @@ import {
   Group,
   Loader,
   Modal,
-  Pagination,
   Select,
   SimpleGrid,
   Stack,
   Text,
   TextInput,
   Title,
-  SegmentedControl,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import {
-  IconCards,
-  IconPlus,
-  IconSearch,
-  IconTable,
-} from "@tabler/icons-react";
-import { DataTable } from "mantine-datatable";
+import { IconPlus, IconSearch } from "@tabler/icons-react";
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
-
-function formatCurrency(value?: string | number | null) {
-  if (value === undefined || value === null || value === "")
-    return "A combinar";
-  const numeric = typeof value === "number" ? value : Number(value);
-  if (Number.isNaN(numeric)) return "A combinar";
-  return numeric.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-}
+import { useEffect, useRef, useState } from "react";
 
 export default function MySuppliersPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [items, setItems] = useState<WeddingSupplier[]>([]);
   const [categories, setCategories] = useState<SupplierCategory[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [favoriteOnly, setFavoriteOnly] = useState(false);
-  const [viewMode, setViewMode] = useState<"table" | "cards" | "gallery">(
-    "cards",
-  );
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
@@ -80,11 +59,15 @@ export default function MySuppliersPage() {
   const [supplierToRemove, setSupplierToRemove] =
     useState<WeddingSupplier | null>(null);
   const pageSize = 12;
+  const hasMore = items.length < total;
+  const initialLoading = loading && items.length === 0;
+  const loadingMore = loading && items.length > 0;
 
   useEffect(() => {
     let mounted = true;
     async function load() {
       setLoading(true);
+      setLoadError(false);
       try {
         const [weddingData, categoriesData] = await Promise.all([
           listWeddingSuppliers({
@@ -98,9 +81,20 @@ export default function MySuppliersPage() {
           listSupplierCategories(),
         ]);
         if (!mounted) return;
-        setItems(weddingData.results || []);
+        const results = weddingData.results || [];
+        setItems((currentItems) =>
+          page === 1 ? results : [...currentItems, ...results],
+        );
         setTotal(weddingData.count || 0);
         setCategories(categoriesData.results || categoriesData || []);
+      } catch {
+        if (mounted) {
+          setLoadError(true);
+          notifications.show({
+            color: "red",
+            message: "Não foi possível carregar mais fornecedores.",
+          });
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -110,6 +104,25 @@ export default function MySuppliersPage() {
       mounted = false;
     };
   }, [page, search, status, favoriteOnly]);
+
+  useEffect(() => {
+    const sentinel = loadMoreRef.current;
+
+    if (!sentinel || !hasMore || loading || loadError) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting) {
+          setPage((currentPage) => currentPage + 1);
+        }
+      },
+      { rootMargin: "240px 0px" },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loading, loadError]);
 
   const handleOpenEditSupplier = (supplier: Supplier) => {
     setSelectedSupplier(supplier);
@@ -154,20 +167,6 @@ export default function MySuppliersPage() {
       });
     }
   };
-
-  const rows = useMemo(
-    () =>
-      items.map((item) => ({
-        ...item,
-        supplier_name: item.supplier_detail?.name || "-",
-        category_name: item.supplier_detail?.category_detail?.name || "-",
-        location:
-          [item.supplier_detail?.city, item.supplier_detail?.state]
-            .filter(Boolean)
-            .join(" • ") || "-",
-      })),
-    [items],
-  );
 
   return (
     <BaseLayout>
@@ -248,7 +247,7 @@ export default function MySuppliersPage() {
           }
         />
 
-        {loading ? (
+        {initialLoading ? (
           <Card radius="xl" p="xl" withBorder>
             <Group justify="center" py="xl">
               <Loader />
@@ -296,14 +295,26 @@ export default function MySuppliersPage() {
           </SimpleGrid>
         )}
 
-        {total > pageSize ? (
-          <Group justify="center">
-            <Pagination
-              value={page}
-              onChange={setPage}
-              total={Math.max(1, Math.ceil(total / pageSize))}
-            />
-          </Group>
+        {items.length > 0 ? (
+          <Stack gap="sm" align="center" py="md">
+            <div ref={loadMoreRef} />
+            {loadingMore ? (
+              <Group gap="sm" py="sm">
+                <Loader size="sm" />
+                <Text size="sm" c="dimmed">
+                  Carregando mais fornecedores
+                </Text>
+              </Group>
+            ) : hasMore ? (
+              <Text size="sm" c="dimmed">
+                Role para carregar mais
+              </Text>
+            ) : (
+              <Text size="sm" c="dimmed">
+                Você chegou ao fim da lista
+              </Text>
+            )}
+          </Stack>
         ) : null}
       </Stack>
 

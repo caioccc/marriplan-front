@@ -44,6 +44,10 @@ api.interceptors.request.use((config) => {
 
 const ROUTES_WITHOUT_TOKEN = ['/login', '/register']
 
+const buildLoginRedirectUrl = (pathname: string) => {
+    return `/login?redirect=${encodeURIComponent(pathname)}&reason=session_expired`
+}
+
 api.interceptors.response.use(
     (response) => {
         return response
@@ -53,7 +57,7 @@ api.interceptors.response.use(
             if (ROUTES_WITHOUT_TOKEN.indexOf(window.location.pathname) === -1) {
                 localStorage.removeItem('token')
                 localStorage.removeItem("user");
-                window.location.href = `/login?redirect=${window.location.pathname}`;
+                window.location.href = buildLoginRedirectUrl(window.location.pathname);
             }
         }
         if (error.response?.status === HttpStatusCode.Forbidden) {

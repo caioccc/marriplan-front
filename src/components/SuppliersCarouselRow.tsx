@@ -1,5 +1,8 @@
 import { SupplierCard } from "@/components/SupplierCard";
-import { listWeddingSuppliers, WeddingSupplier } from "@/services/suppliers";
+import {
+  listWeddingSuppliersDashboard,
+  WeddingSupplier,
+} from "@/services/suppliers";
 import { Carousel } from "@mantine/carousel";
 import { Box, Stack, Title } from "@mantine/core";
 import Autoplay from "embla-carousel-autoplay";
@@ -20,8 +23,7 @@ export function SuppliersCarouselRow() {
     async function load() {
       setLoading(true);
       try {
-        const data = await listWeddingSuppliers({
-          page_size: 12,
+        const data = await listWeddingSuppliersDashboard({
           ordering: "-updated_at",
         });
         if (mounted) {
@@ -42,9 +44,9 @@ export function SuppliersCarouselRow() {
   }
 
   return (
-    <Box w="100%" mt="xl">
+    <Box w="100%">
       <Stack gap="md">
-        <Box>
+        <Box px="md">
           <Title order={3}>Meus fornecedores</Title>
         </Box>
         <Carousel
