@@ -5,6 +5,7 @@ export type ChecklistTaskPriority = 'high' | 'medium' | 'low';
 export interface ChecklistTask {
   id: number;
   month: number;
+  days_before_event: number | null;
   description: string;
   start_date: string;
   due_date: string;

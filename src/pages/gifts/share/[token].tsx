@@ -1,8 +1,10 @@
+import PageSectionHeader from "@/components/PageSectionHeader";
 import PublicGiftListLayout from "@/components/Layout/PublicGiftListLayout";
 import PublicGiftReserveModal from "@/components/PublicGiftReserveModal";
 import api from "@/services/api";
 import { giftsService } from "@/services/giftsService";
 import { Gift } from "@/types/gift";
+import { primaryButtonStyles, segmentedTabsStyles, softButtonStyles } from "@/styles";
 import {
   Badge,
   Box,
@@ -18,6 +20,7 @@ import {
   RangeSlider,
   ScrollArea,
   SegmentedControl,
+  SimpleGrid,
   Stack,
   Switch,
   Text,
@@ -30,17 +33,12 @@ import {
   IconSortDescending
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const STATUS_LABELS: Record<string, string> = {
   available: "Disponível",
   purchased: "Comprado",
   reserved: "Reservado",
-};
-const STATUS_COLORS: Record<string, string> = {
-  available: "green",
-  purchased: "gray",
-  reserved: "yellow",
 };
 const CATEGORY_LABELS: Record<string, string> = {
   kitchen: "Cozinha",
@@ -58,7 +56,40 @@ function formatCurrency(value: number | string) {
     : "R$ 0,00";
 }
 
-import { useCallback } from "react";
+const sharePaginationStyles = `
+  .share-pagination .mantine-Pagination-control {
+    border-radius: 12px;
+    border-color: var(--marriplan-border);
+    color: var(--marriplan-text);
+  }
+
+  .share-pagination .mantine-Pagination-control[data-active] {
+    background-color: var(--marriplan-rose);
+    border-color: var(--marriplan-rose);
+    color: #fff;
+  }
+`;
+
+function getStatusBadgeStyle(status: string) {
+  if (status === "available") {
+    return {
+      backgroundColor: "var(--marriplan-rose)",
+      color: "#fff",
+    };
+  }
+
+  if (status === "reserved") {
+    return {
+      backgroundColor: "rgba(242, 230, 216, 0.95)",
+      color: "var(--marriplan-text)",
+    };
+  }
+
+  return {
+    backgroundColor: "var(--marriplan-border)",
+    color: "var(--marriplan-text)",
+  };
+}
 
 type WeddingProfileLite = {
   nome_noivo?: string;
@@ -110,6 +141,7 @@ export default function GiftsSharePage() {
   >([]);
   const [reservationLinksOpen, setReservationLinksOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const isCompactLayout = useMediaQuery("(max-width: 1024px)");
 
   // Buscar presentes e opções de filtro
   useEffect(() => {
@@ -291,119 +323,123 @@ export default function GiftsSharePage() {
       onSearch={handleSearch}
       filters={filters}
     >
-      <Box>
-        <Title order={2} mb="md" style={{ textAlign: "left" }}>
-          {coupleTitle}
-        </Title>
+      <Stack gap="lg">
+        <PageSectionHeader
+          eyebrow="Catálogo compartilhável"
+          title={coupleTitle}
+          description="Veja os presentes disponíveis, organize por data ou preço e reserve sem sair da página."
+        />
 
         <Group
           justify="space-between"
           align="center"
           mb="md"
-          style={isMobile ? { flexDirection: "column", gap: 12 } : {}}
+          style={isCompactLayout ? { flexDirection: "column", gap: 12 } : {}}
         >
           <div
             style={
-              isMobile
+              isCompactLayout
                 ? { width: "100%", display: "flex", justifyContent: "center" }
                 : {}
             }
           >
-            <SegmentedControl
-              value={ordering}
-              onChange={(value) => handleOrdering(value as typeof ordering)}
-              data={[
-                {
-                  value: "recent",
-                  label: (
-                    <Tooltip label="Mais recente" withArrow position="top">
-                      {isMobile ? (
-                        <IconClock size={18} />
-                      ) : (
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                          }}
-                        >
-                          <IconClock size={16} style={{ marginRight: 4 }} />
-                          Mais recente
-                        </span>
-                      )}
-                    </Tooltip>
-                  ),
-                },
-                {
-                  value: "oldest",
-                  label: (
-                    <Tooltip label="Mais antigo" withArrow position="top">
-                      {isMobile ? (
-                        <IconCalendar size={18} />
-                      ) : (
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                          }}
-                        >
-                          <IconCalendar size={16} style={{ marginRight: 4 }} />
-                          Mais antigo
-                        </span>
-                      )}
-                    </Tooltip>
-                  ),
-                },
-                {
-                  value: "price_asc",
-                  label: (
-                    <Tooltip label="Preço crescente" withArrow position="top">
-                      {isMobile ? (
-                        <IconSortAscending size={18} />
-                      ) : (
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                          }}
-                        >
-                          <IconSortAscending
-                            size={16}
-                            style={{ marginRight: 4 }}
-                          />
-                          Preço crescente
-                        </span>
-                      )}
-                    </Tooltip>
-                  ),
-                },
-                {
-                  value: "price_desc",
-                  label: (
-                    <Tooltip label="Preço decrescente" withArrow position="top">
-                      {isMobile ? (
-                        <IconSortDescending size={18} />
-                      ) : (
-                        <span
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                          }}
-                        >
-                          <IconSortDescending
-                            size={16}
-                            style={{ marginRight: 4 }}
-                          />
-                          Preço decrescente
-                        </span>
-                      )}
-                    </Tooltip>
-                  ),
-                },
-              ]}
-              color="blue"
-              size="md"
-              radius="md"
-            />
+            {!isCompactLayout && (
+              <SegmentedControl
+                value={ordering}
+                onChange={(value) => handleOrdering(value as typeof ordering)}
+                data={[
+                  {
+                    value: "recent",
+                    label: (
+                      <Tooltip label="Mais recente" withArrow position="top">
+                        {isMobile ? (
+                          <IconClock size={18} />
+                        ) : (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                            }}
+                          >
+                            <IconClock size={16} style={{ marginRight: 4 }} />
+                            Mais recente
+                          </span>
+                        )}
+                      </Tooltip>
+                    ),
+                  },
+                  {
+                    value: "oldest",
+                    label: (
+                      <Tooltip label="Mais antigo" withArrow position="top">
+                        {isMobile ? (
+                          <IconCalendar size={18} />
+                        ) : (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                            }}
+                          >
+                            <IconCalendar size={16} style={{ marginRight: 4 }} />
+                            Mais antigo
+                          </span>
+                        )}
+                      </Tooltip>
+                    ),
+                  },
+                  {
+                    value: "price_asc",
+                    label: (
+                      <Tooltip label="Preço crescente" withArrow position="top">
+                        {isMobile ? (
+                          <IconSortAscending size={18} />
+                        ) : (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                            }}
+                          >
+                            <IconSortAscending
+                              size={16}
+                              style={{ marginRight: 4 }}
+                            />
+                            Preço crescente
+                          </span>
+                        )}
+                      </Tooltip>
+                    ),
+                  },
+                  {
+                    value: "price_desc",
+                    label: (
+                      <Tooltip label="Preço decrescente" withArrow position="top">
+                        {isMobile ? (
+                          <IconSortDescending size={18} />
+                        ) : (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                            }}
+                          >
+                            <IconSortDescending
+                              size={16}
+                              style={{ marginRight: 4 }}
+                            />
+                            Preço decrescente
+                          </span>
+                        )}
+                      </Tooltip>
+                    ),
+                  },
+                ]}
+                styles={segmentedTabsStyles}
+                size="md"
+                radius="md"
+              />
+            )}
           </div>
           <Tooltip
             label="Quantidade total de presentes encontrados"
@@ -420,7 +456,7 @@ export default function GiftsSharePage() {
             <Loader size="lg" />
           </Group>
         ) : (
-          <Group wrap="wrap" gap="md">
+          <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="md">
             {gifts.length === 0 && (
               <Text color="dimmed">Nenhum presente encontrado.</Text>
             )}
@@ -433,7 +469,12 @@ export default function GiftsSharePage() {
                   padding="lg"
                   radius="md"
                   withBorder
-                  style={{ width: 320, opacity: isLocked ? 0.7 : 1 }}
+                  style={{
+                    width: "100%",
+                    opacity: isLocked ? 0.7 : 1,
+                    background: "var(--marriplan-surface)",
+                    borderColor: "var(--marriplan-border)",
+                  }}
                 >
                   <Box
                     style={{
@@ -527,15 +568,7 @@ export default function GiftsSharePage() {
                     </Text>
                   )}
                   <Group mt="xs" justify="space-between" align="center">
-                    <Badge
-                      color={
-                        gift.status === "available"
-                          ? STATUS_COLORS[gift.status] || "gray"
-                          : gift.status === "reserved"
-                          ? "yellow"
-                          : "gray"
-                      }
-                    >
+                    <Badge style={getStatusBadgeStyle(gift.status)}>
                       {STATUS_LABELS[gift.status] || gift.status}
                     </Badge>
                     {gift.link && !isLocked && (
@@ -551,8 +584,7 @@ export default function GiftsSharePage() {
                           rel="noopener noreferrer"
                           leftSection={<IconExternalLink size={16} />}
                           size="xs"
-                          variant="light"
-                          color="blue"
+                          styles={softButtonStyles}
                         >
                           Ver Produto
                         </Button>
@@ -563,7 +595,7 @@ export default function GiftsSharePage() {
                     <Button
                       fullWidth
                       mt="md"
-                      variant="light"
+                      styles={primaryButtonStyles}
                       onClick={() => {
                         setSelectedGift(gift);
                         setReserveModalOpen(true);
@@ -575,11 +607,12 @@ export default function GiftsSharePage() {
                 </Card>
               );
             })}
-          </Group>
+          </SimpleGrid>
         )}
         <Group justify="center" mt="lg">
           <Tooltip label="Paginação dos presentes" withArrow position="top">
             <Pagination
+              className="share-pagination"
               total={Math.ceil(total / pageSize)}
               value={page}
               onChange={setPage}
@@ -616,6 +649,7 @@ export default function GiftsSharePage() {
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                styles={softButtonStyles}
               >
                 Abrir WhatsApp do {link.label}
               </Button>
@@ -627,7 +661,8 @@ export default function GiftsSharePage() {
             )}
           </Stack>
         </Modal>
-      </Box>
+        <style>{sharePaginationStyles}</style>
+      </Stack>
     </PublicGiftListLayout>
   );
 }

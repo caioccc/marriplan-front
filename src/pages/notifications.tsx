@@ -11,38 +11,64 @@ import {
   removeNotification,
 } from "@/services/notifications";
 import { primaryButtonStyles, softButtonStyles } from "@/styles";
-import { Box, Button, Group, Text, Title, Tooltip } from "@mantine/core";
-import { IconBell, IconEye, IconEyeOff, IconTrash } from "@tabler/icons-react";
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Group,
+  Menu,
+  Text,
+  Title,
+  Tooltip,
+} from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
+import {
+  IconBell,
+  IconDotsVertical,
+  IconEye,
+  IconEyeOff,
+  IconTrash,
+} from "@tabler/icons-react";
 import { DataTable } from "mantine-datatable";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+type NotificationItem = {
+  id: number | string;
+  type: string;
+  title: string;
+  message: string;
+  created_at: string;
+  is_read: boolean;
+};
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [total, setTotal] = useState(0);
+  const isCompactLayout = useMediaQuery("(max-width: 1024px)");
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     setLoading(true);
     const data = await fetchNotifications(page, pageSize);
-    setNotifications(data.results);
+    setNotifications(data.results ?? []);
     setTotal(data.count);
     setLoading(false);
-  };
+  }, [page, pageSize]);
 
   useEffect(() => {
     loadNotifications();
-  }, [page, pageSize]);
+  }, [loadNotifications]);
 
-  const handleMarkAsRead = async (id) => {
+  const handleMarkAsRead = async (id: number | string) => {
     await markAsRead(id);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
     );
   };
 
-  const handleMarkAsUnread = async (id) => {
+  const handleMarkAsUnread = async (id: number | string) => {
     await markAsUnread(id);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: false } : n)),
@@ -59,7 +85,7 @@ export default function NotificationsPage() {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: false })));
   };
 
-  const handleRemoveNotification = async (id) => {
+  const handleRemoveNotification = async (id: number | string) => {
     await removeNotification(id);
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
@@ -78,6 +104,183 @@ export default function NotificationsPage() {
       ? "yellow"
       : "blue";
   };
+
+  const tableColumns = isCompactLayout
+    ? [
+        {
+          accessor: "type",
+          title: "Tipo",
+          render: (n) => <AnimatedTargetDot color={getColor(n.type)} />,
+        },
+        {
+          accessor: "message",
+          title: "Mensagem",
+          render: (n) => (
+            <Tooltip label={n.message} withArrow>
+              <Text
+                style={
+                  n.is_read
+                    ? { textDecoration: "line-through", color: "#adb5bd" }
+                    : {}
+                }
+              >
+                {truncate(n.message, 30)}
+              </Text>
+            </Tooltip>
+          ),
+        },
+        {
+          accessor: "actions",
+          title: "Ações",
+          render: (n) =>
+            isCompactLayout ? (
+              <Menu shadow="md" width={220} position="bottom-end">
+                <Menu.Target>
+                  <ActionIcon
+                    variant="subtle"
+                    aria-label="Ações da notificação"
+                    style={{ color: "var(--marriplan-text)" }}
+                  >
+                    <IconDotsVertical size={18} />
+                  </ActionIcon>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  {n.is_read ? (
+                    <Menu.Item
+                      leftSection={<IconEyeOff size={16} />}
+                      onClick={() => handleMarkAsUnread(n.id)}
+                    >
+                      Marcar como não lida
+                    </Menu.Item>
+                  ) : (
+                    <Menu.Item
+                      leftSection={<IconEye size={16} />}
+                      onClick={() => handleMarkAsRead(n.id)}
+                    >
+                      Marcar como lida
+                    </Menu.Item>
+                  )}
+                  <Menu.Item
+                    leftSection={<IconTrash size={16} />}
+                    onClick={() => handleRemoveNotification(n.id)}
+                    color="red"
+                  >
+                    Excluir
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            ) : (
+              <Group gap="xs">
+                {n.is_read ? (
+                  <Button
+                    size="compact-xs"
+                    variant="subtle"
+                    onClick={() => handleMarkAsUnread(n.id)}
+                    styles={softButtonStyles}
+                  >
+                    <IconEyeOff size={18} />
+                  </Button>
+                ) : (
+                  <Button
+                    size="compact-xs"
+                    variant="subtle"
+                    onClick={() => handleMarkAsRead(n.id)}
+                    styles={primaryButtonStyles}
+                  >
+                    <IconEye size={18} />
+                  </Button>
+                )}
+                <Button
+                  size="compact-xs"
+                  variant="subtle"
+                  onClick={() => handleRemoveNotification(n.id)}
+                  styles={destructiveButtonStyles}
+                >
+                  <IconTrash size={18} />
+                </Button>
+              </Group>
+            ),
+        },
+      ]
+    : [
+        {
+          accessor: "type",
+          title: "Tipo",
+          render: (n) => <AnimatedTargetDot color={getColor(n.type)} />,
+        },
+        {
+          accessor: "title",
+          title: "Título",
+          render: (n) => (
+            <Text
+              style={
+                n.is_read
+                  ? { textDecoration: "line-through", color: "#adb5bd" }
+                  : {}
+              }
+            >
+              {truncate(n.title, 30)}
+            </Text>
+          ),
+        },
+        {
+          accessor: "message",
+          title: "Mensagem",
+          render: (n) => (
+            <Tooltip label={n.message} withArrow>
+              <Text
+                style={
+                  n.is_read
+                    ? { textDecoration: "line-through", color: "#adb5bd" }
+                    : {}
+                }
+              >
+                {truncate(n.message, 30)}
+              </Text>
+            </Tooltip>
+          ),
+        },
+        {
+          accessor: "created_at",
+          title: "Data/Hora",
+          render: (n) => new Date(n.created_at).toLocaleString(),
+        },
+        {
+          accessor: "actions",
+          title: "Ações",
+          render: (n) => (
+            <Group gap="xs">
+              {n.is_read ? (
+                <Button
+                  size="compact-xs"
+                  variant="subtle"
+                  onClick={() => handleMarkAsUnread(n.id)}
+                  styles={softButtonStyles}
+                >
+                  <IconEyeOff size={18} />
+                </Button>
+              ) : (
+                <Button
+                  size="compact-xs"
+                  variant="subtle"
+                  onClick={() => handleMarkAsRead(n.id)}
+                  styles={primaryButtonStyles}
+                >
+                  <IconEye size={18} />
+                </Button>
+              )}
+              <Button
+                size="compact-xs"
+                variant="subtle"
+                onClick={() => handleRemoveNotification(n.id)}
+                styles={destructiveButtonStyles}
+              >
+                <IconTrash size={18} />
+              </Button>
+            </Group>
+          ),
+        },
+      ];
 
   const pageStyles = {
     root: {
@@ -162,87 +365,8 @@ export default function NotificationsPage() {
         >
           <DataTable
             className="notifications-table"
-            columns={[
-              {
-                accessor: "type",
-                title: "Tipo",
-                render: (n) => <AnimatedTargetDot color={getColor(n.type)} />,
-              },
-              {
-                accessor: "title",
-                title: "Título",
-                render: (n) => (
-                  <Text
-                    style={
-                      n.is_read
-                        ? { textDecoration: "line-through", color: "#adb5bd" }
-                        : {}
-                    }
-                  >
-                    {truncate(n.title, 30)}
-                  </Text>
-                ),
-              },
-              {
-                accessor: "message",
-                title: "Mensagem",
-                render: (n) => (
-                  <Tooltip label={n.message} withArrow>
-                    <Text
-                      style={
-                        n.is_read
-                          ? { textDecoration: "line-through", color: "#adb5bd" }
-                          : {}
-                      }
-                    >
-                      {truncate(n.message, 30)}
-                    </Text>
-                  </Tooltip>
-                ),
-              },
-              {
-                accessor: "created_at",
-                title: "Data/Hora",
-                render: (n) => new Date(n.created_at).toLocaleString(),
-              },
-              {
-                accessor: "actions",
-                title: "Ações",
-                render: (n) => (
-                  <Group spacing="compact-xs">
-                    {n.is_read ? (
-                      <Button
-                        size="compact-xs"
-                        variant="subtle"
-                        onClick={() => handleMarkAsUnread(n.id)}
-                        styles={softButtonStyles}
-                      >
-                        <IconEyeOff size={18} />
-                      </Button>
-                    ) : (
-                      <Button
-                        size="compact-xs"
-                        variant="subtle"
-                        onClick={() => handleMarkAsRead(n.id)}
-                        styles={primaryButtonStyles}
-                      >
-                        <IconEye size={18} />
-                      </Button>
-                    )}
-                    <Button
-                      size="compact-xs"
-                      variant="subtle"
-                      onClick={() => handleRemoveNotification(n.id)}
-                      styles={destructiveButtonStyles}
-                    >
-                      <IconTrash size={18} />
-                    </Button>
-                  </Group>
-                ),
-              },
-            ]}
+            columns={tableColumns}
             records={notifications}
-            withBorder
             highlightOnHover
             fetching={loading}
             totalRecords={total}

@@ -13,11 +13,13 @@ import {
 } from "@/services/suppliers";
 import {
   inputStyles,
+  actionIconStyles,
   primaryButtonStyles,
   softButtonStyles,
 } from "@/styles";
 import {
   Badge,
+  ActionIcon,
   Button,
   Card,
   Group,
@@ -31,9 +33,10 @@ import {
   Title,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { IconPlus, IconSearch } from "@tabler/icons-react";
+import { IconFilter, IconPlus, IconSearch } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
+import { useMediaQuery } from "@mantine/hooks";
 
 export default function MySuppliersPage() {
   const router = useRouter();
@@ -46,6 +49,9 @@ export default function MySuppliersPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [favoriteOnly, setFavoriteOnly] = useState(false);
+  const [draftStatus, setDraftStatus] = useState("");
+  const [draftFavoriteOnly, setDraftFavoriteOnly] = useState(false);
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
@@ -62,6 +68,14 @@ export default function MySuppliersPage() {
   const hasMore = items.length < total;
   const initialLoading = loading && items.length === 0;
   const loadingMore = loading && items.length > 0;
+  const isCompactLayout = useMediaQuery("(max-width: 1024px)");
+
+  useEffect(() => {
+    if (advancedFiltersOpen) {
+      setDraftStatus(status);
+      setDraftFavoriteOnly(favoriteOnly);
+    }
+  }, [advancedFiltersOpen, status, favoriteOnly]);
 
   useEffect(() => {
     let mounted = true;
@@ -178,24 +192,17 @@ export default function MySuppliersPage() {
           actions={
             <Group gap="sm">
               <Button
-                variant="default"
-                styles={softButtonStyles}
-                onClick={() => router.push("/meus-fornecedores/fornecedores")}
-              >
-                Ir ao marketplace
-              </Button>
-              <Button
-                leftSection={<IconPlus size={18} />}
                 styles={primaryButtonStyles}
                 onClick={() => router.push("/meus-fornecedores/fornecedores")}
+                leftSection={<IconPlus size={18} />}
               >
-                Adicionar fornecedor
+                Ir ao Marketplace
               </Button>
             </Group>
           }
           filters={
             <Stack gap="md">
-              <Group grow align="flex-end" wrap="wrap">
+              <Group gap="sm" align="flex-end" wrap="nowrap">
                 <TextInput
                   label="Buscar"
                   placeholder="Nome do fornecedor"
@@ -205,38 +212,53 @@ export default function MySuppliersPage() {
                     setSearch(event.currentTarget.value);
                     setPage(1);
                   }}
+                  style={{ flex: 1, minWidth: 0 }}
                   styles={inputStyles}
                 />
-                <Select
-                  label="Status"
-                  data={[
-                    { value: "", label: "Todos" },
-                    { value: "QUOTING", label: "Cotando" },
-                    { value: "NEGOTIATING", label: "Negociando" },
-                    { value: "HIRED", label: "Contratado" },
-                    { value: "PAID", label: "Pago" },
-                    { value: "CANCELED", label: "Cancelado" },
-                  ]}
-                  value={status}
-                  onChange={(value) => {
-                    setStatus(value || "");
-                    setPage(1);
-                  }}
-                  styles={inputStyles}
-                />
-                <Select
-                  label="Favoritos"
-                  data={[
-                    { value: "all", label: "Todos" },
-                    { value: "only", label: "Somente favoritos" },
-                  ]}
-                  value={favoriteOnly ? "only" : "all"}
-                  onChange={(value) => {
-                    setFavoriteOnly(value === "only");
-                    setPage(1);
-                  }}
-                  styles={inputStyles}
-                />
+                {isCompactLayout ? (
+                  <ActionIcon
+                    aria-label="Abrir filtros avançados"
+                    onClick={() => setAdvancedFiltersOpen(true)}
+                    styles={actionIconStyles}
+                    size="lg"
+                    variant="light"
+                  >
+                    <IconFilter size={16} />
+                  </ActionIcon>
+                ) : (
+                  <>
+                    <Select
+                      label="Status"
+                      data={[
+                        { value: "", label: "Todos" },
+                        { value: "QUOTING", label: "Cotando" },
+                        { value: "NEGOTIATING", label: "Negociando" },
+                        { value: "HIRED", label: "Contratado" },
+                        { value: "PAID", label: "Pago" },
+                        { value: "CANCELED", label: "Cancelado" },
+                      ]}
+                      value={status}
+                      onChange={(value) => {
+                        setStatus(value || "");
+                        setPage(1);
+                      }}
+                      styles={inputStyles}
+                    />
+                    <Select
+                      label="Favoritos"
+                      data={[
+                        { value: "all", label: "Todos" },
+                        { value: "only", label: "Somente favoritos" },
+                      ]}
+                      value={favoriteOnly ? "only" : "all"}
+                      onChange={(value) => {
+                        setFavoriteOnly(value === "only");
+                        setPage(1);
+                      }}
+                      styles={inputStyles}
+                    />
+                  </>
+                )}
               </Group>
               <Group justify="space-between" wrap="wrap">
                 <Text size="sm" c="dimmed">
@@ -326,6 +348,68 @@ export default function MySuppliersPage() {
         onClose={() => setSupplierModalOpen(false)}
         onSaved={handleSavedSupplier}
       />
+
+      <Modal
+        opened={advancedFiltersOpen}
+        onClose={() => setAdvancedFiltersOpen(false)}
+        title="Filtros avançados"
+        centered
+        size="sm"
+      >
+        <Stack gap="md">
+          <Select
+            label="Status"
+            data={[
+              { value: "", label: "Todos" },
+              { value: "QUOTING", label: "Cotando" },
+              { value: "NEGOTIATING", label: "Negociando" },
+              { value: "HIRED", label: "Contratado" },
+              { value: "PAID", label: "Pago" },
+              { value: "CANCELED", label: "Cancelado" },
+            ]}
+            value={draftStatus}
+            onChange={(value) => setDraftStatus(value || "")}
+            styles={inputStyles}
+          />
+          <Select
+            label="Favoritos"
+            data={[
+              { value: "all", label: "Todos" },
+              { value: "only", label: "Somente favoritos" },
+            ]}
+            value={draftFavoriteOnly ? "only" : "all"}
+            onChange={(value) => setDraftFavoriteOnly(value === "only")}
+            styles={inputStyles}
+          />
+          <Group justify="space-between" mt="sm">
+            <Button
+              variant="light"
+              styles={softButtonStyles}
+              onClick={() => {
+                setDraftStatus("");
+                setDraftFavoriteOnly(false);
+                setStatus("");
+                setFavoriteOnly(false);
+                setPage(1);
+                setAdvancedFiltersOpen(false);
+              }}
+            >
+              Limpar filtros
+            </Button>
+            <Button
+              styles={primaryButtonStyles}
+              onClick={() => {
+                setStatus(draftStatus);
+                setFavoriteOnly(draftFavoriteOnly);
+                setPage(1);
+                setAdvancedFiltersOpen(false);
+              }}
+            >
+              Aplicar filtros
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={removeModalOpen}

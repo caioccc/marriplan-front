@@ -19,6 +19,7 @@ import {
     TextInput
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import { useMediaQuery } from "@mantine/hooks";
 import { useEffect, useMemo, useState } from "react";
 
 type SupplierFormModalProps = {
@@ -102,6 +103,7 @@ export function SupplierFormModal({
 }: SupplierFormModalProps) {
   const [form, setForm] = useState<SupplierFormState>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const isCompactLayout = useMediaQuery("(max-width: 1024px)");
 
   const categoryOptions = useMemo(
     () =>
@@ -158,7 +160,7 @@ export function SupplierFormModal({
       });
       onSaved?.(saved);
       onClose();
-    } catch (error) {
+    } catch {
       notifications.show({
         color: "red",
         message:
@@ -191,150 +193,296 @@ export function SupplierFormModal({
           </Badge> */}
         </Group>
 
-        <Select
-          label="Categoria"
-          data={categoryOptions}
-          value={form.category_id}
-          onChange={(value) =>
-            setForm((prev) => ({ ...prev, category_id: value || "" }))
-          }
-          required
-          styles={inputStyles}
-        />
+        {isCompactLayout ? (
+          <Stack gap="md">
+            <Select
+              label="Categoria"
+              data={categoryOptions}
+              value={form.category_id}
+              onChange={(value) =>
+                setForm((prev) => ({ ...prev, category_id: value || "" }))
+              }
+              required
+              styles={inputStyles}
+            />
 
-        <Group grow align="flex-start" wrap="wrap">
-          <TextInput
-            label="Nome"
-            value={form.name}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, name: event.currentTarget.value }))
-            }
-            required
-            styles={inputStyles}
-          />
-          <TextInput
-            label="Empresa"
-            value={form.company_name}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                company_name: event.currentTarget.value,
-              }))
-            }
-            styles={inputStyles}
-          />
-        </Group>
+            <TextInput
+              label="Nome"
+              value={form.name}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, name: event.currentTarget.value }))
+              }
+              required
+              styles={inputStyles}
+            />
 
-        <Textarea
-          label="Descrição"
-          minRows={3}
-          value={form.description}
-          onChange={(event) =>
-            setForm((prev) => ({
-              ...prev,
-              description: event.currentTarget.value,
-            }))
-          }
-          styles={inputStyles}
-        />
+            <TextInput
+              label="Empresa"
+              value={form.company_name}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  company_name: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
 
-        <Group grow align="flex-start" wrap="wrap">
-          <TextInput
-            label="Telefone"
-            value={form.phone}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, phone: event.currentTarget.value }))
-            }
-            styles={inputStyles}
-          />
-          <TextInput
-            label="WhatsApp"
-            value={form.whatsapp}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                whatsapp: event.currentTarget.value,
-              }))
-            }
-            styles={inputStyles}
-          />
-        </Group>
+            <Textarea
+              label="Descrição"
+              minRows={3}
+              value={form.description}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  description: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
 
-        <Group grow align="flex-start" wrap="wrap">
-          <TextInput
-            label="E-mail"
-            value={form.email}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, email: event.currentTarget.value }))
-            }
-            styles={inputStyles}
-          />
-          <TextInput
-            label="CNPJ"
-            value={form.cnpj}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, cnpj: event.currentTarget.value }))
-            }
-            styles={inputStyles}
-          />
-        </Group>
+            <TextInput
+              label="Telefone"
+              value={form.phone}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, phone: event.currentTarget.value }))
+              }
+              styles={inputStyles}
+            />
 
-        <Group grow align="flex-start" wrap="wrap">
-          <TextInput
-            label="Instagram"
-            value={form.instagram}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                instagram: event.currentTarget.value,
-              }))
-            }
-            styles={inputStyles}
-          />
-          <TextInput
-            label="Website"
-            value={form.website}
-            onChange={(event) =>
-              setForm((prev) => ({
-                ...prev,
-                website: event.currentTarget.value,
-              }))
-            }
-            styles={inputStyles}
-          />
-        </Group>
+            <TextInput
+              label="WhatsApp"
+              value={form.whatsapp}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  whatsapp: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
 
-        <Group grow align="flex-start" wrap="wrap">
-          <TextInput
-            label="Cidade"
-            value={form.city}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, city: event.currentTarget.value }))
-            }
-            styles={inputStyles}
-          />
-          <TextInput
-            label="Estado"
-            value={form.state}
-            onChange={(event) =>
-              setForm((prev) => ({ ...prev, state: event.currentTarget.value }))
-            }
-            styles={inputStyles}
-          />
-        </Group>
+            <TextInput
+              label="E-mail"
+              value={form.email}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, email: event.currentTarget.value }))
+              }
+              styles={inputStyles}
+            />
 
-        <TextInput
-          label="Imagem de capa"
-          placeholder="URL da imagem (opcional)"
-          value={form.cover_image_url}
-          onChange={(event) =>
-            setForm((prev) => ({
-              ...prev,
-              cover_image_url: event.currentTarget.value,
-            }))
-          }
-          styles={inputStyles}
-        />
+            <TextInput
+              label="CNPJ"
+              value={form.cnpj}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, cnpj: event.currentTarget.value }))
+              }
+              styles={inputStyles}
+            />
+
+            <TextInput
+              label="Instagram"
+              value={form.instagram}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  instagram: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+
+            <TextInput
+              label="Website"
+              value={form.website}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  website: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+
+            <TextInput
+              label="Cidade"
+              value={form.city}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, city: event.currentTarget.value }))
+              }
+              styles={inputStyles}
+            />
+
+            <TextInput
+              label="Estado"
+              value={form.state}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, state: event.currentTarget.value }))
+              }
+              styles={inputStyles}
+            />
+
+            <TextInput
+              label="Imagem de capa"
+              placeholder="URL da imagem (opcional)"
+              value={form.cover_image_url}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  cover_image_url: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+          </Stack>
+        ) : (
+          <Stack gap="md">
+            <Select
+              label="Categoria"
+              data={categoryOptions}
+              value={form.category_id}
+              onChange={(value) =>
+                setForm((prev) => ({ ...prev, category_id: value || "" }))
+              }
+              required
+              styles={inputStyles}
+            />
+
+            <Group grow align="flex-start" wrap="wrap">
+              <TextInput
+                label="Nome"
+                value={form.name}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, name: event.currentTarget.value }))
+                }
+                required
+                styles={inputStyles}
+              />
+              <TextInput
+                label="Empresa"
+                value={form.company_name}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    company_name: event.currentTarget.value,
+                  }))
+                }
+                styles={inputStyles}
+              />
+            </Group>
+
+            <Textarea
+              label="Descrição"
+              minRows={3}
+              value={form.description}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  description: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+
+            <Group grow align="flex-start" wrap="wrap">
+              <TextInput
+                label="Telefone"
+                value={form.phone}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, phone: event.currentTarget.value }))
+                }
+                styles={inputStyles}
+              />
+              <TextInput
+                label="WhatsApp"
+                value={form.whatsapp}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    whatsapp: event.currentTarget.value,
+                  }))
+                }
+                styles={inputStyles}
+              />
+            </Group>
+
+            <Group grow align="flex-start" wrap="wrap">
+              <TextInput
+                label="E-mail"
+                value={form.email}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, email: event.currentTarget.value }))
+                }
+                styles={inputStyles}
+              />
+              <TextInput
+                label="CNPJ"
+                value={form.cnpj}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, cnpj: event.currentTarget.value }))
+                }
+                styles={inputStyles}
+              />
+            </Group>
+
+            <Group grow align="flex-start" wrap="wrap">
+              <TextInput
+                label="Instagram"
+                value={form.instagram}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    instagram: event.currentTarget.value,
+                  }))
+                }
+                styles={inputStyles}
+              />
+              <TextInput
+                label="Website"
+                value={form.website}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    website: event.currentTarget.value,
+                  }))
+                }
+                styles={inputStyles}
+              />
+            </Group>
+
+            <Group grow align="flex-start" wrap="wrap">
+              <TextInput
+                label="Cidade"
+                value={form.city}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, city: event.currentTarget.value }))
+                }
+                styles={inputStyles}
+              />
+              <TextInput
+                label="Estado"
+                value={form.state}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, state: event.currentTarget.value }))
+                }
+                styles={inputStyles}
+              />
+            </Group>
+
+            <TextInput
+              label="Imagem de capa"
+              placeholder="URL da imagem (opcional)"
+              value={form.cover_image_url}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  cover_image_url: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+          </Stack>
+        )}
 
         <Group justify="flex-end">
           <Button

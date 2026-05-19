@@ -32,8 +32,8 @@ interface ImportGuestsModalProps {
 }
 
 const EXPECTED_COLUMNS = [
-  { key: "name", label: "Nome" },
-  { key: "phone", label: "Telefone" },
+  { key: "nome", label: "Nome" },
+  { key: "telefone", label: "Telefone" },
   { key: "whatsapp", label: "WhatsApp" },
   { key: "email", label: "Email" },
   { key: "alergias", label: "Alergias" },
@@ -125,7 +125,7 @@ export default function ImportGuestsModal({
       const autoMap: Record<string, string> = {};
       EXPECTED_COLUMNS.forEach((col) => {
         const found = (header as string[]).find(
-          (c) => c.trim().toLowerCase() === col.label.trim().toLowerCase(),
+          (c) => c.trim().toLowerCase() === col.key.trim().toLowerCase(),
         );
         if (found) autoMap[col.key] = found;
       });

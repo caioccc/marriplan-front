@@ -9,6 +9,7 @@ import {
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { IconFilter, IconSearch } from "@tabler/icons-react";
+import { inputStyles } from "@/styles";
 import { ReactNode, useState } from "react";
 
 interface PublicGiftListLayoutProps {
@@ -66,6 +67,7 @@ export default function PublicGiftListLayout({
               onChange={(e) => onSearch(e.currentTarget.value)}
               w="100%"
               style={{ flex: 1 }}
+              styles={inputStyles}
             />
           </Group>
         ) : (
@@ -76,6 +78,7 @@ export default function PublicGiftListLayout({
               value={search}
               onChange={(e) => onSearch(e.currentTarget.value)}
               w={320}
+              styles={inputStyles}
             />
           </Group>
         )}

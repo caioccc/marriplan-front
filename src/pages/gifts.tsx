@@ -1,20 +1,20 @@
 import { GalleryView } from "@/components/GalleryView";
 import { GiftFormModal } from "@/components/GiftFormModal";
-import { MarriplanStatusBadge } from "@/components/MarriplanStatusBadge";
-import BaseLayout from "@/components/Layout/_BaseLayout";
 import ImportGiftsModal from "@/components/ImportGiftsModal";
+import BaseLayout from "@/components/Layout/_BaseLayout";
 import { ListView } from "@/components/ListView";
-import PageSectionHeader from "@/components/PageSectionHeader";
 import { MarkAsPurchasedModal } from "@/components/MarkAsPurchasedModal";
+import { MarriplanStatusBadge } from "@/components/MarriplanStatusBadge";
+import PageSectionHeader from "@/components/PageSectionHeader";
 import { giftsService } from "@/services/giftsService";
 import { guests_list } from "@/services/guests";
-import { Gift } from "@/types/gift";
 import {
   inputStyles,
   primaryButtonStyles,
   segmentedTabsStyles,
   softButtonStyles,
 } from "@/styles";
+import { Gift } from "@/types/gift";
 import {
   ActionIcon,
   Box,
@@ -31,6 +31,8 @@ import {
   TextInput,
   Tooltip,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 import {
   IconBrandFacebook,
   IconBrandWhatsapp,
@@ -42,6 +44,7 @@ import {
   IconEdit,
   IconEye,
   IconFileTypePdf,
+  IconFilter,
   IconGift,
   IconGiftFilled,
   IconLayoutGrid,
@@ -55,7 +58,6 @@ import {
 import { DataTable } from "mantine-datatable";
 import { NextPage } from "next";
 import { useEffect, useRef, useState } from "react";
-import { notifications } from "@mantine/notifications";
 const statusOptions = [
   { label: "Todos", value: "" },
   { label: "Disponíveis", value: "available" },
@@ -76,6 +78,24 @@ const categoryOptions = [
   { value: "decor", label: "Decoração" },
 ];
 
+const paginationThemeStyles = `
+  .gifts-pagination .mantine-Pagination-control,
+  .gifts-table .mantine-DataTable-pagination .mantine-Pagination-control,
+  .gifts-table .mantine-Pagination-control {
+    border-radius: 12px;
+    border-color: var(--marriplan-border);
+    color: var(--marriplan-text);
+  }
+
+  .gifts-pagination .mantine-Pagination-control[data-active],
+  .gifts-table .mantine-DataTable-pagination .mantine-Pagination-control[data-active],
+  .gifts-table .mantine-Pagination-control[data-active] {
+    background-color: var(--marriplan-rose);
+    border-color: var(--marriplan-rose);
+    color: #fff;
+  }
+`;
+
 const GiftsPage: NextPage = () => {
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [status, setStatus] = useState("");
@@ -88,6 +108,9 @@ const GiftsPage: NextPage = () => {
   const [shareUrl, setShareUrl] = useState("");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
+  const [draftCategory, setDraftCategory] = useState("");
+  const [draftStatus, setDraftStatus] = useState("");
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   const [markModal, setMarkModal] = useState<{ open: boolean; gift?: Gift }>({
     open: false,
   });
@@ -99,8 +122,25 @@ const GiftsPage: NextPage = () => {
   const [exporting, setExporting] = useState<"csv" | "xlsx" | "pdf" | null>(
     null,
   );
-  const [viewMode, setViewMode] = useState("table");
+  const [viewMode, setViewMode] = useState<"table" | "cards" | "gallery">(
+    "table",
+  );
+  const isCompactLayout = useMediaQuery("(max-width: 1024px)");
+  const pageSize = 10;
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (advancedFiltersOpen) {
+      setDraftCategory(category);
+      setDraftStatus(status);
+    }
+  }, [advancedFiltersOpen, category, status]);
+
+  useEffect(() => {
+    if (isCompactLayout && viewMode === "table") {
+      setViewMode("cards");
+    }
+  }, [isCompactLayout, viewMode]);
 
   function translateStatus(g: Gift) {
     switch (g.status) {
@@ -333,36 +373,42 @@ const GiftsPage: NextPage = () => {
           description="Acompanhe a vitrine, compartilhe a lista e organize os presentes em um layout padronizado."
           actions={
             <Group gap="sm">
-              <Button
-                leftSection={<IconFileTypePdf size={18} />}
-                styles={softButtonStyles}
-                onClick={() => handleExport("pdf")}
-                loading={exporting === "pdf"}
-              >
-                Exportar PDF
-              </Button>
-              <Button
-                leftSection={<IconWorldPin size={18} />}
-                styles={softButtonStyles}
-                onClick={async () => {
-                  const res = await giftsService.getShareToken();
-                  const token = res.token;
-                  setShareUrl(`${window.location.origin}/gifts/share/${token}`);
-                  window.open(
-                    `${window.location.origin}/gifts/share/${token}`,
-                    "_blank",
-                  );
-                }}
-              >
-                Ver Vitrine
-              </Button>
-              <Button
-                leftSection={<IconShare size={18} />}
-                styles={softButtonStyles}
-                onClick={handleShare}
-              >
-                Compartilhar lista
-              </Button>
+              {!isCompactLayout && (
+                <>
+                  <Button
+                    leftSection={<IconFileTypePdf size={18} />}
+                    styles={softButtonStyles}
+                    onClick={() => handleExport("pdf")}
+                    loading={exporting === "pdf"}
+                  >
+                    Exportar PDF
+                  </Button>
+                  <Button
+                    leftSection={<IconWorldPin size={18} />}
+                    styles={softButtonStyles}
+                    onClick={async () => {
+                      const res = await giftsService.getShareToken();
+                      const token = res.token;
+                      setShareUrl(
+                        `${window.location.origin}/gifts/share/${token}`,
+                      );
+                      window.open(
+                        `${window.location.origin}/gifts/share/${token}`,
+                        "_blank",
+                      );
+                    }}
+                  >
+                    Ver Vitrine
+                  </Button>
+                  <Button
+                    leftSection={<IconShare size={18} />}
+                    styles={softButtonStyles}
+                    onClick={handleShare}
+                  >
+                    Compartilhar lista
+                  </Button>
+                </>
+              )}
               <Button
                 leftSection={<IconGiftFilled size={18} />}
                 styles={primaryButtonStyles}
@@ -384,6 +430,28 @@ const GiftsPage: NextPage = () => {
                   </Button>
                 </Menu.Target>
                 <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={<IconWorldPin size={18} />}
+                    onClick={async () => {
+                      const res = await giftsService.getShareToken();
+                      const token = res.token;
+                      setShareUrl(
+                        `${window.location.origin}/gifts/share/${token}`,
+                      );
+                      window.open(
+                        `${window.location.origin}/gifts/share/${token}`,
+                        "_blank",
+                      );
+                    }}
+                  >
+                    Ver Vitrine
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconShare size={18} />}
+                    onClick={handleShare}
+                  >
+                    Compartilhar lista
+                  </Menu.Item>
                   <Menu.Item
                     leftSection={<IconDownload size={18} />}
                     onClick={handleDownloadTemplate}
@@ -415,9 +483,9 @@ const GiftsPage: NextPage = () => {
             </Group>
           }
           filters={
-            <Stack gap="sm">
-              <Group justify="space-between">
-                <Group gap="sm" align="center" wrap="wrap">
+            isCompactLayout ? (
+              <Stack gap="sm">
+                <Group align="flex-end" gap="xs" wrap="nowrap">
                   <TextInput
                     leftSection={<IconSearch size={16} />}
                     placeholder="Buscar presente..."
@@ -426,131 +494,172 @@ const GiftsPage: NextPage = () => {
                       setSearch(e.currentTarget.value);
                       setPage(1);
                     }}
-                    w={{ base: "100%", sm: 260 }}
+                    style={{ flex: 1 }}
                     styles={inputStyles}
                   />
-                  <Select
-                    placeholder="Categoria"
-                    value={category}
-                    onChange={(value) => {
-                      setCategory(value || "");
-                      setPage(1);
-                    }}
-                    data={categoryOptions}
-                    w={{ base: "100%", sm: 200 }}
-                    clearable
-                    styles={inputStyles}
-                  />
+                  <Tooltip label="Filtros avançados" withArrow>
+                    <ActionIcon
+                      variant="default"
+                      size="lg"
+                      aria-label="Filtros avançados"
+                      onClick={() => setAdvancedFiltersOpen(true)}
+                    >
+                      <IconFilter size={18} />
+                    </ActionIcon>
+                  </Tooltip>
+                </Group>
+                <Group justify="flex-end" gap="xs" wrap="wrap">
                   <SegmentedControl
-                    data={statusOptions.map((opt) => ({
-                      ...opt,
-                      label: statusLabels[opt.value]?.label || opt.label,
-                    }))}
-                    value={status}
-                    onChange={(value) => {
-                      setStatus(value);
-                      setPage(1);
-                    }}
+                    value={viewMode === "table" ? "cards" : viewMode}
+                    onChange={setViewMode}
+                    data={[
+                      { value: "cards", label: <IconCards size={16} /> },
+                      { value: "gallery", label: <IconLayoutGrid size={16} /> },
+                    ]}
                     styles={segmentedTabsStyles}
                   />
                 </Group>
-                <SegmentedControl
-                  value={viewMode}
-                  onChange={setViewMode}
-                  data={[
-                    { value: "table", label: <IconList size={16} /> },
-                    { value: "cards", label: <IconCards size={16} /> },
-                    { value: "gallery", label: <IconLayoutGrid size={16} /> },
-                  ]}
-                  styles={segmentedTabsStyles}
-                />
-              </Group>
-            </Stack>
+              </Stack>
+            ) : (
+              <Stack gap="sm">
+                <Group justify="space-between">
+                  <Group gap="sm" align="center" wrap="wrap">
+                    <TextInput
+                      leftSection={<IconSearch size={16} />}
+                      placeholder="Buscar presente..."
+                      value={search}
+                      onChange={(e) => {
+                        setSearch(e.currentTarget.value);
+                        setPage(1);
+                      }}
+                      w={{ base: "100%", sm: 260 }}
+                      styles={inputStyles}
+                    />
+                    <Select
+                      placeholder="Categoria"
+                      value={category}
+                      onChange={(value) => {
+                        setCategory(value || "");
+                        setPage(1);
+                      }}
+                      data={categoryOptions}
+                      w={{ base: "100%", sm: 200 }}
+                      clearable
+                      styles={inputStyles}
+                    />
+                    <SegmentedControl
+                      data={statusOptions.map((opt) => ({
+                        ...opt,
+                        label: statusLabels[opt.value]?.label || opt.label,
+                      }))}
+                      value={status}
+                      onChange={(value) => {
+                        setStatus(value);
+                        setPage(1);
+                      }}
+                      styles={segmentedTabsStyles}
+                    />
+                  </Group>
+                  <SegmentedControl
+                    value={viewMode}
+                    onChange={setViewMode}
+                    data={[
+                      { value: "table", label: <IconList size={16} /> },
+                      { value: "cards", label: <IconCards size={16} /> },
+                      { value: "gallery", label: <IconLayoutGrid size={16} /> },
+                    ]}
+                    styles={segmentedTabsStyles}
+                  />
+                </Group>
+              </Stack>
+            )
           }
         />
-        {viewMode === "table" && (
-          <DataTable
-            records={gifts}
-            columns={[
-              { accessor: "name", title: "Nome" },
-              {
-                accessor: "value",
-                title: "Valor",
-                render: (g) => `R$ ${g.value}`,
-              },
-              {
-                accessor: "category",
-                title: "Categoria",
-                render: (g) =>
-                  categoryOptions.find((c) => c.value === g.category)?.label ||
-                  g.category,
-              },
-              {
-                accessor: "status",
-                title: "Status",
-                render: (g) => (
-                  <MarriplanStatusBadge kind="gift" status={g.status} />
-                ),
-              },
-              {
-                accessor: "actions",
-                title: "",
-                render: (g) => (
-                  <Group gap={4}>
-                    {g.status !== "purchased" && (
-                      <Tooltip label="Marcar como comprado">
+        {!isCompactLayout && viewMode === "table" && (
+          <Box className="gifts-table">
+            <DataTable
+              records={gifts}
+              columns={[
+                { accessor: "name", title: "Nome" },
+                {
+                  accessor: "value",
+                  title: "Valor",
+                  render: (g) => `R$ ${g.value}`,
+                },
+                {
+                  accessor: "category",
+                  title: "Categoria",
+                  render: (g) =>
+                    categoryOptions.find((c) => c.value === g.category)
+                      ?.label || g.category,
+                },
+                {
+                  accessor: "status",
+                  title: "Status",
+                  render: (g) => (
+                    <MarriplanStatusBadge kind="gift" status={g.status} />
+                  ),
+                },
+                {
+                  accessor: "actions",
+                  title: "",
+                  render: (g) => (
+                    <Group gap={4}>
+                      {g.status !== "purchased" && (
+                        <Tooltip label="Marcar como comprado">
+                          <ActionIcon
+                            variant="subtle"
+                            color="green"
+                            onClick={() => handleMarkAsPurchased(g)}
+                          >
+                            <IconCheck size={18} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                      {(g.status === "purchased" ||
+                        g.status === "reserved") && (
+                        <Tooltip label="Marcar como disponível">
+                          <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            onClick={() => handleMarkAsAvailable(g)}
+                          >
+                            <IconStatusChange size={18} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                      {g.link && (
+                        <Tooltip label="Ver presente">
+                          <ActionIcon
+                            variant="subtle"
+                            color="blue"
+                            onClick={() => window.open(g.link, "_blank")}
+                          >
+                            <IconEye size={18} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                      <Tooltip label="Editar">
                         <ActionIcon
                           variant="subtle"
-                          color="green"
-                          onClick={() => handleMarkAsPurchased(g)}
+                          color="orange"
+                          onClick={() => {
+                            setEditingGift(g);
+                            setModalOpen(true);
+                          }}
                         >
-                          <IconCheck size={18} />
+                          <IconEdit size={18} />
                         </ActionIcon>
                       </Tooltip>
-                    )}
-                    {(g.status === "purchased" || g.status === "reserved") && (
-                      <Tooltip label="Marcar como disponível">
-                        <ActionIcon
-                          variant="subtle"
-                          color="gray"
-                          onClick={() => handleMarkAsAvailable(g)}
-                        >
-                          <IconStatusChange size={18} />
-                        </ActionIcon>
-                      </Tooltip>
-                    )}
-                    {g.link && (
-                      <Tooltip label="Ver presente">
-                        <ActionIcon
-                          variant="subtle"
-                          color="blue"
-                          onClick={() => window.open(g.link, "_blank")}
-                        >
-                          <IconEye size={18} />
-                        </ActionIcon>
-                      </Tooltip>
-                    )}
-                    <Tooltip label="Editar">
-                      <ActionIcon
-                        variant="subtle"
-                        color="orange"
-                        onClick={() => {
-                          setEditingGift(g);
-                          setModalOpen(true);
-                        }}
-                      >
-                        <IconEdit size={18} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
-                ),
-              },
-            ]}
+                    </Group>
+                  ),
+                },
+              ]}
             fetching={loading}
             totalRecords={total}
             page={page}
             onPageChange={setPage}
-            recordsPerPage={10}
+            recordsPerPage={pageSize}
             minHeight={300}
             highlightOnHover
             withTableBorder
@@ -563,6 +672,7 @@ const GiftsPage: NextPage = () => {
               `${from}–${to} de ${totalRecords}`
             }
           />
+          </Box>
         )}
         {viewMode === "cards" && (
           <ListView
@@ -644,6 +754,9 @@ const GiftsPage: NextPage = () => {
             items={gifts}
             getItemId={(g) => g.id}
             getImageUrl={(g) => g.image}
+            cols={
+              isCompactLayout ? { base: 1, sm: 1, md: 1, lg: 1 } : undefined
+            }
             fallbackIcon={
               <IconGift size={48} color="var(--mantine-color-gray-5)" />
             }
@@ -700,12 +813,71 @@ const GiftsPage: NextPage = () => {
         {(viewMode === "cards" || viewMode === "gallery") && (
           <Group justify="center" mt="md">
             <Pagination
-              total={Math.ceil(total / 10)}
+              className="gifts-pagination"
+              total={Math.max(1, Math.ceil(total / pageSize))}
               value={page}
               onChange={setPage}
             />
           </Group>
         )}
+        <Modal
+          opened={advancedFiltersOpen}
+          onClose={() => setAdvancedFiltersOpen(false)}
+          title="Filtros avançados"
+          centered
+          size="sm"
+        >
+          <Stack gap="md">
+            <Select
+              label="Categoria"
+              placeholder="Todas"
+              value={draftCategory}
+              onChange={(value) => setDraftCategory(value || "")}
+              data={categoryOptions}
+              clearable
+              styles={inputStyles}
+            />
+            <Select
+              label="Status"
+              placeholder="Todos"
+              value={draftStatus}
+              onChange={(value) => setDraftStatus(value || "")}
+              data={statusOptions.map((opt) => ({
+                value: opt.value,
+                label: statusLabels[opt.value]?.label || opt.label,
+              }))}
+              clearable
+              styles={inputStyles}
+            />
+            <Group justify="space-between" mt="sm">
+              <Button
+                variant="light"
+                styles={softButtonStyles}
+                onClick={() => {
+                  setDraftCategory("");
+                  setDraftStatus("");
+                  setCategory("");
+                  setStatus("");
+                  setPage(1);
+                  setAdvancedFiltersOpen(false);
+                }}
+              >
+                Limpar filtros
+              </Button>
+              <Button
+                styles={primaryButtonStyles}
+                onClick={() => {
+                  setCategory(draftCategory);
+                  setStatus(draftStatus);
+                  setPage(1);
+                  setAdvancedFiltersOpen(false);
+                }}
+              >
+                Aplicar
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
         <GiftFormModal
           opened={modalOpen}
           onClose={() => setModalOpen(false)}
@@ -795,6 +967,7 @@ const GiftsPage: NextPage = () => {
             {importSuccess}
           </Text>
         )}
+        <style>{paginationThemeStyles}</style>
       </Stack>
     </BaseLayout>
   );

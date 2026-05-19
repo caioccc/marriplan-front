@@ -50,10 +50,12 @@ import {
 } from "@tabler/icons-react";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import { useCallback, useEffect, useState } from "react";
+import { useMediaQuery } from "@mantine/hooks";
 
 import {
   actionIconDangerStyles,
   actionIconEditStyles,
+  actionIconStyles,
   inputStyles,
   primaryButtonStyles,
   segmentedTabsStyles,
@@ -118,18 +120,9 @@ export default function GuestTable() {
     whatsapp_link?: string;
     token?: string;
   } | null>(null);
-
-  const maxCompanionsValue = Math.max(
-    10,
-    ...guests.map((g) => g.acompanhantes ?? 0),
-  );
-  const rangeIsDefault =
-    companionsRange[0] === 0 && companionsRange[1] === maxCompanionsValue;
-  const filtersActive =
-    !rangeIsDefault ||
-    whatsappFilter !== "all" ||
-    allergyFilter !== "all" ||
-    statusFilter !== "all";
+  const isCompactLayout = useMediaQuery("(max-width: 1024px)");
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isTablet = useMediaQuery("(min-width: 768px)");
 
   const fetchAllGuests = useCallback(
     async ({ ordering }: { ordering: string }) => {
@@ -174,14 +167,25 @@ export default function GuestTable() {
         values.hasWhatsapp && value.replace(/\D/g, "").length < 10
           ? "WhatsApp inválido"
           : null,
-      email: (value) =>
-        value === "" || validateEmail(value) ? null : "Email inválido",
+      email: (value) => (value === "" || validateEmail(value) ? null : "Email inválido"),
       acompanhantes: (value) =>
         value === "" || (!isNaN(Number(value)) && Number(value) >= 0)
           ? null
           : "Acompanhantes inválido",
     },
   });
+
+  const maxCompanionsValue = Math.max(
+    10,
+    ...guests.map((g) => g.acompanhantes ?? 0),
+  );
+  const filtersActive =
+    companionsRange[0] > 0 ||
+    companionsRange[1] < maxCompanionsValue ||
+    whatsappFilter !== "all" ||
+    allergyFilter !== "all" ||
+    statusFilter !== "all";
+  
 
   // Busca convidados do backend conforme paginação, busca e ordenação
   useEffect(() => {
@@ -225,6 +229,12 @@ export default function GuestTable() {
     statusFilter,
     filtersActive,
   ]);
+
+  useEffect(() => {
+    if (isMobile && viewMode === "table") {
+      setViewMode("gallery");
+    }
+  }, [isMobile, viewMode]);
 
   useEffect(() => {
     setCompanionsRange((prev) => {
@@ -443,28 +453,87 @@ export default function GuestTable() {
                 >
                   Importar convidados
                 </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconFileTypePdf size={18} />}
-                  onClick={() => handleExport("pdf")}
-                >
-                  Exportar PDF
-                </Menu.Item>
+                {!isCompactLayout && (
+                  <Menu.Item
+                    leftSection={<IconFileTypePdf size={18} />}
+                    onClick={() => handleExport("pdf")}
+                  >
+                    Exportar PDF
+                  </Menu.Item>
+                )}
               </Menu.Dropdown>
             </Menu>
-            <Button
-              leftSection={<IconFileTypePdf size={18} />}
-              styles={softButtonStyles}
-              onClick={() => handleExport("pdf")}
-              loading={exporting === "pdf"}
-            >
-              Exportar PDF
-            </Button>
+            {!isCompactLayout && (
+              <Button
+                leftSection={<IconFileTypePdf size={18} />}
+                styles={softButtonStyles}
+                onClick={() => handleExport("pdf")}
+                loading={exporting === "pdf"}
+              >
+                Exportar PDF
+              </Button>
+            )}
           </Group>
         }
         filters={
-          <Stack gap="sm">
-            <Group justify="space-between">
-              <Group gap="sm" align="center" wrap="wrap">
+          isTablet ? (
+            <Group gap="sm" align="center" wrap="nowrap">
+              <TextInput
+                leftSection={<IconSearch size={16} />}
+                placeholder="Buscar por nome, e-mail, telefone..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.currentTarget.value);
+                  setPage(1);
+                }}
+                style={{ flex: 1, minWidth: 0 }}
+                styles={inputStyles}
+              />
+              {isCompactLayout ? (
+                <Tooltip label="Filtro avançado">
+                  <ActionIcon
+                    aria-label="Abrir filtro avançado"
+                    onClick={() => setAdvancedFilterOpen(true)}
+                    styles={actionIconStyles}
+                    size="lg"
+                    variant="light"
+                  >
+                    <IconFilter size={16} />
+                  </ActionIcon>
+                </Tooltip>
+              ) : (
+                <Button
+                  leftSection={<IconFilter size={16} />}
+                  styles={softButtonStyles}
+                  onClick={() => setAdvancedFilterOpen(true)}
+                >
+                  Filtro avançado
+                </Button>
+              )}
+              <SegmentedControl
+                value={viewMode}
+                onChange={setViewMode}
+                data={
+                  isMobile
+                    ? [
+                        { value: "gallery", label: <IconCards size={16} /> },
+                        { value: "cards", label: <IconList size={16} /> },
+                      ]
+                    : [
+                        { value: "table", label: <IconList size={16} /> },
+                        { value: "cards", label: <IconCards size={16} /> },
+                        {
+                          value: "gallery",
+                          label: <IconLayoutGrid size={16} />,
+                        },
+                      ]
+                }
+                styles={segmentedTabsStyles}
+              />
+            </Group>
+          ) : (
+            <Stack gap="sm">
+              <Group gap="sm" align="center" wrap="nowrap">
                 <TextInput
                   leftSection={<IconSearch size={16} />}
                   placeholder="Buscar por nome, e-mail, telefone..."
@@ -473,32 +542,58 @@ export default function GuestTable() {
                     setSearch(e.currentTarget.value);
                     setPage(1);
                   }}
-                  w={{ base: "100%", sm: 260 }}
+                  style={{ flex: 1, minWidth: 0 }}
                   styles={inputStyles}
                 />
-                <Button
-                  leftSection={<IconFilter size={16} />}
-                  styles={softButtonStyles}
-                  onClick={() => setAdvancedFilterOpen(true)}
-                >
-                  Filtro avançado
-                </Button>
+                {isCompactLayout ? (
+                  <Tooltip label="Filtro avançado">
+                    <ActionIcon
+                      aria-label="Abrir filtro avançado"
+                      onClick={() => setAdvancedFilterOpen(true)}
+                      styles={actionIconStyles}
+                      size="lg"
+                      variant="light"
+                    >
+                      <IconFilter size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                ) : (
+                  <Button
+                    leftSection={<IconFilter size={16} />}
+                    styles={softButtonStyles}
+                    onClick={() => setAdvancedFilterOpen(true)}
+                  >
+                    Filtro avançado
+                  </Button>
+                )}
               </Group>
-              <SegmentedControl
-                value={viewMode}
-                onChange={setViewMode}
-                data={[
-                  { value: "table", label: <IconList size={16} /> },
-                  { value: "cards", label: <IconCards size={16} /> },
-                  { value: "gallery", label: <IconLayoutGrid size={16} /> },
-                ]}
-                styles={segmentedTabsStyles}
-              />
-            </Group>
-          </Stack>
+              <Group justify="flex-end">
+                <SegmentedControl
+                  value={viewMode}
+                  onChange={setViewMode}
+                  data={
+                    isMobile
+                      ? [
+                          { value: "gallery", label: <IconCards size={16} /> },
+                          { value: "cards", label: <IconList size={16} /> },
+                        ]
+                      : [
+                          { value: "table", label: <IconList size={16} /> },
+                          { value: "cards", label: <IconCards size={16} /> },
+                          {
+                            value: "gallery",
+                            label: <IconLayoutGrid size={16} />,
+                          },
+                        ]
+                  }
+                  styles={segmentedTabsStyles}
+                />
+              </Group>
+            </Stack>
+          )
         }
       />
-      {viewMode === "table" && (
+      {!isMobile && viewMode === "table" && (
         <DataTable<Guest>
           className="guest-table"
           withTableBorder
@@ -1143,7 +1238,7 @@ export default function GuestTable() {
                 { value: "Confirmed", label: "Confirmado" },
                 { value: "Refused", label: "Recusado" },
               ]}
-              w={{ base: "100%", sm: 200 }}
+              w={{ base: "100%" }}
               styles={inputStyles}
             />
           </Stack>
@@ -1185,7 +1280,7 @@ export default function GuestTable() {
           </Stack>
           <Group justify="space-between" mt="sm">
             <Button
-              variant="default"
+              variant="light"
               styles={softButtonStyles}
               onClick={() => {
                 setCompanionsRange([0, maxCompanionsValue]);

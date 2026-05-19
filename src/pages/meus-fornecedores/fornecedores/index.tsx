@@ -14,6 +14,7 @@ import {
 } from "@/services/suppliers";
 import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
+  ActionIcon,
   Badge,
   Button,
   Card,
@@ -30,20 +31,17 @@ import {
   TextInput,
   Title
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
   IconArrowLeft,
+  IconFilter,
   IconPaperclip,
   IconPlus,
   IconSearch,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
-
-const VIEW_OPTIONS = [
-  { value: "cards", label: "Cards" },
-  { value: "list", label: "Lista" },
-];
 
 function formatCurrencyInput(value: string) {
   return value.replace(/[^\d,.-]/g, "").replace(",", ".");
@@ -80,11 +78,14 @@ export default function SuppliersMarketplacePage() {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [viewMode, setViewMode] = useState<"cards" | "list">("cards");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [city, setCity] = useState("");
   const [state, setState] = useState("");
+  const [draftCategory, setDraftCategory] = useState("");
+  const [draftCity, setDraftCity] = useState("");
+  const [draftState, setDraftState] = useState("");
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
   const [supplierModalMode, setSupplierModalMode] = useState<"create" | "edit">(
     "create",
@@ -97,6 +98,15 @@ export default function SuppliersMarketplacePage() {
   );
   const [contractFile, setContractFile] = useState<File | null>(null);
   const [weddingForm, setWeddingForm] = useState(initialWeddingSupplierForm);
+  const isCompactLayout = useMediaQuery("(max-width: 1024px)");
+
+  useEffect(() => {
+    if (advancedFiltersOpen) {
+      setDraftCategory(category);
+      setDraftCity(city);
+      setDraftState(state);
+    }
+  }, [advancedFiltersOpen, category, city, state]);
 
   const categoryOptions = useMemo(
     () => [
@@ -214,13 +224,6 @@ export default function SuppliersMarketplacePage() {
     }
   };
 
-  const tableRows = items.map((supplier) => ({
-    ...supplier,
-    category_name: supplier.category_detail?.name || "-",
-    location:
-      [supplier.city, supplier.state].filter(Boolean).join(" • ") || "-",
-  }));
-
   return (
     <BaseLayout>
       <Stack gap="lg" py="md">
@@ -251,7 +254,7 @@ export default function SuppliersMarketplacePage() {
 
         <Card radius="xl" p="md" withBorder>
           <Stack gap="md">
-            <Group grow align="flex-end" wrap="wrap">
+            <Group gap="sm" align="flex-end" wrap="nowrap">
               <TextInput
                 label="Buscar"
                 placeholder="Nome, empresa ou descrição"
@@ -261,38 +264,60 @@ export default function SuppliersMarketplacePage() {
                   setSearch(event.currentTarget.value);
                   setPage(1);
                 }}
+                style={{ flex: 1, minWidth: 0 }}
                 styles={inputStyles}
               />
-              <Select
-                label="Categoria"
-                data={categoryOptions}
-                value={category}
-                onChange={(value) => {
-                  setCategory(value || "");
-                  setPage(1);
-                }}
-                styles={inputStyles}
-              />
-              <TextInput
-                label="Cidade"
-                placeholder="Ex.: São Paulo"
-                value={city}
-                onChange={(event) => {
-                  setCity(event.currentTarget.value);
-                  setPage(1);
-                }}
-                styles={inputStyles}
-              />
-              <TextInput
-                label="Estado"
-                placeholder="Ex.: SP"
-                value={state}
-                onChange={(event) => {
-                  setState(event.currentTarget.value);
-                  setPage(1);
-                }}
-                styles={inputStyles}
-              />
+              {isCompactLayout ? (
+                <ActionIcon
+                  aria-label="Abrir filtros avançados"
+                  onClick={() => setAdvancedFiltersOpen(true)}
+                  styles={{
+                    root: {
+                      backgroundColor: "var(--marriplan-rose)",
+                      color: "#fff",
+                      borderRadius: 12,
+                      border: "1px solid var(--marriplan-rose)",
+                    },
+                  }}
+                  size="lg"
+                  variant="light"
+                >
+                  <IconFilter size={16} />
+                </ActionIcon>
+              ) : (
+                <>
+                  <Select
+                    label="Categoria"
+                    data={categoryOptions}
+                    value={category}
+                    onChange={(value) => {
+                      setCategory(value || "");
+                      setPage(1);
+                    }}
+                    styles={inputStyles}
+                  />
+                  <TextInput
+                    label="Cidade"
+                    placeholder="Ex.: São Paulo"
+                    value={city}
+                    onChange={(event) => {
+                      setCity(event.currentTarget.value);
+                      setPage(1);
+                    }}
+                    styles={inputStyles}
+                  />
+                  <TextInput
+                    label="Estado"
+                    placeholder="Ex.: SP"
+                    value={state}
+                    onChange={(event) => {
+                      setState(event.currentTarget.value);
+                      setPage(1);
+                    }}
+                    styles={inputStyles}
+                  />
+                </>
+              )}
             </Group>
 
             <Group justify="space-between" align="center" wrap="wrap">
@@ -329,7 +354,7 @@ export default function SuppliersMarketplacePage() {
             </Stack>
           </Card>
         ) : (
-          <SimpleGrid cols={{ base: 2, sm: 3, lg: 4 }} spacing="lg">
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
             {items.map((supplier) => (
               <SupplierCard
                 key={supplier.id}
@@ -367,6 +392,68 @@ export default function SuppliersMarketplacePage() {
       />
 
       <Modal
+        opened={advancedFiltersOpen}
+        onClose={() => setAdvancedFiltersOpen(false)}
+        title="Filtros avançados"
+        centered
+        size="sm"
+      >
+        <Stack gap="md">
+          <Select
+            label="Categoria"
+            data={categoryOptions}
+            value={draftCategory}
+            onChange={(value) => setDraftCategory(value || "")}
+            styles={inputStyles}
+          />
+          <TextInput
+            label="Cidade"
+            placeholder="Ex.: São Paulo"
+            value={draftCity}
+            onChange={(event) => setDraftCity(event.currentTarget.value)}
+            styles={inputStyles}
+          />
+          <TextInput
+            label="Estado"
+            placeholder="Ex.: SP"
+            value={draftState}
+            onChange={(event) => setDraftState(event.currentTarget.value)}
+            styles={inputStyles}
+          />
+          <Group justify="space-between" mt="sm">
+            <Button
+              variant="light"
+              styles={softButtonStyles}
+              onClick={() => {
+                setDraftCategory("");
+                setDraftCity("");
+                setDraftState("");
+                setCategory("");
+                setCity("");
+                setState("");
+                setPage(1);
+                setAdvancedFiltersOpen(false);
+              }}
+            >
+              Limpar filtros
+            </Button>
+            <Button
+              styles={primaryButtonStyles}
+              onClick={() => {
+                setCategory(draftCategory);
+                setCity(draftCity);
+                setState(draftState);
+                setPage(1);
+                setAdvancedFiltersOpen(false);
+              }}
+            >
+              Aplicar
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
         opened={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         title={
@@ -378,7 +465,8 @@ export default function SuppliersMarketplacePage() {
         size="xl"
       >
         <Stack gap="md">
-          <Group grow align="flex-start" wrap="wrap">
+        {isCompactLayout ? (
+          <Stack gap="md">
             <Select
               label="Status"
               data={[
@@ -398,7 +486,6 @@ export default function SuppliersMarketplacePage() {
               styles={inputStyles}
             />
             <Checkbox
-              mt={28}
               label="Favorito"
               checked={weddingForm.is_favorite}
               onChange={(event) =>
@@ -408,9 +495,7 @@ export default function SuppliersMarketplacePage() {
                 }))
               }
             />
-          </Group>
 
-          <Group grow align="flex-start" wrap="wrap">
             <TextInput
               label="Valor estimado"
               value={weddingForm.estimated_price}
@@ -444,20 +529,104 @@ export default function SuppliersMarketplacePage() {
               }
               styles={inputStyles}
             />
-          </Group>
 
-          <Textarea
-            label="Observações"
-            minRows={4}
-            value={weddingForm.notes}
-            onChange={(event) =>
-              setWeddingForm((prev) => ({
-                ...prev,
-                notes: event.currentTarget.value,
-              }))
-            }
-            styles={inputStyles}
-          />
+            <Textarea
+              label="Observações"
+              minRows={4}
+              value={weddingForm.notes}
+              onChange={(event) =>
+                setWeddingForm((prev) => ({
+                  ...prev,
+                  notes: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+          </Stack>
+        ) : (
+          <Stack gap="md">
+            <Group grow align="flex-start" wrap="wrap">
+              <Select
+                label="Status"
+                data={[
+                  { value: "QUOTING", label: "Cotando" },
+                  { value: "NEGOTIATING", label: "Negociando" },
+                  { value: "HIRED", label: "Contratado" },
+                  { value: "PAID", label: "Pago" },
+                  { value: "CANCELED", label: "Cancelado" },
+                ]}
+                value={weddingForm.status}
+                onChange={(value) =>
+                  setWeddingForm((prev) => ({
+                    ...prev,
+                    status: (value || "QUOTING") as typeof weddingForm.status,
+                  }))
+                }
+                styles={inputStyles}
+              />
+              <Checkbox
+                mt={28}
+                label="Favorito"
+                checked={weddingForm.is_favorite}
+                onChange={(event) =>
+                  setWeddingForm((prev) => ({
+                    ...prev,
+                    is_favorite: event.currentTarget.checked,
+                  }))
+                }
+              />
+            </Group>
+
+            <Group grow align="flex-start" wrap="wrap">
+              <TextInput
+                label="Valor estimado"
+                value={weddingForm.estimated_price}
+                onChange={(event) =>
+                  setWeddingForm((prev) => ({
+                    ...prev,
+                    estimated_price: event.currentTarget.value,
+                  }))
+                }
+                styles={inputStyles}
+              />
+              <TextInput
+                label="Valor negociado"
+                value={weddingForm.negotiated_price}
+                onChange={(event) =>
+                  setWeddingForm((prev) => ({
+                    ...prev,
+                    negotiated_price: event.currentTarget.value,
+                  }))
+                }
+                styles={inputStyles}
+              />
+              <TextInput
+                label="Valor pago"
+                value={weddingForm.paid_amount}
+                onChange={(event) =>
+                  setWeddingForm((prev) => ({
+                    ...prev,
+                    paid_amount: event.currentTarget.value,
+                  }))
+                }
+                styles={inputStyles}
+              />
+            </Group>
+
+            <Textarea
+              label="Observações"
+              minRows={4}
+              value={weddingForm.notes}
+              onChange={(event) =>
+                setWeddingForm((prev) => ({
+                  ...prev,
+                  notes: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+          </Stack>
+        )}
 
           <Card
             radius="lg"

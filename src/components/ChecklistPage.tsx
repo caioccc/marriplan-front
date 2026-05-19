@@ -12,6 +12,7 @@ import {
 import {
   actionIconDangerStyles,
   actionIconEditStyles,
+  actionIconStyles,
   checklistTabsStyles,
   inputStyles,
   primaryButtonStyles,
@@ -27,6 +28,7 @@ import {
   Collapse,
   Group,
   Loader,
+  Modal,
   RingProgress,
   Select,
   SimpleGrid,
@@ -42,9 +44,10 @@ import {
   IconChevronRight,
   IconEdit,
   IconFileDownload,
+  IconFilter,
   IconPlus,
   IconSearch,
-  IconTrash,
+  IconTrash
 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import ChecklistTaskModal from "./ChecklistTaskModal";
@@ -59,8 +62,16 @@ export default function ChecklistPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [filterPriority, setFilterPriority] = useState<string | null>(null);
+  const [draftFilterStatus, setDraftFilterStatus] = useState<string | null>(
+    null,
+  );
+  const [draftFilterPriority, setDraftFilterPriority] = useState<string | null>(
+    null,
+  );
+  const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   const [loadingTaskId, setLoadingTaskId] = useState<number | null>(null);
   const isMobile = useMediaQuery("(max-width: 600px)");
+  const isCompactFilters = useMediaQuery("(max-width: 1024px)");
 
   useEffect(() => {
     setLoading(true);
@@ -68,6 +79,13 @@ export default function ChecklistPage() {
       .then((data) => setTasks(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (advancedFiltersOpen) {
+      setDraftFilterStatus(filterStatus);
+      setDraftFilterPriority(filterPriority);
+    }
+  }, [advancedFiltersOpen, filterStatus, filterPriority]);
 
   // Filtros
   const filteredTasks = tasks.filter(
@@ -210,9 +228,10 @@ export default function ChecklistPage() {
 
   // Handlers
   function handleAddTask(month: number) {
-    setEditingTask({
+    const newTask: ChecklistTask = {
       id: 0,
       month,
+      days_before_event: null,
       description: "",
       start_date: "",
       due_date: "",
@@ -222,7 +241,9 @@ export default function ChecklistPage() {
       attachments: [],
       created_at: "",
       updated_at: "",
-    });
+    };
+
+    setEditingTask(newTask);
     setModalOpen(true);
   }
   function handleEditTask(task: ChecklistTask) {
@@ -349,14 +370,16 @@ export default function ChecklistPage() {
             title="Checklist de Casamento"
             description="Acompanhe tarefas, prazos e prioridades em uma visão padronizada da aplicação."
             actions={
-              <Button
-                leftSection={<IconFileDownload size={18} />}
-                variant="light"
-                styles={softButtonStyles}
-                onClick={handleExportPDF}
-              >
-                Exportar PDF
-              </Button>
+              isCompactFilters ? undefined : (
+                <Button
+                  leftSection={<IconFileDownload size={18} />}
+                  variant="light"
+                  styles={softButtonStyles}
+                  onClick={handleExportPDF}
+                >
+                  Exportar PDF
+                </Button>
+              )
             }
             filters={
               <Group gap="sm" align="center" wrap="wrap">
@@ -365,38 +388,115 @@ export default function ChecklistPage() {
                   placeholder="Buscar tarefa..."
                   value={search}
                   onChange={(e) => setSearch(e.currentTarget.value)}
-                  w={{ base: "100%", sm: 220 }}
+                  w={{ base: "100%", sm: isCompactFilters ? "100%" : 220 }}
+                  style={{
+                    flex: isCompactFilters ? 1 : undefined,
+                    minWidth: isCompactFilters ? 220 : undefined,
+                  }}
                   styles={inputStyles}
                 />
-                <Select
-                  data={[
-                    { value: "pending", label: "Pendente" },
-                    { value: "in_progress", label: "Em Andamento" },
-                    { value: "done", label: "Concluído" },
-                  ]}
-                  value={filterStatus}
-                  onChange={(v) => setFilterStatus(v || null)}
-                  placeholder="Status"
-                  clearable
-                  w={{ base: "100%", sm: 170 }}
-                  styles={inputStyles}
-                />
-                <Select
-                  data={[
-                    { value: "high", label: "Alta" },
-                    { value: "medium", label: "Média" },
-                    { value: "low", label: "Baixa" },
-                  ]}
-                  value={filterPriority}
-                  onChange={(v) => setFilterPriority(v || null)}
-                  placeholder="Prioridade"
-                  clearable
-                  w={{ base: "100%", sm: 170 }}
-                  styles={inputStyles}
-                />
+                {isCompactFilters ? (
+                  <TooltipMantine label="Filtros avançados" withArrow>
+                    <ActionIcon
+                      variant="light"
+                      size="lg"
+                      aria-label="Abrir filtros avançados"
+                      onClick={() => setAdvancedFiltersOpen(true)}
+                      styles={actionIconStyles}
+                      style={{ alignSelf: "center" }}
+                    >
+                      <IconFilter size={18} />
+                    </ActionIcon>
+                  </TooltipMantine>
+                ) : (
+                  <>
+                    <Select
+                      data={[
+                        { value: "pending", label: "Pendente" },
+                        { value: "in_progress", label: "Em Andamento" },
+                        { value: "done", label: "Concluído" },
+                      ]}
+                      value={filterStatus}
+                      onChange={(v) => setFilterStatus(v || null)}
+                      placeholder="Status"
+                      clearable
+                      w={{ base: "100%", sm: 170 }}
+                      styles={inputStyles}
+                    />
+                    <Select
+                      data={[
+                        { value: "high", label: "Alta" },
+                        { value: "medium", label: "Média" },
+                        { value: "low", label: "Baixa" },
+                      ]}
+                      value={filterPriority}
+                      onChange={(v) => setFilterPriority(v || null)}
+                      placeholder="Prioridade"
+                      clearable
+                      w={{ base: "100%", sm: 170 }}
+                      styles={inputStyles}
+                    />
+                  </>
+                )}
               </Group>
             }
           />
+          <Modal
+            opened={advancedFiltersOpen}
+            onClose={() => setAdvancedFiltersOpen(false)}
+            title="Filtros avançados"
+            centered
+            size="sm"
+          >
+            <Stack gap="md">
+              <Select
+                data={[
+                  { value: "pending", label: "Pendente" },
+                  { value: "in_progress", label: "Em Andamento" },
+                  { value: "done", label: "Concluído" },
+                ]}
+                value={draftFilterStatus}
+                onChange={(v) => setDraftFilterStatus(v || null)}
+                placeholder="Status"
+                clearable
+                styles={inputStyles}
+              />
+              <Select
+                data={[
+                  { value: "high", label: "Alta" },
+                  { value: "medium", label: "Média" },
+                  { value: "low", label: "Baixa" },
+                ]}
+                value={draftFilterPriority}
+                onChange={(v) => setDraftFilterPriority(v || null)}
+                placeholder="Prioridade"
+                clearable
+                styles={inputStyles}
+              />
+              <Group justify="space-between" gap="sm" mt="xs">
+                <Button
+                  variant="light"
+                  styles={softButtonStyles}
+                  onClick={() => {
+                    setDraftFilterStatus(null);
+                    setDraftFilterPriority(null);
+                  }}
+                >
+                  Limpar filtros
+                </Button>
+                <Button
+                  styles={primaryButtonStyles}
+                  onClick={() => {
+                    setFilterStatus(draftFilterStatus);
+                    setFilterPriority(draftFilterPriority);
+                    setAdvancedFiltersOpen(false);
+                  }}
+                >
+                  Aplicar filtros
+                </Button>
+              </Group>
+            </Stack>
+          </Modal>
           {loading ? (
             <Loader />
           ) : (
@@ -526,11 +626,10 @@ export default function ChecklistPage() {
                                   Nenhuma tarefa para este período.
                                 </Text>
                               ) : (
-                                <Stack spacing={6}>
+                                <Stack>
                                   {periodTasks.map((task) => (
                                     <Group
                                       key={task.id}
-                                      position="apart"
                                       style={{
                                         borderBottom:
                                           "1px solid var(--marriplan-border)",

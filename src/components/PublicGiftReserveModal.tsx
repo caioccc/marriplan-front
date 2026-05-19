@@ -1,5 +1,6 @@
 import { Button, Group, Modal, Textarea, TextInput } from "@mantine/core";
 import { useEffect, useState } from "react";
+import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
 
 type PublicGiftReserveModalProps = {
   opened: boolean;
@@ -42,6 +43,7 @@ export default function PublicGiftReserveModal({
         value={reserverName}
         onChange={(event) => setReserverName(event.currentTarget.value)}
         mb="sm"
+        styles={inputStyles}
       />
       <Textarea
         label="Mensagem para os noivos"
@@ -50,15 +52,17 @@ export default function PublicGiftReserveModal({
         onChange={(event) => setMessage(event.currentTarget.value)}
         minRows={4}
         mb="md"
+        styles={inputStyles}
       />
       <Group justify="flex-end">
-        <Button variant="default" onClick={onClose}>
+        <Button variant="default" onClick={onClose} styles={softButtonStyles}>
           Cancelar
         </Button>
         <Button
           onClick={() => onConfirm({ reserver_name: reserverName, message })}
           loading={loading}
           disabled={loading}
+          styles={primaryButtonStyles}
         >
           Confirmar reserva
         </Button>
