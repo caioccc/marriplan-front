@@ -49,7 +49,7 @@ import {
   IconUser,
 } from "@tabler/icons-react";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   actionIconDangerStyles,
@@ -63,6 +63,7 @@ import { Pagination } from "@mantine/core";
 import PageSectionHeader from "./PageSectionHeader";
 
 interface Guest {
+  [key: string]: unknown;
   id: number;
   name: string;
   phone: string;
@@ -87,7 +88,7 @@ export default function GuestTable() {
   );
   const [page, setPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
-  const [sortStatus, setSortStatus] = useState<DataTableSortStatus>({
+  const [sortStatus, setSortStatus] = useState<DataTableSortStatus<Guest>>({
     columnAccessor: "name",
     direction: "asc",
   });
@@ -106,6 +107,9 @@ export default function GuestTable() {
   const [allergyFilter, setAllergyFilter] = useState<
     "all" | "with" | "without"
   >("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "Pending" | "Confirmed" | "Refused"
+  >("all");
   const [presencaModalOpen, setPresencaModalOpen] = useState(false);
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
   const [confirmationModalOpen, setConfirmationModalOpen] = useState(false);
@@ -122,27 +126,33 @@ export default function GuestTable() {
   const rangeIsDefault =
     companionsRange[0] === 0 && companionsRange[1] === maxCompanionsValue;
   const filtersActive =
-    !rangeIsDefault || whatsappFilter !== "all" || allergyFilter !== "all";
+    !rangeIsDefault ||
+    whatsappFilter !== "all" ||
+    allergyFilter !== "all" ||
+    statusFilter !== "all";
 
-  async function fetchAllGuests({ ordering }: { ordering: string }) {
-    const pageSize = 200;
-    let currentPage = 1;
-    let results: Guest[] = [];
-    let count = 0;
-    while (true) {
-      const data = await guests_list({
-        page: currentPage,
-        page_size: pageSize,
-        search,
-        ordering,
-      });
-      if (currentPage === 1) count = data.count || 0;
-      results = results.concat(data.results || []);
-      if (!data.results?.length || results.length >= count) break;
-      currentPage += 1;
-    }
-    return { results, count };
-  }
+  const fetchAllGuests = useCallback(
+    async ({ ordering }: { ordering: string }) => {
+      const pageSize = 200;
+      let currentPage = 1;
+      let results: Guest[] = [];
+      let count = 0;
+      while (true) {
+        const data = await guests_list({
+          page: currentPage,
+          page_size: pageSize,
+          search,
+          ordering,
+        });
+        if (currentPage === 1) count = data.count || 0;
+        results = results.concat(data.results || []);
+        if (!data.results?.length || results.length >= count) break;
+        currentPage += 1;
+      }
+      return { results, count };
+    },
+    [search],
+  );
 
   const form = useForm({
     initialValues: {
@@ -202,13 +212,19 @@ export default function GuestTable() {
       }
     }
     fetchGuests();
-  }, [page, recordsPerPage, search, sortStatus, filtersActive]);
+  }, [page, recordsPerPage, search, sortStatus, filtersActive, fetchAllGuests]);
 
   useEffect(() => {
     if (filtersActive) {
       setPage(1);
     }
-  }, [companionsRange, whatsappFilter, allergyFilter, filtersActive]);
+  }, [
+    companionsRange,
+    whatsappFilter,
+    allergyFilter,
+    statusFilter,
+    filtersActive,
+  ]);
 
   useEffect(() => {
     setCompanionsRange((prev) => {
@@ -375,6 +391,9 @@ export default function GuestTable() {
     if (allergyFilter === "with" && !hasAllergy) return false;
     if (allergyFilter === "without" && hasAllergy) return false;
 
+    if (statusFilter !== "all" && g.status_presenca !== statusFilter)
+      return false;
+
     return true;
   });
 
@@ -480,8 +499,9 @@ export default function GuestTable() {
         }
       />
       {viewMode === "table" && (
-        <DataTable
+        <DataTable<Guest>
           className="guest-table"
+          withTableBorder
           borderRadius="xl"
           highlightOnHover
           verticalSpacing="sm"
@@ -511,8 +531,7 @@ export default function GuestTable() {
               accessor: "status_presenca",
               title: "Status",
               width: 120,
-              render: (record: Record<string, unknown>) => {
-                const guest = record as Guest;
+              render: (guest: Guest) => {
                 const statusColors: Record<string, string> = {
                   Pending: "yellow",
                   Confirmed: "green",
@@ -539,8 +558,7 @@ export default function GuestTable() {
               accessor: "actions",
               title: "",
               width: 130,
-              render: (g: Record<string, unknown>) => {
-                const guest = g as Guest;
+              render: (guest: Guest) => {
                 return (
                   <Group gap={4}>
                     {guest.status_presenca === "Pending" && (
@@ -663,12 +681,13 @@ export default function GuestTable() {
               },
             },
           ]}
-          records={paginatedGuests as unknown as Record<string, unknown>[]}
+          records={paginatedGuests}
           totalRecords={derivedTotalRecords}
           page={page}
           onPageChange={setPage}
           recordsPerPage={recordsPerPage}
           onRecordsPerPageChange={setRecordsPerPage}
+          recordsPerPageOptions={[10, 20, 50]}
           sortStatus={sortStatus}
           onSortStatusChange={setSortStatus}
           rowStyle={() => ({ background: "#f8f9fa" })}
@@ -676,7 +695,6 @@ export default function GuestTable() {
             table: { fontSize: rem(15) },
           }}
           striped
-          responsive
           fetching={loading}
           paginationText={({ from, to, totalRecords }) =>
             `${from}–${to} de ${totalRecords}`
@@ -1112,6 +1130,25 @@ export default function GuestTable() {
           </Group>
           <Stack gap="xs">
             <Text size="sm" fw={600}>
+              Status de Presença
+            </Text>
+            <Select
+              value={statusFilter}
+              onChange={(value) =>
+                setStatusFilter((value as typeof statusFilter) || "all")
+              }
+              data={[
+                { value: "all", label: "Todos os status" },
+                { value: "Pending", label: "Pendente" },
+                { value: "Confirmed", label: "Confirmado" },
+                { value: "Refused", label: "Recusado" },
+              ]}
+              w={{ base: "100%", sm: 200 }}
+              styles={inputStyles}
+            />
+          </Stack>
+          <Stack gap="xs">
+            <Text size="sm" fw={600}>
               WhatsApp
             </Text>
             <Select
@@ -1154,6 +1191,7 @@ export default function GuestTable() {
                 setCompanionsRange([0, maxCompanionsValue]);
                 setWhatsappFilter("all");
                 setAllergyFilter("all");
+                setStatusFilter("all");
               }}
             >
               Limpar filtros
