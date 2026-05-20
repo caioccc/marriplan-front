@@ -30,14 +30,6 @@ export function MarkAsPurchasedModal({
       onConfirm(customName);
     } else if (!useCustomName && selectedGuest) {
       const guest = guests.find((g) => g.id == selectedGuest);
-      console.log(
-        "Selected guest:",
-        guest,
-        "Selected guest ID:",
-        selectedGuest,
-        "guests",
-        guests,
-      );
       onConfirm(guest?.name || "");
     }
     onClose();

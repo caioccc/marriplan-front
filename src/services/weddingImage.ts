@@ -1,6 +1,6 @@
 import api from './api';
 
-export async function uploadWeddingImage(file: File, folder = 'wedding-site') {
+export async function uploadCloudinaryImage(file: File, folder = 'wedding-site') {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('folder', folder);
@@ -9,6 +9,10 @@ export async function uploadWeddingImage(file: File, folder = 'wedding-site') {
     withCredentials: true,
   });
   return response.data; // WeddingImage
+}
+
+export async function uploadWeddingImage(file: File, folder = 'wedding-site') {
+  return uploadCloudinaryImage(file, folder);
 }
 
 export async function deleteWeddingImage(public_id: string) {

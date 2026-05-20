@@ -27,7 +27,22 @@ export function ItemCard<T>({
     setImageError(true);
   };
 
-  const imagePlaceholder = (
+  const imagePlaceholderVertical = (
+    <Flex
+      justify="center"
+      align="center"
+      w={'100%'}
+      h={180}
+      bg="gray.1"
+      style={{ borderRadius: "var(--mantine-radius-md)" }}
+    >
+      {fallbackIcon || (
+        <IconPhoto size={48} color="var(--mantine-color-gray-5)" />
+      )}
+    </Flex>
+  );
+
+  const imagePlaceholderHorizontal = (
     <Flex
       justify="center"
       align="center"
@@ -47,14 +62,15 @@ export function ItemCard<T>({
       <Image
         src={imageUrl}
         alt="Item image"
-        height={layout === "horizontal" ? 100 : 160}
-        width={layout === "horizontal" ? 100 : "auto"}
+        w="100%"
+        h="100%"
         radius="md"
         fit="cover"
+        style={{ display: "block" }}
         onError={handleImageError}
       />
     ) : (
-      imagePlaceholder
+      layout === "vertical" ? imagePlaceholderVertical : imagePlaceholderHorizontal
     );
 
   const menu = (
@@ -89,7 +105,15 @@ export function ItemCard<T>({
           {menu}
         </Box>
         <Flex direction="column" gap="xs">
-          <Card.Section>{imageContent}</Card.Section>
+          <Card.Section>
+            <Box
+              w="100%"
+              h={180}
+              style={{ margin: "0 auto", overflow: "hidden", borderTopLeftRadius: 12, borderTopRightRadius: 12 }}
+            >
+              {imageContent}
+            </Box>
+          </Card.Section>
           <Box mt="sm">{renderContent(item)}</Box>
         </Flex>
       </Card>
@@ -99,7 +123,11 @@ export function ItemCard<T>({
   return (
     <Card padding="lg" radius="lg" withBorder style={cardStyle}>
       <Flex gap="lg" align="flex-start">
-        <Box w={100} h={100} style={{ flexShrink: 0 }}>
+        <Box
+          w={100}
+          h={100}
+          style={{ flexShrink: 0, overflow: "hidden", borderRadius: 12 }}
+        >
           {imageContent}
         </Box>
         <Flex

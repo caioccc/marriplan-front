@@ -16,6 +16,8 @@ import {
 } from "@mantine/core";
 import { IconBox, IconGift, IconHeart, IconHome } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
+import { ImageDropzone } from "./ImageUpload";
+import { uploadCloudinaryImage } from "@/services/weddingImage";
 
 interface GiftFormModalProps {
   opened: boolean;
@@ -87,9 +89,10 @@ export function GiftFormModal({
       }
       onSave(gift);
       onClose();
-    } catch (e: any) {
+    } catch (e: unknown) {
       const errorMessage =
-        e?.response?.data?.detail || "Erro ao salvar presente.";
+        (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        "Erro ao salvar presente.";
       setSubmitError(String(errorMessage));
     } finally {
       setLoading(false);
@@ -235,7 +238,33 @@ export function GiftFormModal({
           mb="sm"
           error={errors.status}
         />
-        {/* <ImageUpload label="Imagem" value={form.image} onChange={handleImageUpload} mb="sm" /> */}
+        <ImageDropzone
+          title="Imagem do presente"
+          label="Adicionar imagem"
+          value={form.image || null}
+          uploadFile={async (file) => {
+            try {
+              return await uploadCloudinaryImage(file, "gift-images");
+            } catch {
+              return null;
+            }
+          }}
+          onChange={async (image: unknown) => {
+            const uploaded = image as { url?: string; id_cloudinary?: string; public_id?: string } | string | null;
+            handleChange(
+              "image",
+              typeof uploaded === "string" ? uploaded : uploaded?.url || ""
+            );
+            handleChange(
+              "image_public_id",
+              typeof uploaded === "string" ? "" : uploaded?.id_cloudinary || uploaded?.public_id || ""
+            );
+          }}
+          onRemove={async () => {
+            handleChange("image", "");
+            handleChange("image_public_id", "");
+          }}
+        />
         <Group mt="md" justify="flex-end">
           <Button onClick={onClose} variant="default">
             Cancelar

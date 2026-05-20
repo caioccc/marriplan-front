@@ -67,11 +67,10 @@ export default function HomePage() {
           ],
           { duration: 180, easing: "cubic-bezier(.2,.9,.3,1)" },
         );
-      } catch (err) {
-        console.log(
-          "Animation not supported, navigating without animation",
-          err,
-        );
+      } catch {
+        // fallback for browsers that don't support WAAPI
+        el.style.transform = "translateY(-6px) scale(0.995)";
+        el.style.opacity = "0.98";
       }
       setTimeout(() => {
         router.push(href);

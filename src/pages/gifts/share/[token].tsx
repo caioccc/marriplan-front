@@ -103,8 +103,7 @@ export default function GiftsSharePage() {
     try {
       const res = await api.get(`/api/wedding-profile/${profileId}/`);
       setWeddingProfile(res.data);
-    } catch (e) {
-      console.log("Erro ao buscar dados do casamento:", e);
+    } catch {
       setWeddingProfile(null);
     }
   }, []);

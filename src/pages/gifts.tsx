@@ -14,7 +14,10 @@ import {
   segmentedTabsStyles,
   softButtonStyles,
 } from "@/styles";
-import { getCategoryOptionsFromSlugs, getAllCategoryOptions } from "@/lib/giftCategories";
+import {
+  getCategoryOptionsFromSlugs,
+  getAllCategoryOptions,
+} from "@/lib/giftCategories";
 import { Gift } from "@/types/gift";
 import {
   ActionIcon,
@@ -129,7 +132,6 @@ const GiftsPage: NextPage = () => {
     getAllCategoryOptions(),
   );
 
-
   useEffect(() => {
     let mounted = true;
     async function loadAllCategories() {
@@ -140,7 +142,9 @@ const GiftsPage: NextPage = () => {
           new Set(
             items
               .map((g: Gift) => g.category)
-              .filter((c): c is string => typeof c === "string" && c.length > 0),
+              .filter(
+                (c): c is string => typeof c === "string" && c.length > 0,
+              ),
           ),
         );
         const opts = getCategoryOptionsFromSlugs(cats);
@@ -336,6 +340,22 @@ const GiftsPage: NextPage = () => {
       setGifts(res.results);
       setTotal(res.count);
     });
+    // atualiza categorias (pode ter vindo nova categoria da importação)
+    try {
+      const res = await giftsService.listAllGifts();
+      const items = (res.results || []) as Gift[];
+      const cats = Array.from(
+        new Set(
+          items
+            .map((g: Gift) => g.category)
+            .filter((c): c is string => typeof c === "string" && c.length > 0),
+        ),
+      );
+      const opts = getCategoryOptionsFromSlugs(cats);
+      setCategoryOptions(opts);
+    } catch {
+      // silently ignore
+    }
     return { success: true };
   };
 
@@ -537,7 +557,9 @@ const GiftsPage: NextPage = () => {
                 <Group justify="flex-end" gap="xs" wrap="wrap">
                   <SegmentedControl
                     value={viewMode === "table" ? "cards" : viewMode}
-                    onChange={(v) => setViewMode(v as "table" | "cards" | "gallery")}
+                    onChange={(v) =>
+                      setViewMode(v as "table" | "cards" | "gallery")
+                    }
                     data={[
                       { value: "cards", label: <IconCards size={16} /> },
                       { value: "gallery", label: <IconLayoutGrid size={16} /> },
@@ -588,7 +610,9 @@ const GiftsPage: NextPage = () => {
                   </Group>
                   <SegmentedControl
                     value={viewMode}
-                    onChange={(v) => setViewMode(v as "table" | "cards" | "gallery")}
+                    onChange={(v) =>
+                      setViewMode(v as "table" | "cards" | "gallery")
+                    }
                     data={[
                       { value: "table", label: <IconList size={16} /> },
                       { value: "cards", label: <IconCards size={16} /> },
@@ -681,23 +705,23 @@ const GiftsPage: NextPage = () => {
                   ),
                 },
               ]}
-            fetching={loading}
-            totalRecords={total}
-            page={page}
-            onPageChange={setPage}
-            recordsPerPage={pageSize}
-            minHeight={300}
-            highlightOnHover
-            withTableBorder
-            borderRadius="xl"
-            verticalSpacing="sm"
-            horizontalSpacing="md"
-            striped
-            noRecordsText="Nenhum presente cadastrado."
-            paginationText={({ from, to, totalRecords }) =>
-              `${from}–${to} de ${totalRecords}`
-            }
-          />
+              fetching={loading}
+              totalRecords={total}
+              page={page}
+              onPageChange={setPage}
+              recordsPerPage={pageSize}
+              minHeight={300}
+              highlightOnHover
+              withTableBorder
+              borderRadius="xl"
+              verticalSpacing="sm"
+              horizontalSpacing="md"
+              striped
+              noRecordsText="Nenhum presente cadastrado."
+              paginationText={({ from, to, totalRecords }) =>
+                `${from}–${to} de ${totalRecords}`
+              }
+            />
           </Box>
         )}
         {viewMode === "cards" && (

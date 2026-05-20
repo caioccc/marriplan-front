@@ -194,7 +194,6 @@ const ChatContent: NextPage = () => {
             setLoadingSession(true);
             const response = await getTotalSessions();
             const data = response.data.results || [];
-            console.log(data)
             setSessions(data);
             if (data.length > 0) {
                 // seleciona a primeira sessão ordenada por data (updated_at) da mais atual para a mais antiga
@@ -345,7 +344,6 @@ const ChatContent: NextPage = () => {
                                     )
                                 );
                             } else if (data.type === 'done' && data.metrics) {
-                                console.log('Métricas recebidas:', data.metrics); // <-- log das métricas
                                 setMessages((prev) =>
                                     prev.map((msg) =>
                                         msg.id === aiMsgId

@@ -7,6 +7,7 @@ export interface Gift {
   description?: string;
   category: string;
   image?: string;
+  image_public_id?: string;
   icon?: string;
   status: 'available' | 'purchased' | 'reserved';
   purchased_by?: string;

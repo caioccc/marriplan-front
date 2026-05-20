@@ -37,7 +37,6 @@ function Countdown({ date, time }: { date: string; time?: string }) {
   useEffect(() => {
     if (!date) return;
     let dateTime = date;
-    console.log("Date:", date, "Time:", time);
     if (time) dateTime += "T" + time;
     setTarget(new Date(dateTime));
   }, [date, time]);
@@ -76,7 +75,6 @@ function Countdown({ date, time }: { date: string; time?: string }) {
 }
 
 export default function WeddingLanding({ data }: { data: any }) {
-  console.log("Dados do site:", data);
   // Ajusta para ler dados do modelo WeddingSite (sem content)
   const theme = data.template || "classico";
   const casal = `${data.groom_name || ""} & ${data.bride_name || ""}`;

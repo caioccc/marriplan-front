@@ -49,8 +49,7 @@ export function SettingsProvider({children}: { children: ReactNode }) {
     const saveSettings = async (data: Partial<Settings>) => {
         setLoading(true);
         try {
-            const saveSetsResponse = await updateSettings(data);
-            console.log('Settings saved Context:', saveSetsResponse);
+            await updateSettings(data);
         } finally {
             setLoading(false);
         }

@@ -22,7 +22,8 @@ import {
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useEffect, useMemo, useState } from "react";
-import { IMaskInput } from "react-imask";
+import { ImageDropzone } from "./ImageUpload";
+import { uploadCloudinaryImage } from "@/services/weddingImage";
 
 type SupplierFormModalProps = {
   opened: boolean;
@@ -47,6 +48,7 @@ type SupplierFormState = {
   city: string;
   state: string;
   cover_image_url: string;
+  cover_image_public_id: string;
 };
 
 const emptyForm: SupplierFormState = {
@@ -63,6 +65,7 @@ const emptyForm: SupplierFormState = {
   city: "",
   state: "",
   cover_image_url: "",
+  cover_image_public_id: "",
 };
 
 function getCategoryId(supplier?: Supplier | null) {
@@ -92,6 +95,7 @@ function buildFormState(supplier?: Supplier | null): SupplierFormState {
     city: supplier.city || "",
     state: supplier.state || "",
     cover_image_url: supplier.cover_image_url || "",
+    cover_image_public_id: supplier.cover_image_public_id || "",
   };
 }
 
@@ -253,8 +257,6 @@ export function SupplierFormModal({
 
             <TextInput
               label="Telefone"
-              component={IMaskInput}
-              mask="(00) 00000-0000"
               placeholder="(00) 00000-0000"
               value={form.phone}
               onChange={(event) =>
@@ -268,8 +270,6 @@ export function SupplierFormModal({
 
             <TextInput
               label="WhatsApp"
-              component={IMaskInput}
-              mask="(00) 00000-0000"
               placeholder="(00) 00000-0000"
               value={form.whatsapp}
               onChange={(event) =>
@@ -295,8 +295,6 @@ export function SupplierFormModal({
 
             <TextInput
               label="CNPJ"
-              component={IMaskInput}
-              mask="00.000.000/0000-00"
               placeholder="00.000.000/0000-00"
               value={form.cnpj}
               onChange={(event) =>
@@ -367,6 +365,39 @@ export function SupplierFormModal({
                 }))
               }
               styles={inputStyles}
+            />
+            <ImageDropzone
+              title="Foto de capa"
+              label="Adicionar imagem"
+              value={form.cover_image_url || null}
+              uploadFile={async (file) => {
+                try {
+                  return await uploadCloudinaryImage(file, "supplier-covers");
+                } catch {
+                  return null;
+                }
+              }}
+              onChange={async (image: unknown) =>
+                setForm((prev) => {
+                  const uploaded = image as { url?: string; id_cloudinary?: string; public_id?: string } | string | null;
+                  return {
+                    ...prev,
+                    cover_image_url:
+                      typeof uploaded === "string" ? uploaded : uploaded?.url || "",
+                    cover_image_public_id:
+                      typeof uploaded === "string"
+                        ? ""
+                        : uploaded?.id_cloudinary || uploaded?.public_id || "",
+                  };
+                })
+              }
+              onRemove={async () =>
+                setForm((prev) => ({
+                  ...prev,
+                  cover_image_url: "",
+                  cover_image_public_id: "",
+                }))
+              }
             />
           </Stack>
         ) : (
@@ -532,6 +563,39 @@ export function SupplierFormModal({
                 }))
               }
               styles={inputStyles}
+            />
+            <ImageDropzone
+              title="Foto de capa"
+              label="Adicionar imagem"
+              value={form.cover_image_url || null}
+              uploadFile={async (file) => {
+                try {
+                  return await uploadCloudinaryImage(file, "supplier-covers");
+                } catch {
+                  return null;
+                }
+              }}
+              onChange={async (image: unknown) =>
+                setForm((prev) => {
+                  const uploaded = image as { url?: string; id_cloudinary?: string; public_id?: string } | string | null;
+                  return {
+                    ...prev,
+                    cover_image_url:
+                      typeof uploaded === "string" ? uploaded : uploaded?.url || "",
+                    cover_image_public_id:
+                      typeof uploaded === "string"
+                        ? ""
+                        : uploaded?.id_cloudinary || uploaded?.public_id || "",
+                  };
+                })
+              }
+              onRemove={async () =>
+                setForm((prev) => ({
+                  ...prev,
+                  cover_image_url: "",
+                  cover_image_public_id: "",
+                }))
+              }
             />
           </Stack>
         )}

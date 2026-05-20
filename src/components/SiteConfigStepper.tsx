@@ -532,7 +532,6 @@ export default function SiteConfigStepper({
             value={form.values.gallery || []}
             onRemove={async (img: any) => {
               if (img.id_cloudinary) {
-                console.log("Removendo imagem:", img.id_cloudinary);
                 try {
                   await deleteWeddingImage(img.id_cloudinary);
                   const newGallery = form.values.gallery.filter(

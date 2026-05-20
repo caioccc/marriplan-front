@@ -64,6 +64,8 @@ import {
 import { Pagination } from "@mantine/core";
 import PageSectionHeader from "./PageSectionHeader";
 import { toSentenceCase, toUpperCamelWords } from "@/lib/text";
+import { ImageDropzone } from "@/components/ImageUpload";
+import { uploadCloudinaryImage } from "@/services/weddingImage";
 
 interface Guest {
   [key: string]: unknown;
@@ -71,6 +73,8 @@ interface Guest {
   name: string;
   phone: string;
   whatsapp: string; // agora é string (número)
+  photo_url?: string;
+  photo_public_id?: string;
   email: string;
   alergias?: string;
   acompanhantes?: number;
@@ -154,6 +158,8 @@ export default function GuestTable() {
       phone: "",
       hasWhatsapp: false,
       whatsapp: "",
+      photo_url: "",
+      photo_public_id: "",
       email: "",
       alergias: "",
       acompanhantes: "",
@@ -253,6 +259,8 @@ export default function GuestTable() {
       phone: "",
       hasWhatsapp: false,
       whatsapp: "",
+      photo_url: "",
+      photo_public_id: "",
       email: "",
       alergias: "",
       acompanhantes: "",
@@ -269,6 +277,8 @@ export default function GuestTable() {
       phone: guest.phone,
       hasWhatsapp: !!guest.whatsapp,
       whatsapp: guest.whatsapp || "",
+      photo_url: guest.photo_url || "",
+      photo_public_id: guest.photo_public_id || "",
       email: guest.email,
       alergias: guest.alergias || "",
       acompanhantes: guest.acompanhantes?.toString() || "",
@@ -283,6 +293,8 @@ export default function GuestTable() {
       name: toUpperCamelWords(values.name),
       phone: values.phone,
       whatsapp: values.hasWhatsapp ? values.whatsapp : "",
+      photo_url: values.photo_url || "",
+      photo_public_id: values.photo_public_id || "",
       email: values.email,
       alergias: toSentenceCase(values.alergias),
       acompanhantes:
@@ -852,7 +864,7 @@ export default function GuestTable() {
         <ListView
           items={paginatedGuests}
           getItemId={(g) => g.id}
-          getImageUrl={() => undefined} // Convidados não têm imagem, então é undefined
+          getImageUrl={(g) => g.photo_url || undefined}
           fallbackIcon={
             <IconUser size={48} color="var(--mantine-color-gray-5)" />
           }
@@ -955,7 +967,7 @@ export default function GuestTable() {
         <GalleryView
           items={paginatedGuests}
           getItemId={(g) => g.id}
-          getImageUrl={() => undefined} // Convidados não têm imagem, então é undefined
+          getImageUrl={(g) => g.photo_url || undefined}
           fallbackIcon={
             <IconUser size={48} color="var(--mantine-color-gray-5)" />
           }
@@ -1069,7 +1081,7 @@ export default function GuestTable() {
         onClose={() => setModalOpen(false)}
         title={editing ? "Editar convidado" : "Adicionar convidado"}
         centered
-        size="md"
+        size="xl"
         overlayProps={{ blur: 2 }}
       >
         <form onSubmit={form.onSubmit(handleSubmit)}>
@@ -1137,6 +1149,45 @@ export default function GuestTable() {
                 styles={inputStyles}
               />
             )}
+            <ImageDropzone
+              title="Foto do convidado"
+              label="Adicionar foto"
+              value={form.values.photo_url || null}
+              uploadFile={async (file) => {
+                try {
+                  return await uploadCloudinaryImage(file, "guest-photos");
+                } catch (error: unknown) {
+                  const normalizedError = error as {
+                    response?: { data?: { error?: string } };
+                  };
+                  notifications.show({
+                    color: "red",
+                    message:
+                      normalizedError?.response?.data?.error ||
+                      "Não foi possível enviar a foto.",
+                  });
+                  return null;
+                }
+              }}
+              onChange={async (image: unknown) => {
+                const uploaded = image as { url?: string; id_cloudinary?: string; public_id?: string } | string | null;
+                form.setFieldValue(
+                  "photo_url",
+                  typeof uploaded === "string" ? uploaded : uploaded?.url || "",
+                );
+                form.setFieldValue(
+                  "photo_public_id",
+                  typeof uploaded === "string"
+                    ? ""
+                    : uploaded?.id_cloudinary || uploaded?.public_id || "",
+                );
+              }}
+              onRemove={async () => {
+                form.setFieldValue("photo_url", "");
+                form.setFieldValue("photo_public_id", "");
+              }}
+              public_id={form.values.photo_public_id}
+            />
             <TextInput
               label="Email"
               type="email"
