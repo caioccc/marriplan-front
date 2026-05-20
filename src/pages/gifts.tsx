@@ -14,6 +14,7 @@ import {
   segmentedTabsStyles,
   softButtonStyles,
 } from "@/styles";
+import { getCategoryOptionsFromSlugs, getAllCategoryOptions } from "@/lib/giftCategories";
 import { Gift } from "@/types/gift";
 import {
   ActionIcon,
@@ -71,12 +72,7 @@ const statusLabels: Record<string, { label: string }> = {
   reserved: { label: "Reservado" },
 };
 
-const categoryOptions = [
-  { value: "", label: "Todas" },
-  { value: "home", label: "Casa" },
-  { value: "kitchen", label: "Cozinha" },
-  { value: "decor", label: "Decoração" },
-];
+// categoryOptions will be populated from backend gifts (unique categories)
 
 const paginationThemeStyles = `
   .gifts-pagination .mantine-Pagination-control,
@@ -128,6 +124,36 @@ const GiftsPage: NextPage = () => {
   const isCompactLayout = useMediaQuery("(max-width: 1024px)");
   const pageSize = 10;
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [categoryOptions, setCategoryOptions] = useState(
+    getAllCategoryOptions(),
+  );
+
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadAllCategories() {
+      try {
+        const res = await giftsService.listAllGifts();
+        const items = (res.results || []) as Gift[];
+        const cats = Array.from(
+          new Set(
+            items
+              .map((g: Gift) => g.category)
+              .filter((c): c is string => typeof c === "string" && c.length > 0),
+          ),
+        );
+        const opts = getCategoryOptionsFromSlugs(cats);
+        if (mounted) setCategoryOptions(opts);
+      } catch {
+        // silently ignore
+      }
+    }
+    loadAllCategories();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (advancedFiltersOpen) {
@@ -511,7 +537,7 @@ const GiftsPage: NextPage = () => {
                 <Group justify="flex-end" gap="xs" wrap="wrap">
                   <SegmentedControl
                     value={viewMode === "table" ? "cards" : viewMode}
-                    onChange={setViewMode}
+                    onChange={(v) => setViewMode(v as "table" | "cards" | "gallery")}
                     data={[
                       { value: "cards", label: <IconCards size={16} /> },
                       { value: "gallery", label: <IconLayoutGrid size={16} /> },
@@ -562,7 +588,7 @@ const GiftsPage: NextPage = () => {
                   </Group>
                   <SegmentedControl
                     value={viewMode}
-                    onChange={setViewMode}
+                    onChange={(v) => setViewMode(v as "table" | "cards" | "gallery")}
                     data={[
                       { value: "table", label: <IconList size={16} /> },
                       { value: "cards", label: <IconCards size={16} /> },

@@ -22,6 +22,7 @@ import {
   IconHome
 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
+import { getAllCategoryOptions, getCategoryLabel } from "@/lib/giftCategories";
 
 interface GiftFormModalProps {
   opened: boolean;
@@ -88,8 +89,8 @@ export function GiftFormModal({
       }
       onSave(gift);
       onClose();
-    } catch (e) {
-      const errorMessage = (e as Record<string, unknown>)?.response?.data?.detail || "Erro ao salvar presente.";
+    } catch (e: any) {
+      const errorMessage = e?.response?.data?.detail || "Erro ao salvar presente.";
       setSubmitError(String(errorMessage));
     } finally {
       setLoading(false);
@@ -207,23 +208,7 @@ export function GiftFormModal({
           required
           value={form.category || ""}
           onChange={(v) => handleChange("category", v)}
-          data={[
-            { value: "home", label: "Casa" },
-            { value: "travel", label: "Viagem" },
-            { value: "money", label: "Dinheiro" },
-            { value: "other", label: "Outros" },
-            { value: "experience", label: "Experiência" },
-            { value: "charity", label: "Caridade" },
-            { value: "electronics", label: "Eletrônicos" },
-            { value: "furniture", label: "Móveis" },
-            { value: "kitchen", label: "Cozinha" },
-            { value: "clothing", label: "Roupas" },
-            { value: "books", label: "Livros" },
-            { value: "toys", label: "Brinquedos" },
-            { value: "jewelry", label: "Joias" },
-            { value: "decor", label: "Decoração" },
-            { value: "gift_card", label: "Cartão Presente" },
-          ]}
+          data={getAllCategoryOptions()}
           mb="sm"
           error={errors.category}
         />
@@ -236,12 +221,6 @@ export function GiftFormModal({
             label: opt.label,
             icon: opt.icon,
           }))}
-          itemComponent={({ value, label }) => (
-            <Group>
-              <span>{iconOptions.find((i) => i.value === value)?.icon}</span>
-              <span>{label}</span>
-            </Group>
-          )}
           mb="sm"
         />
         <Select
@@ -292,7 +271,7 @@ export function GiftFormModal({
             />
             <TextInput
               label="Categoria"
-              value={form.category || ""}
+              value={getCategoryLabel(form.category || "")}
               readOnly
               mb="sm"
             />

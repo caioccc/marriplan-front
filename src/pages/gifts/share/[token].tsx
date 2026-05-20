@@ -34,20 +34,14 @@ import {
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useState } from "react";
+import { getCategoryLabel } from "@/lib/giftCategories";
 
 const STATUS_LABELS: Record<string, string> = {
   available: "Disponível",
   purchased: "Comprado",
   reserved: "Reservado",
 };
-const CATEGORY_LABELS: Record<string, string> = {
-  kitchen: "Cozinha",
-  home: "Casa",
-  electronics: "Eletrônicos",
-  decor: "Decoração",
-  bath: "Banho",
-  // ...adicione outras categorias conforme necessário
-};
+// categorias agora centralizadas em frontend/src/lib/giftCategories.ts
 
 function formatCurrency(value: number | string) {
   if (typeof value === "string") value = parseFloat(value);
@@ -248,7 +242,7 @@ export default function GiftsSharePage() {
           {categories.map((cat) => (
             <Checkbox
               key={cat}
-              label={CATEGORY_LABELS[cat] || cat}
+              label={getCategoryLabel(cat)}
               checked={selectedCategories.includes(cat)}
               onChange={() => handleCategoryChange(cat)}
             />
@@ -558,7 +552,7 @@ export default function GiftsSharePage() {
                       style={isLocked ? { textDecoration: "line-through" } : {}}
                     >
                       <b>Categoria:</b>{" "}
-                      {CATEGORY_LABELS[gift.category] || gift.category}
+                      {getCategoryLabel(gift.category)}
                     </Text>
                   ) : (
                     <Text
