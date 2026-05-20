@@ -63,6 +63,7 @@ import {
 } from "@/styles";
 import { Pagination } from "@mantine/core";
 import PageSectionHeader from "./PageSectionHeader";
+import { toSentenceCase, toUpperCamelWords } from "@/lib/text";
 
 interface Guest {
   [key: string]: unknown;
@@ -279,14 +280,14 @@ export default function GuestTable() {
 
   async function handleSubmit(values: typeof form.values) {
     const payload: Record<string, string | number | null | undefined> = {
-      name: values.name,
+      name: toUpperCamelWords(values.name),
       phone: values.phone,
       whatsapp: values.hasWhatsapp ? values.whatsapp : "",
       email: values.email,
-      alergias: values.alergias,
+      alergias: toSentenceCase(values.alergias),
       acompanhantes:
         values.acompanhantes === "" ? null : Number(values.acompanhantes),
-      observacoes: values.observacoes,
+      observacoes: toSentenceCase(values.observacoes),
     };
     if (values.status_presenca) {
       payload.status_presenca = values.status_presenca;

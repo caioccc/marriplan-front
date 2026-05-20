@@ -1,8 +1,7 @@
+import { getAllCategoryOptions, getCategoryLabel } from "@/lib/giftCategories";
+import { toSentenceCase, toUpperCamelWords } from "@/lib/text";
 import { giftsService } from "@/services/giftsService";
-import {
-  inputStyles,
-  primaryButtonStylesWithDisabled
-} from "@/styles";
+import { inputStyles, primaryButtonStylesWithDisabled } from "@/styles";
 import { Gift } from "@/types/gift";
 import {
   Box,
@@ -13,16 +12,10 @@ import {
   Notification,
   Select,
   Textarea,
-  TextInput
+  TextInput,
 } from "@mantine/core";
-import {
-  IconBox,
-  IconGift,
-  IconHeart,
-  IconHome
-} from "@tabler/icons-react";
+import { IconBox, IconGift, IconHeart, IconHome } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
-import { getAllCategoryOptions, getCategoryLabel } from "@/lib/giftCategories";
 
 interface GiftFormModalProps {
   opened: boolean;
@@ -82,15 +75,21 @@ export function GiftFormModal({
     setLoading(true);
     try {
       let gift;
+      const payload = {
+        ...form,
+        name: toUpperCamelWords(form.name || ""),
+        description: toSentenceCase(form.description || ""),
+      };
       if (form.id) {
-        gift = await giftsService.updateGift(form.id, form);
+        gift = await giftsService.updateGift(form.id, payload);
       } else {
-        gift = await giftsService.createGift(form);
+        gift = await giftsService.createGift(payload);
       }
       onSave(gift);
       onClose();
     } catch (e: any) {
-      const errorMessage = e?.response?.data?.detail || "Erro ao salvar presente.";
+      const errorMessage =
+        e?.response?.data?.detail || "Erro ao salvar presente.";
       setSubmitError(String(errorMessage));
     } finally {
       setLoading(false);

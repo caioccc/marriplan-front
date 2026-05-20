@@ -17,6 +17,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { ptBR } from "date-fns/locale";
 import { useEffect, useState } from "react";
+import { toSentenceCase } from "@/lib/text";
 
 const PRIORITY_OPTIONS = [
   { value: "high", label: "Alta" },
@@ -74,12 +75,12 @@ export default function ChecklistTaskModal({
   function handleSave() {
     onSave(
       {
-        description,
+        description: toSentenceCase(description),
         start_date: startDate?.toISOString().slice(0, 10),
         due_date: dueDate?.toISOString().slice(0, 10),
         priority,
         status,
-        notes,
+        notes: toSentenceCase(notes),
       },
       file || undefined,
     );

@@ -163,7 +163,6 @@ const MarriplanDashboard: React.FC = () => {
     }
     // Convidados
     const totalGuests = guests.count;
-    console.log("Total de convidados:", guests);
     const confirmedGuests = guests.results.filter(
       (g) => g.status_presenca === "Confirmed",
     ).length;

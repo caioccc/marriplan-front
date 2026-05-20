@@ -1,26 +1,28 @@
 //eslint-disable @typescript-eslint/no-explicit-any
 //eslint-disable @typescript-eslint/no-unused-vars
 //eslint-disable react-hooks/exhaustive-deps
+import { toSentenceCase, toUpperCamelWords } from "@/lib/text";
 import {
-    createSupplier,
-    Supplier,
-    SupplierCategory,
-    updateSupplier,
+  createSupplier,
+  Supplier,
+  SupplierCategory,
+  updateSupplier,
 } from "@/services/suppliers";
 import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
-    Button,
-    Group,
-    Modal,
-    Select,
-    Stack,
-    Text,
-    Textarea,
-    TextInput
+  Button,
+  Group,
+  Modal,
+  Select,
+  Stack,
+  Text,
+  Textarea,
+  TextInput,
 } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
 import { useMediaQuery } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
 import { useEffect, useMemo, useState } from "react";
+import { IMaskInput } from "react-imask";
 
 type SupplierFormModalProps = {
   opened: boolean;
@@ -138,6 +140,11 @@ export function SupplierFormModal({
     try {
       const payload = {
         ...form,
+        name: toUpperCamelWords(form.name),
+        city: toUpperCamelWords(form.city),
+        state: toUpperCamelWords(form.state),
+        company_name: toUpperCamelWords(form.company_name),
+        description: toSentenceCase(form.description),
         category_id: Number(form.category_id),
       };
 
@@ -210,7 +217,10 @@ export function SupplierFormModal({
               label="Nome"
               value={form.name}
               onChange={(event) =>
-                setForm((prev) => ({ ...prev, name: event.currentTarget.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  name: event.currentTarget.value,
+                }))
               }
               required
               styles={inputStyles}
@@ -243,15 +253,24 @@ export function SupplierFormModal({
 
             <TextInput
               label="Telefone"
+              component={IMaskInput}
+              mask="(00) 00000-0000"
+              placeholder="(00) 00000-0000"
               value={form.phone}
               onChange={(event) =>
-                setForm((prev) => ({ ...prev, phone: event.currentTarget.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  phone: event.currentTarget.value,
+                }))
               }
               styles={inputStyles}
             />
 
             <TextInput
               label="WhatsApp"
+              component={IMaskInput}
+              mask="(00) 00000-0000"
+              placeholder="(00) 00000-0000"
               value={form.whatsapp}
               onChange={(event) =>
                 setForm((prev) => ({
@@ -266,16 +285,25 @@ export function SupplierFormModal({
               label="E-mail"
               value={form.email}
               onChange={(event) =>
-                setForm((prev) => ({ ...prev, email: event.currentTarget.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  email: event.currentTarget.value,
+                }))
               }
               styles={inputStyles}
             />
 
             <TextInput
               label="CNPJ"
+              component={IMaskInput}
+              mask="00.000.000/0000-00"
+              placeholder="00.000.000/0000-00"
               value={form.cnpj}
               onChange={(event) =>
-                setForm((prev) => ({ ...prev, cnpj: event.currentTarget.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  cnpj: event.currentTarget.value,
+                }))
               }
               styles={inputStyles}
             />
@@ -308,7 +336,10 @@ export function SupplierFormModal({
               label="Cidade"
               value={form.city}
               onChange={(event) =>
-                setForm((prev) => ({ ...prev, city: event.currentTarget.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  city: event.currentTarget.value,
+                }))
               }
               styles={inputStyles}
             />
@@ -317,7 +348,10 @@ export function SupplierFormModal({
               label="Estado"
               value={form.state}
               onChange={(event) =>
-                setForm((prev) => ({ ...prev, state: event.currentTarget.value }))
+                setForm((prev) => ({
+                  ...prev,
+                  state: event.currentTarget.value,
+                }))
               }
               styles={inputStyles}
             />
@@ -353,7 +387,10 @@ export function SupplierFormModal({
                 label="Nome"
                 value={form.name}
                 onChange={(event) =>
-                  setForm((prev) => ({ ...prev, name: event.currentTarget.value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    name: event.currentTarget.value,
+                  }))
                 }
                 required
                 styles={inputStyles}
@@ -389,7 +426,10 @@ export function SupplierFormModal({
                 label="Telefone"
                 value={form.phone}
                 onChange={(event) =>
-                  setForm((prev) => ({ ...prev, phone: event.currentTarget.value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    phone: event.currentTarget.value,
+                  }))
                 }
                 styles={inputStyles}
               />
@@ -411,7 +451,10 @@ export function SupplierFormModal({
                 label="E-mail"
                 value={form.email}
                 onChange={(event) =>
-                  setForm((prev) => ({ ...prev, email: event.currentTarget.value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    email: event.currentTarget.value,
+                  }))
                 }
                 styles={inputStyles}
               />
@@ -419,7 +462,10 @@ export function SupplierFormModal({
                 label="CNPJ"
                 value={form.cnpj}
                 onChange={(event) =>
-                  setForm((prev) => ({ ...prev, cnpj: event.currentTarget.value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    cnpj: event.currentTarget.value,
+                  }))
                 }
                 styles={inputStyles}
               />
@@ -455,7 +501,10 @@ export function SupplierFormModal({
                 label="Cidade"
                 value={form.city}
                 onChange={(event) =>
-                  setForm((prev) => ({ ...prev, city: event.currentTarget.value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    city: event.currentTarget.value,
+                  }))
                 }
                 styles={inputStyles}
               />
@@ -463,7 +512,10 @@ export function SupplierFormModal({
                 label="Estado"
                 value={form.state}
                 onChange={(event) =>
-                  setForm((prev) => ({ ...prev, state: event.currentTarget.value }))
+                  setForm((prev) => ({
+                    ...prev,
+                    state: event.currentTarget.value,
+                  }))
                 }
                 styles={inputStyles}
               />

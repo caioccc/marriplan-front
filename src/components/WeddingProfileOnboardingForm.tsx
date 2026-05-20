@@ -19,6 +19,7 @@ import ptBR from "date-fns/locale/pt-BR";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { IMaskInput } from "react-imask";
+import { toUpperCamelWords, toSentenceCase } from "@/lib/text";
 
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
@@ -63,6 +64,44 @@ export default function WeddingProfileOnboardingForm({
     date.setHours(hours, minutes, 0, 0);
     return date;
   };
+
+  const isValidOptionalEmail = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return true;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+  };
+
+  const isValidOptionalUrl = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return true;
+    try {
+      const url = new URL(trimmed);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
+
+  
+  const buildNormalizedPayload = (values: Record<string, any>) => ({
+    ...values,
+    nome_noivo: toUpperCamelWords(values.nome_noivo ?? ""),
+    nome_noiva: toUpperCamelWords(values.nome_noiva ?? ""),
+    local: toUpperCamelWords(values.local ?? ""),
+    bairro: toUpperCamelWords(values.bairro ?? ""),
+    cidade: toUpperCamelWords(values.cidade ?? ""),
+    estado: toUpperCamelWords(values.estado ?? ""),
+    descricao_noivo: toSentenceCase(values.descricao_noivo ?? ""),
+    descricao_noiva: toSentenceCase(values.descricao_noiva ?? ""),
+    frase_casal: toSentenceCase(values.frase_casal ?? ""),
+    historia: toSentenceCase(values.historia ?? ""),
+    email_noivo: (values.email_noivo ?? "").trim().toLowerCase(),
+    email_noiva: (values.email_noiva ?? "").trim().toLowerCase(),
+    facebook_noivo: (values.facebook_noivo ?? "").trim(),
+    instagram_noivo: (values.instagram_noivo ?? "").trim(),
+    facebook_noiva: (values.facebook_noiva ?? "").trim(),
+    instagram_noiva: (values.instagram_noiva ?? "").trim(),
+  });
 
   const form = useForm({
     initialValues: {
@@ -117,21 +156,35 @@ export default function WeddingProfileOnboardingForm({
   }, [form.values.latitude, form.values.longitude]);
 
   const handleSave = async () => {
+    if (!validateStep(0)) {
+      setActive(0);
+      return;
+    }
+    if (!validateStep(1)) {
+      setActive(1);
+      return;
+    }
+    if (!validateStep(2)) {
+      setActive(2);
+      return;
+    }
+
     setLoading(true);
     try {
+      const normalizedValues = buildNormalizedPayload(form.values);
       // Formata data e hora para o backend
       const dataToSend = {
-        ...form.values,
-        data_casamento: form.values.data_casamento
-          ? typeof form.values.data_casamento === "string"
-            ? form.values.data_casamento.slice(0, 10)
-            : form.values.data_casamento.toISOString().slice(0, 10)
+        ...normalizedValues,
+        data_casamento: normalizedValues.data_casamento
+          ? typeof normalizedValues.data_casamento === "string"
+            ? normalizedValues.data_casamento.slice(0, 10)
+            : normalizedValues.data_casamento.toISOString().slice(0, 10)
           : "",
-        hora_casamento: form.values.hora_casamento
-          ? typeof form.values.hora_casamento === "string"
-            ? form.values.hora_casamento.slice(0, 5)
-            : form.values.hora_casamento instanceof Date
-            ? form.values.hora_casamento.toTimeString().slice(0, 5)
+        hora_casamento: normalizedValues.hora_casamento
+          ? typeof normalizedValues.hora_casamento === "string"
+            ? normalizedValues.hora_casamento.slice(0, 5)
+            : normalizedValues.hora_casamento instanceof Date
+            ? normalizedValues.hora_casamento.toTimeString().slice(0, 5)
             : ""
           : "",
       };
@@ -145,7 +198,7 @@ export default function WeddingProfileOnboardingForm({
     } catch (e) {
       toast({
         title: "Erro",
-        description: "Nao foi possivel salvar o perfil.",
+        description: "Nao foi possivel salvar o perfil. Verifique os campos.",
       });
     } finally {
       setLoading(false);
@@ -185,12 +238,16 @@ export default function WeddingProfileOnboardingForm({
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
       address,
     )}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    if (data && data.length > 0) {
-      form.setFieldValue("latitude", parseFloat(data[0].lat));
-      form.setFieldValue("longitude", parseFloat(data[0].lon));
-      return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        form.setFieldValue("latitude", parseFloat(data[0].lat));
+        form.setFieldValue("longitude", parseFloat(data[0].lon));
+        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+      }
+    } catch (e) {
+      console.error("Erro ao geocodificar endereco:", e);
     }
     return null;
   }
@@ -198,31 +255,17 @@ export default function WeddingProfileOnboardingForm({
   // Funcao para buscar endereco pelas coordenadas (reverse geocode)
   async function reverseGeocode(lat: number, lon: number) {
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return data.address || {};
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      return data.address || {};
+    } catch (e) {
+      console.error("Erro ao fazer reverse geocoding:", e);
+      return {};
+    }
   }
 
   // Atualiza o mapa ao preencher o CEP ou endereco
-  useEffect(() => {
-    if (form.values.cep && form.values.endereco && form.values.cidade) {
-      const fullAddress = `${form.values.endereco}, ${
-        form.values.numero || ""
-      }, ${form.values.bairro || ""}, ${form.values.cidade}, ${
-        form.values.estado || ""
-      }`;
-      geocodeAddress(fullAddress).then((coords) => {
-        if (coords) setMapPosition(coords as [number, number]);
-      });
-    }
-  }, [
-    form.values.cep,
-    form.values.endereco,
-    form.values.cidade,
-    form.values.numero,
-    form.values.bairro,
-    form.values.estado,
-  ]);
 
   // Componente para manipular o clique no mapa
   function LocationMarker() {
@@ -283,6 +326,99 @@ export default function WeddingProfileOnboardingForm({
         !!form.values.local
       );
     }
+    return true;
+  }
+
+  function validateStep(step: number): boolean {
+    if (step === 0) {
+      form.clearFieldError("nome_noivo");
+      form.clearFieldError("telefone_noivo");
+      form.clearFieldError("email_noivo");
+      form.clearFieldError("facebook_noivo");
+      form.clearFieldError("instagram_noivo");
+
+      let hasError = false;
+      if (!form.values.nome_noivo) {
+        form.setFieldError("nome_noivo", "Obrigatorio");
+        hasError = true;
+      }
+      if (
+        !form.values.telefone_noivo ||
+        form.values.telefone_noivo.replace(/\D/g, "").length < 10
+      ) {
+        form.setFieldError("telefone_noivo", "Obrigatorio");
+        hasError = true;
+      }
+      if (!isValidOptionalEmail(form.values.email_noivo)) {
+        form.setFieldError("email_noivo", "Email invalido");
+        hasError = true;
+      }
+      if (!isValidOptionalUrl(form.values.facebook_noivo)) {
+        form.setFieldError("facebook_noivo", "URL invalida");
+        hasError = true;
+      }
+      if (!isValidOptionalUrl(form.values.instagram_noivo)) {
+        form.setFieldError("instagram_noivo", "URL invalida");
+        hasError = true;
+      }
+      return !hasError;
+    }
+
+    if (step === 1) {
+      form.clearFieldError("nome_noiva");
+      form.clearFieldError("telefone_noiva");
+      form.clearFieldError("email_noiva");
+      form.clearFieldError("facebook_noiva");
+      form.clearFieldError("instagram_noiva");
+
+      let hasError = false;
+      if (!form.values.nome_noiva) {
+        form.setFieldError("nome_noiva", "Obrigatorio");
+        hasError = true;
+      }
+      if (
+        !form.values.telefone_noiva ||
+        form.values.telefone_noiva.replace(/\D/g, "").length < 10
+      ) {
+        form.setFieldError("telefone_noiva", "Obrigatorio");
+        hasError = true;
+      }
+      if (!isValidOptionalEmail(form.values.email_noiva)) {
+        form.setFieldError("email_noiva", "Email invalido");
+        hasError = true;
+      }
+      if (!isValidOptionalUrl(form.values.facebook_noiva)) {
+        form.setFieldError("facebook_noiva", "URL invalida");
+        hasError = true;
+      }
+      if (!isValidOptionalUrl(form.values.instagram_noiva)) {
+        form.setFieldError("instagram_noiva", "URL invalida");
+        hasError = true;
+      }
+      return !hasError;
+    }
+
+    if (step === 2) {
+      form.clearFieldError("data_casamento");
+      form.clearFieldError("hora_casamento");
+      form.clearFieldError("local");
+
+      let hasError = false;
+      if (!form.values.data_casamento) {
+        form.setFieldError("data_casamento", "Obrigatorio");
+        hasError = true;
+      }
+      if (!form.values.hora_casamento) {
+        form.setFieldError("hora_casamento", "Obrigatorio");
+        hasError = true;
+      }
+      if (!form.values.local) {
+        form.setFieldError("local", "Obrigatorio");
+        hasError = true;
+      }
+      return !hasError;
+    }
+
     return true;
   }
 
@@ -526,7 +662,10 @@ export default function WeddingProfileOnboardingForm({
         {active < 3 ? (
           <Button
             type="button"
-            onClick={() => setActive((a) => Math.min(a + 1, 3))}
+            onClick={() => {
+              if (!validateStep(active)) return;
+              setActive((a) => Math.min(a + 1, 3));
+            }}
             disabled={!isStepValid(active)}
           >
             Proximo

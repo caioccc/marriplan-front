@@ -38,6 +38,7 @@ import {
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMediaQuery } from "@mantine/hooks";
+import { handleValueChange, toSentenceCase } from "@/lib/text";
 
 function formatCurrencyInput(value: string) {
   const normalized = value.replace(/[^\d,.-]/g, "").replace(",", ".");
@@ -125,7 +126,7 @@ export default function SupplierDetailPage() {
         estimated_price: formatCurrencyInput(form.estimated_price),
         negotiated_price: formatCurrencyInput(form.negotiated_price),
         paid_amount: formatCurrencyInput(form.paid_amount),
-        notes: form.notes,
+        notes: toSentenceCase(form.notes),
       };
 
       if (!relation) {
@@ -813,34 +814,34 @@ export default function SupplierDetailPage() {
                   <TextInput
                     label="Valor estimado"
                     value={form.estimated_price}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        estimated_price: event.currentTarget.value,
-                      }))
-                    }
+                    onChange={(event) => {
+                      const val = handleValueChange(event.currentTarget.value);
+                      setForm((prev) => ({ ...prev, estimated_price: val }));
+                    }}
+                    placeholder="0.00"
+                    rightSection={<span style={{ paddingRight: 8 }}>R$</span>}
                     styles={inputStyles}
                   />
                   <TextInput
                     label="Valor negociado"
                     value={form.negotiated_price}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        negotiated_price: event.currentTarget.value,
-                      }))
-                    }
+                    onChange={(event) => {
+                      const val = handleValueChange(event.currentTarget.value);
+                      setForm((prev) => ({ ...prev, negotiated_price: val }));
+                    }}
+                    placeholder="0.00"
+                    rightSection={<span style={{ paddingRight: 8 }}>R$</span>}
                     styles={inputStyles}
                   />
                   <TextInput
                     label="Valor pago"
                     value={form.paid_amount}
-                    onChange={(event) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        paid_amount: event.currentTarget.value,
-                      }))
-                    }
+                    onChange={(event) => {
+                      const val = handleValueChange(event.currentTarget.value);
+                      setForm((prev) => ({ ...prev, paid_amount: val }));
+                    }}
+                    placeholder="0.00"
+                    rightSection={<span style={{ paddingRight: 8 }}>R$</span>}
                     styles={inputStyles}
                   />
                 </Group>
