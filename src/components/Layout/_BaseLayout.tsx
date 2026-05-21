@@ -1,5 +1,6 @@
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { ProfileModal } from "@/components/ProfileModal";
+import WeddingIdentityStyles from "@/components/wedding/identity/WeddingIdentityStyles";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   ActionIcon,
@@ -23,17 +24,23 @@ import {
   IconCheck,
   IconChecklist,
   IconChevronDown,
+  IconChevronRight,
   IconBriefcase,
   IconGift,
   IconHome2,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
+  IconLayoutGrid,
   IconLogout,
+  IconMoodHeart,
+  IconPalette,
+  IconPhoto,
+  IconSparkles,
   IconUser,
   IconUserCheck,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 interface BaseLayoutProps {
   children: ReactNode;
@@ -96,6 +103,13 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
     profileProgress === 100 ? "var(--marriplan-rose)" : "var(--marriplan-gold)";
   const sidebarWidth = opened ? 248 : 72;
   const collapsedSidebar = !opened;
+  const isWeddingIdentityRoute = router.pathname.startsWith("/identidade-do-casamento");
+  const [identityMenuOpen, setIdentityMenuOpen] = useState(isWeddingIdentityRoute);
+
+  useEffect(() => {
+    setIdentityMenuOpen(isWeddingIdentityRoute);
+  }, [isWeddingIdentityRoute]);
+
   const navLinkStyles = {
     root: {
       borderRadius: 12,
@@ -147,6 +161,39 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
     },
   } as const;
 
+  const weddingIdentitySubmenuStyles = {
+    root: {
+      borderRadius: 12,
+      padding: opened ? "9px 12px" : "9px 8px",
+      color: "var(--marriplan-text)",
+      transition: "all 180ms ease",
+      fontWeight: 500,
+      justifyContent: opened ? "flex-start" : "center",
+      marginBottom: 2,
+      "&:hover": {
+        backgroundColor: "rgba(242, 230, 216, 0.45)",
+      },
+      "&[data-active]": {
+        background: "linear-gradient(90deg, #f6eee4 0%, #fbf7f2 100%)",
+        boxShadow: "inset 0 0 0 1px var(--marriplan-border)",
+      },
+    },
+    label: {
+      fontWeight: 500,
+      letterSpacing: "0.01em",
+      display: opened ? "block" : "none",
+      fontSize: 13,
+    },
+    section: {
+      color: "var(--marriplan-muted)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      marginInlineEnd: opened ? 8 : 0,
+      width: collapsedSidebar ? "100%" : "auto",
+    },
+  } as const;
+
   return (
     <AppShell
       layout="alt"
@@ -164,6 +211,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
         },
       }}
     >
+    {router.pathname.startsWith('/identidade-do-casamento') && <WeddingIdentityStyles />}
       <AppShell.Header
         p="md"
         style={{
@@ -432,6 +480,81 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
             aria-label="Início"
             styles={navLinkStyles}
           />
+           <NavLink
+            label={opened ? "Identidade do Casamento" : ""}
+            leftSection={<IconSparkles size={18} />}
+            rightSection={opened ? <IconChevronRight size={16} /> : undefined}
+            active={isWeddingIdentityRoute}
+            opened={identityMenuOpen}
+            onClick={() => handleSidebarNavigation("/identidade-do-casamento/visao-geral")}
+            aria-label="Identidade do Casamento"
+            styles={navLinkStyles}
+          >
+            <NavLink
+              label={opened ? "Visão Geral" : ""}
+              leftSection={<IconHome2 size={16} />}
+              active={router.pathname === "/identidade-do-casamento/visao-geral"}
+              onClick={() => handleSidebarNavigation("/identidade-do-casamento/visao-geral")}
+              aria-label="Visão Geral"
+              styles={weddingIdentitySubmenuStyles}
+            />
+            <NavLink
+              label={opened ? "Estilo do Casamento" : ""}
+              leftSection={<IconMoodHeart size={16} />}
+              active={router.pathname === "/identidade-do-casamento/estilo-do-casamento"}
+              onClick={() => handleSidebarNavigation("/identidade-do-casamento/estilo-do-casamento")}
+              aria-label="Estilo do Casamento"
+              styles={weddingIdentitySubmenuStyles}
+            />
+            <NavLink
+              label={opened ? "Dress Code" : ""}
+              leftSection={<IconUserCheck size={16} />}
+              active={router.pathname === "/identidade-do-casamento/dress-code"}
+              onClick={() => handleSidebarNavigation("/identidade-do-casamento/dress-code")}
+              aria-label="Dress Code"
+              styles={weddingIdentitySubmenuStyles}
+            />
+            <NavLink
+              label={opened ? "Paleta de Cores" : ""}
+              leftSection={<IconPalette size={16} />}
+              active={router.pathname === "/identidade-do-casamento/paleta-de-cores"}
+              onClick={() => handleSidebarNavigation("/identidade-do-casamento/paleta-de-cores")}
+              aria-label="Paleta de Cores"
+              styles={weddingIdentitySubmenuStyles}
+            />
+            <NavLink
+              label={opened ? "Decoração" : ""}
+              leftSection={<IconChecklist size={16} />}
+              active={router.pathname === "/identidade-do-casamento/decoracao"}
+              onClick={() => handleSidebarNavigation("/identidade-do-casamento/decoracao")}
+              aria-label="Decoração"
+              styles={weddingIdentitySubmenuStyles}
+            />
+            <NavLink
+              label={opened ? "Doces & Bem-casados" : ""}
+              leftSection={<IconGift size={16} />}
+              active={router.pathname === "/identidade-do-casamento/doces-bem-casados"}
+              onClick={() => handleSidebarNavigation("/identidade-do-casamento/doces-bem-casados")}
+              aria-label="Doces & Bem-casados"
+              styles={weddingIdentitySubmenuStyles}
+            />
+            <NavLink
+              label={opened ? "Referências Visuais" : ""}
+              leftSection={<IconPhoto size={16} />}
+              active={router.pathname === "/identidade-do-casamento/referencias-visuais"}
+              onClick={() => handleSidebarNavigation("/identidade-do-casamento/referencias-visuais")}
+              aria-label="Referências Visuais"
+              styles={weddingIdentitySubmenuStyles}
+            />
+            <NavLink
+              label={opened ? "Moodboard Final" : ""}
+              leftSection={<IconLayoutGrid size={16} />}
+              active={router.pathname === "/identidade-do-casamento/moodboard-final"}
+              onClick={() => handleSidebarNavigation("/identidade-do-casamento/moodboard-final")}
+              aria-label="Moodboard Final"
+              styles={weddingIdentitySubmenuStyles}
+            />
+          </NavLink>
           <NavLink
             label={opened ? "Checklist de Casamento" : ""}
             leftSection={<IconChecklist size={18} />} // Ícone de checklist

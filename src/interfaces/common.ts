@@ -45,6 +45,7 @@ export interface UserFullData {
   is_2fa_enabled: boolean;
   settings: number;
   role: string;
+  wedding_partner_role?: "noivo" | "noiva" | null;
   wedding_profile: WeddingProfile | null;
   wedding_site: number;
 }
@@ -98,6 +99,7 @@ export type UserData = {
   id: number;
   is_2fa_enabled: boolean;
   is_email_confirmed: boolean;
+  wedding_partner_role?: "noivo" | "noiva" | null;
   wedding_profile?: any;
 };
 

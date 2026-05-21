@@ -6,6 +6,15 @@ const nextConfig: NextConfig = {
         defaultLocale: 'pt',
         localeDetection: false,
     },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+        pathname: '/freelancerinc/image/upload/**',
+      },
+    ],
+  },
   /* config options here */
 };
 
