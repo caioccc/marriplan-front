@@ -64,6 +64,7 @@ export default function OverviewPage() {
     dressCode,
     setDressCode,
     hasIdentity,
+    saveWeddingIdentity,
   } = useWeddingIdentityState();
 
   const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false);
@@ -172,6 +173,8 @@ export default function OverviewPage() {
     if (activeStep === 4 && canMoveToNextStep) {
       setIsSubmitting(true);
       try {
+        await saveWeddingIdentity();
+
         const savePromises = selectedImages.map((url) =>
           saveWeddingInspiration({
             image_url: url.image_url,
@@ -187,6 +190,12 @@ export default function OverviewPage() {
         setIsIdentityModalOpen(false);
       } catch (error) {
         console.error("Erro ao salvar imagens de inspiração:", error);
+        notifications.show({
+          color: "red",
+          title: "Falha ao salvar identidade",
+          message:
+            "Não foi possível concluir o cadastro da identidade do casamento.",
+        });
       } finally {
         setIsSubmitting(false);
       }
