@@ -2,7 +2,7 @@ import type { GetServerSideProps } from 'next';
 
 export const getServerSideProps: GetServerSideProps = async () => ({
   redirect: {
-    destination: '/identidade-do-casamento/visao-geral',
+    destination: '/identidade-do-casamento/moodboard-final',
     permanent: false,
   },
 });

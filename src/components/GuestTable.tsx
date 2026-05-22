@@ -239,7 +239,7 @@ export default function GuestTable() {
 
   useEffect(() => {
     if (isMobile && viewMode === "table") {
-      setViewMode("gallery");
+      setViewMode("cards");
     }
   }, [isMobile, viewMode]);
 

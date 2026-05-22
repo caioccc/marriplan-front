@@ -30,7 +30,7 @@ const getInitialState = (): WeddingIdentityStoredState => {
 
 export function useWeddingIdentityState() {
   const initialState = getInitialState();
-  const [activePage, setActivePage] = useState<WeddingIdentityPageId>(initialState.activePage ?? 'overview');
+  const [activePage, setActivePage] = useState<WeddingIdentityPageId>(initialState.activePage ?? 'moodboard');
   const [palette, setPalette] = useState<PaletteColor[]>(initialState.palette ?? MOCK_PALETTE);
   const [selectedStyle, setSelectedStyle] = useState(initialState.selectedStyle ?? 'romantico');
   const [dressCode, setDressCode] = useState(initialState.dressCode ?? 'social');

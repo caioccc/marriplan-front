@@ -1,5 +1,4 @@
 export type WeddingIdentityPageId =
-  | 'overview'
   | 'palette'
   | 'style'
   | 'dresscode'
@@ -61,4 +60,15 @@ export interface CompletionItem {
   label: string;
   done: boolean;
   icon: string;
+}
+
+
+export type ColorGuide = {
+  name: string;
+  hex?: string;
+};
+
+export interface DressCodePageProps {
+  dressCode: string;
+  setDressCode: (dressCodeId: string) => void;
 }

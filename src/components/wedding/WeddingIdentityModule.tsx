@@ -11,7 +11,6 @@ import {
   DressCodePage,
   InspirationPage,
   MoodboardPage,
-  OverviewPage,
   PalettePage,
   SweetsPage,
   WeddingStylePage,
@@ -283,7 +282,7 @@ export const weddingIdentityCss = `
     border: 2px solid transparent;
   }
   .style-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
-  .style-card.selected { border-color: var(--marriplan-gold); box-shadow: 0 0 0 4px rgba(201,169,110,0.25); }
+  .style-card.selected { border-color: var(--marriplan-gold); box-shadow: 0 0 0 4px rgba(201,169,110,0.25); border: 6px solid var(--marriplan-gold); }
   .style-card-bg { position: absolute; inset: 0; }
   .style-card-content {
     position: absolute;
@@ -583,28 +582,6 @@ export const weddingIdentityCss = `
   .palette-layout { display: grid; grid-template-columns: 1fr 1.4fr; gap: 24px; align-items: start; }
   @media (max-width: 700px) { .palette-layout { grid-template-columns: 1fr; } }
 
-  /* Overview hero */
-  .overview-hero {
-    background: linear-gradient(135deg, #fff4f0 0%, #fefaf5 50%, #f8f3ed 100%);
-    border-radius: 20px;
-    border: 1px solid var(--marriplan-border);
-    padding: 36px;
-    margin-bottom: 28px;
-    display: flex;
-    align-items: center;
-    gap: 36px;
-    position: relative;
-    overflow: hidden;
-  }
-  .overview-hero::after {
-    content: '✦';
-    position: absolute;
-    right: 40px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 80px;
-    color: rgba(201,169,110,0.08);
-  }
 
   .color-picker-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
   .palette-preview-block { display: flex; gap: 12px; flex-wrap: wrap; }
@@ -665,7 +642,6 @@ export default function WeddingIdentityModule() {
 
   const renderPage = () => {
     switch (activePage) {
-      case "overview": return <OverviewPage selectedStyle={selectedStyle} palette={palette} dressCode={dressCode} />;
       case "palette": return <PalettePage palette={palette} setPalette={setPalette} />;
       case "style": return <WeddingStylePage selectedStyle={selectedStyle} setSelectedStyle={setSelectedStyle} />;
       case "dresscode": return <DressCodePage dressCode={dressCode} setDressCode={setDressCode} />;
