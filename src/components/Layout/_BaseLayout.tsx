@@ -44,7 +44,6 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
   const router = useRouter();
   const { logout, user } = useAuth();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  console.log("User in BaseLayout:", isMobile, user);
   const [opened, setOpened] = useState(true);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
 

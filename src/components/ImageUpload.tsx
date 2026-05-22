@@ -442,12 +442,6 @@ export function ImageDropzone({
     setRemovingId(key);
 
     try {
-      console.log(
-        "Removendo item com public_id:",
-        public_id,
-        "e item details:",
-        item,
-      );
       await deleteCloudinaryItem(item, public_id);
 
       try {
