@@ -7,9 +7,11 @@ import {
 import { DressCodePageProps } from "@/types/weddingIdentity";
 import {
   Badge,
+  Box,
   Card,
   Grid,
   Group,
+  Image,
   SimpleGrid,
   Stack,
   Text,
@@ -17,11 +19,17 @@ import {
 import { useMediaQuery } from "@mantine/hooks";
 import React from "react";
 import EmptyState from "../EmptyState";
-import FakeImage from "../FakeImage";
 
-const DressCodePage: React.FC<DressCodePageProps> = ({
+type IdentityDressCodeProps = DressCodePageProps & {
+  hideHeader?: boolean;
+  compact?: boolean;
+};
+
+const DressCodePage: React.FC<IdentityDressCodeProps> = ({
   dressCode,
   setDressCode,
+  hideHeader = false,
+  compact = false,
 }) => {
   const selected = DRESS_CODE_OPTIONS.find((d) => d.id === dressCode);
   const referenceImages = DRESS_CODE_REFERENCE_IMAGES[selected?.id ?? ""];
@@ -30,17 +38,16 @@ const DressCodePage: React.FC<DressCodePageProps> = ({
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   return (
-    <Stack p="md" gap="xl">
-      <PageSectionHeader
-        eyebrow="Identidade do Casamento"
-        title="Dress Code"
-        description="Defina o codigo de vestimenta para orientar seus convidados sobre a indumentaria esperada para a celebracao."
-      />
+    <Stack p={compact ? "xs" : "md"} gap={compact ? "md" : "xl"}>
+      {!hideHeader && (
+        <PageSectionHeader
+          eyebrow="Identidade do Casamento"
+          title="Dress Code"
+          description="Defina o codigo de vestimenta para orientar seus convidados sobre a indumentaria esperada para a celebracao."
+        />
+      )}
 
-      {/* Se for mobile, usamos o layout original (empilhado). Se for tablet/desktop, ativa o Grid lado a lado */}
-      <Grid gutter="xl">
-        {/* COLUNA DA ESQUERDA (Opções) */}
-        {/* No mobile ocupa a tela toda (12). No tablet/desktop ocupa 5 colunas */}
+      <Grid gutter="lg">
         <Grid.Col span={isMobile ? 12 : 5}>
           <Stack gap="md">
             <Text
@@ -53,49 +60,61 @@ const DressCodePage: React.FC<DressCodePageProps> = ({
               Nivel de Formalidade
             </Text>
 
-            {/* Se for mobile/compact, mantemos a grade original (2 ou 3 colunas). No tablet/desktop vira lista vertical (1 coluna) */}
             <SimpleGrid
               cols={isMobile ? 1 : isCompactLayout ? 2 : 1}
-              spacing="md"
+              spacing="sm"
             >
               {DRESS_CODE_OPTIONS.map((opt) => (
                 <Card
                   key={opt.id}
-                  className={`dress-code-card ${
-                    dressCode === opt.id ? "selected" : ""
-                  }`}
                   withBorder
                   radius="lg"
-                  padding="lg"
+                  padding="sm"
                   onClick={() => setDressCode(opt.id)}
-                  style={{ cursor: "pointer" }}
+                  style={{
+                    cursor: "pointer",
+                    borderColor:
+                      dressCode === opt.id
+                        ? "var(--mantine-color-pink-5)"
+                        : "var(--mantine-color-gray-3)",
+                    background:
+                      dressCode === opt.id
+                        ? "rgba(196,117,106,0.08)"
+                        : "var(--mantine-color-body)",
+                    boxShadow:
+                      dressCode === opt.id
+                        ? "0 0 0 1px rgba(196,117,106,0.2)"
+                        : "none",
+                  }}
                 >
-                  <Group justify="space-between" align="flex-start" mb="sm">
+                  <Group justify="space-between" align="center" mb={4}>
                     <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
-                      <Text fw={700} size="md" mb={6}>
+                      <Text fw={700} size="xs" mb={0}>
                         {opt.label}
                       </Text>
-                      <Text size="sm" c="dimmed" lh={1.5} mb="sm">
+                      <Text size="10px" c="dimmed" lh={1.35} mb={2}>
                         {opt.desc}
                       </Text>
                     </Stack>
                     {dressCode === opt.id && (
-                      <Badge color="pink" variant="light">
+                      <Badge color="pink" variant="light" size="xs">
                         ✦
                       </Badge>
                     )}
                   </Group>
 
-                  <Group gap={3} wrap="nowrap">
+                  <Group gap={4} wrap="nowrap">
                     {[1, 2, 3, 4, 5].map((i) => (
-                      <div
+                      <Box
                         key={i}
-                        className="dress-code-dot"
                         style={{
+                          width: 7,
+                          height: 7,
+                          borderRadius: "50%",
                           background:
                             i <= opt.formality
                               ? opt.color
-                              : "var(--marriplan-border)",
+                              : "var(--mantine-color-gray-3)",
                         }}
                       />
                     ))}
@@ -106,158 +125,242 @@ const DressCodePage: React.FC<DressCodePageProps> = ({
           </Stack>
         </Grid.Col>
 
-        {/* COLUNA DA DIREITA (Resultados) */}
-        {/* No mobile ocupa a tela toda (12) e vai para baixo. No tablet/desktop ocupa 7 colunas ao lado */}
         <Grid.Col span={isMobile ? 12 : 7}>
           {selected ? (
-            /* Mantém o comportamento de 2 colunas para os cards de resultado, mas se o espaço for muito apertado no tablet, empilha em 1 */
-            <SimpleGrid cols={isMobile ? 1 : 2} spacing="lg">
-              {/* Referência Visual — Casal */}
-              <div className="marriplan-card" style={{ padding: 24 }}>
-                <div className="wi-section-title">
-                  Referência Visual — Casal
-                </div>
-                <div style={{ display: "flex", gap: 12 }}>
-                  <FakeImage
-                    emoji="🤵"
-                    imageUrl={referenceImages?.noivo}
-                    color="linear-gradient(135deg,#1a1a1a,#3a3a3a)"
-                    aspectRatio="9 / 16"
-                    label="Noivo"
-                    style={{ flex: 1, borderRadius: 12 }}
-                    h={isMobile ? 300 : 300}
-                  />
-                  <FakeImage
-                    emoji="👰"
-                    imageUrl={referenceImages?.noiva}
-                    color={`linear-gradient(135deg,${selected.color}88,${selected.color}44)`}
-                    aspectRatio="9 / 16"
-                    label="Noiva"
-                    style={{ flex: 1, borderRadius: 12 }}
-                    h={isMobile ? 300 : 300}
-                  />
-                </div>
-              </div>
+            <SimpleGrid cols={isMobile ? 1 : 2} spacing="md">
+              <Card withBorder radius="lg" padding="sm">
+                <Text fw={700} size="sm" mb="xs">
+                  Referencia Visual - Casal
+                </Text>
+                <Group gap="sm" wrap="nowrap">
+                  <Stack gap={6} style={{ flex: 1 }}>
+                    <Card
+                      withBorder
+                      radius="md"
+                      p={0}
+                      style={{ overflow: "hidden" }}
+                    >
+                      {referenceImages?.noivo ? (
+                        <Image
+                          src={referenceImages.noivo}
+                          alt="Noivo"
+                          h={isMobile ? 150 : 170}
+                          fit="cover"
+                        />
+                      ) : (
+                        <Box
+                          h={isMobile ? 150 : 170}
+                          style={{
+                            background:
+                              "linear-gradient(135deg,#1a1a1a,#3a3a3a)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 28,
+                          }}
+                        >
+                          🤵
+                        </Box>
+                      )}
+                    </Card>
+                    <Text size="10px" ta="center" c="dimmed" fw={600}>
+                      Noivo
+                    </Text>
+                  </Stack>
 
-              {/* Referências — Convidados */}
-              <div className="marriplan-card" style={{ padding: 24 }}>
-                <div className="wi-section-title">Referências — Convidados</div>
-                <div style={{ display: "flex", gap: 12 }}>
-                  <FakeImage
-                    emoji="💃"
-                    imageUrl={referenceImages?.madrinhas}
-                    color={`linear-gradient(135deg,${selected.color}55,${selected.color}22)`}
-                    aspectRatio="9 / 16"
-                    label="Madrinhas"
-                    style={{ flex: 1, borderRadius: 12 }}
-                    h={isMobile ? 300 : 300}
-                  />
-                  <FakeImage
-                    emoji="🕺"
-                    imageUrl={referenceImages?.padrinhos}
-                    color="linear-gradient(135deg,#2a2a3a,#3a3a5a)"
-                    aspectRatio="9 / 16"
-                    label="Padrinhos"
-                    style={{ flex: 1, borderRadius: 12 }}
-                    h={isMobile ? 300 : 300}
-                  />
-                </div>
-              </div>
+                  <Stack gap={6} style={{ flex: 1 }}>
+                    <Card
+                      withBorder
+                      radius="md"
+                      p={0}
+                      style={{ overflow: "hidden" }}
+                    >
+                      {referenceImages?.noiva ? (
+                        <Image
+                          src={referenceImages.noiva}
+                          alt="Noiva"
+                          h={isMobile ? 150 : 170}
+                          fit="cover"
+                        />
+                      ) : (
+                        <Box
+                          h={isMobile ? 150 : 170}
+                          style={{
+                            background: `linear-gradient(135deg,${selected.color}88,${selected.color}44)`,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 28,
+                          }}
+                        >
+                          👰
+                        </Box>
+                      )}
+                    </Card>
+                    <Text size="10px" ta="center" c="dimmed" fw={600}>
+                      Noiva
+                    </Text>
+                  </Stack>
+                </Group>
+              </Card>
 
-              {/* Cores Proibidas */}
-              <div className="marriplan-card" style={{ padding: 24 }}>
-                <div className="wi-section-title">Cores Proibidas</div>
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: "var(--marriplan-muted)",
-                    marginBottom: 16,
-                  }}
-                >
+              <Card withBorder radius="lg" padding="sm">
+                <Text fw={700} size="sm" mb="xs">
+                  Referencias - Convidados
+                </Text>
+                <Group gap="sm" wrap="nowrap">
+                  <Stack gap={6} style={{ flex: 1 }}>
+                    <Card
+                      withBorder
+                      radius="md"
+                      p={0}
+                      style={{ overflow: "hidden" }}
+                    >
+                      {referenceImages?.madrinhas ? (
+                        <Image
+                          src={referenceImages.madrinhas}
+                          alt="Madrinhas"
+                          h={isMobile ? 150 : 170}
+                          fit="cover"
+                        />
+                      ) : (
+                        <Box
+                          h={isMobile ? 150 : 170}
+                          style={{
+                            background: `linear-gradient(135deg,${selected.color}55,${selected.color}22)`,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 28,
+                          }}
+                        >
+                          💃
+                        </Box>
+                      )}
+                    </Card>
+                    <Text size="10px" ta="center" c="dimmed" fw={600}>
+                      Madrinhas
+                    </Text>
+                  </Stack>
+
+                  <Stack gap={6} style={{ flex: 1 }}>
+                    <Card
+                      withBorder
+                      radius="md"
+                      p={0}
+                      style={{ overflow: "hidden" }}
+                    >
+                      {referenceImages?.padrinhos ? (
+                        <Image
+                          src={referenceImages.padrinhos}
+                          alt="Padrinhos"
+                          h={isMobile ? 150 : 170}
+                          fit="cover"
+                        />
+                      ) : (
+                        <Box
+                          h={isMobile ? 150 : 170}
+                          style={{
+                            background:
+                              "linear-gradient(135deg,#2a2a3a,#3a3a5a)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 28,
+                          }}
+                        >
+                          🕺
+                        </Box>
+                      )}
+                    </Card>
+                    <Text size="10px" ta="center" c="dimmed" fw={600}>
+                      Padrinhos
+                    </Text>
+                  </Stack>
+                </Group>
+              </Card>
+
+              <Card withBorder radius="lg" padding="sm">
+                <Text fw={700} size="sm" mb={4}>
+                  Cores Proibidas
+                </Text>
+                <Text size="xs" c="dimmed" mb="sm">
                   {colorGuide.description}
-                </p>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                </Text>
+                <Group gap={6} wrap="wrap">
                   {colorGuide.forbiddenColors.map((item, i) => (
-                    <div
+                    <Badge
                       key={`${item.name}-${i}`}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        background: "var(--marriplan-surface-muted)",
-                        borderRadius: 8,
-                        padding: "8px 12px",
-                        border: "1px solid var(--marriplan-border)",
-                      }}
+                      variant="light"
+                      color="gray"
+                      size="lg"
+                      styles={{ root: { textTransform: "none" } }}
                     >
-                      {item.hex ? (
-                        <div
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: "50%",
-                            background: item.hex,
-                            border: "1px solid rgba(0,0,0,0.1)",
-                          }}
-                        />
-                      ) : null}
-                      <span style={{ fontSize: 12, fontFamily: "monospace" }}>
-                        {item.name}
-                      </span>
-                    </div>
+                      <Group gap={4} align="center" wrap="nowrap">
+                        {item.hex ? (
+                          <Box
+                            style={{
+                              width: 12,
+                              height: 12,
+                              borderRadius: "50%",
+                              background: item.hex,
+                              border: "1px solid rgba(0,0,0,0.1)",
+                              marginRight: 5,
+                            }}
+                          />
+                        ) : null}
+                        <Text size="xs" ff="monospace">
+                          {item.name}
+                        </Text>
+                      </Group>
+                    </Badge>
                   ))}
-                </div>
-              </div>
+                </Group>
+              </Card>
 
-              {/* Cores Sugeridas */}
-              <div className="marriplan-card" style={{ padding: 24 }}>
-                <div className="wi-section-title">Cores Sugeridas</div>
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: "var(--marriplan-muted)",
-                    marginBottom: 16,
-                  }}
-                >
+              <Card withBorder radius="lg" padding="sm">
+                <Text fw={700} size="sm" mb={4}>
+                  Cores Sugeridas
+                </Text>
+                <Text size="xs" c="dimmed" mb="sm">
                   Cores que combinam com o visual do casamento
-                </p>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                </Text>
+                <Group gap={6} wrap="wrap">
                   {colorGuide.suggestedColors.map((item, i) => (
-                    <div
+                    <Badge
                       key={`${item.name}-${i}`}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        background: "var(--marriplan-surface-muted)",
-                        borderRadius: 8,
-                        padding: "8px 12px",
-                        border: "1px solid var(--marriplan-border)",
-                      }}
+                      variant="light"
+                      color="gray"
+                      size="lg"
+                      styles={{ root: { textTransform: "none" } }}
                     >
-                      {item.hex ? (
-                        <div
-                          style={{
-                            width: 20,
-                            height: 20,
-                            borderRadius: "50%",
-                            background: item.hex,
-                          }}
-                        />
-                      ) : null}
-                      <span style={{ fontSize: 12, fontFamily: "monospace" }}>
-                        {item.name}
-                      </span>
-                    </div>
+                       <Group gap={4} align="center" wrap="nowrap">
+                        {item.hex ? (
+                          <Box
+                            style={{
+                              width: 12,
+                              height: 12,
+                              borderRadius: "50%",
+                              background: item.hex,
+                              border: "1px solid rgba(0,0,0,0.1)",
+                              marginRight: 5,
+                            }}
+                          />
+                        ) : null}
+                        <Text size="xs" ff="monospace">
+                          {item.name}
+                        </Text>
+                      </Group>
+                    </Badge>
                   ))}
-                </div>
-              </div>
+                </Group>
+              </Card>
             </SimpleGrid>
           ) : (
             <EmptyState
               icon="👗"
               title="Nenhum dress code selecionado"
-              message="Escolha um nível de formalidade ao lado para orientar seus convidados."
+              message="Escolha um nivel de formalidade ao lado para orientar seus convidados."
             />
           )}
         </Grid.Col>

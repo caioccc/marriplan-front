@@ -17,6 +17,20 @@ export interface WeddingStyle {
   emoji: string;
 }
 
+export interface WeddingSizeOption {
+  id: string;
+  label: string;
+  subtitle: string;
+  guestRange: string;
+  title: string;
+  description: string;
+  tags: string[];
+  color: string;
+  bg: string;
+  emoji: string;
+  imageUrl?: string;
+}
+
 export interface PaletteColor {
   id: number;
   hex: string;
@@ -71,4 +85,9 @@ export type ColorGuide = {
 export interface DressCodePageProps {
   dressCode: string;
   setDressCode: (dressCodeId: string) => void;
+}
+
+export interface WeddingSizePageProps {
+  weddingSize: string;
+  setWeddingSize: (weddingSizeId: string) => void;
 }

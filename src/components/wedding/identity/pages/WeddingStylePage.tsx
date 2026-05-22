@@ -1,44 +1,44 @@
 import {
   STYLE_IMAGE_MAP,
   WEDDING_STYLES,
-  WEDDING_STYLE_FILTERS,
 } from "@/constants/weddingIdentityData";
 import {
   Badge,
+  Box,
   Button,
+  CardSection,
   Card,
   Group,
   Modal,
   SimpleGrid,
   Stack,
   Text,
+  ThemeIcon,
 } from "@mantine/core";
 import React, { useMemo, useState } from "react";
 import Icon from "../Icon";
 import PageSectionHeader from "@/components/PageSectionHeader";
 import Image from "next/image";
-import { primaryButtonStyles } from "@/styles";
+import { primaryButtonStyles, softButtonStyles } from "@/styles";
 import { useMediaQuery } from "@mantine/hooks";
 
 
 interface WeddingStylePageProps {
   selectedStyle: string;
   setSelectedStyle: (styleId: string) => void;
+  hideHeader?: boolean;
+  compact?: boolean;
 }
 
 const WeddingStylePage: React.FC<WeddingStylePageProps> = ({
   selectedStyle,
   setSelectedStyle,
+  hideHeader = false,
+  compact = false,
 }) => {
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("Todos");
   const [detailsStyleId, setDetailsStyleId] = useState<string | null>(null);
 
-  const filtered = WEDDING_STYLES.filter(
-    (s) =>
-      (filter === "Todos" || s.label === filter || s.tags.includes(filter)) &&
-      s.label.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = WEDDING_STYLES;
 
   const selectedStyleDetails = useMemo(
     () => WEDDING_STYLES.find((style) => style.id === detailsStyleId) ?? null,
@@ -92,152 +92,160 @@ const WeddingStylePage: React.FC<WeddingStylePageProps> = ({
   };
 
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const isTablet = useMediaQuery("(min-width: 768px)");
 
   return (
-    <Stack p="md">
-      <PageSectionHeader
-        eyebrow="Identidade do Casamento"
-        title="Estilo do Casamento"
-        description="Escolha o estilo que mais representa o seu sonho. Isso vai guiar todas as decisoes esteticas do grande dia."
-        actions={
-          selectedStyle ? (
-            <Badge color="yellow" variant="light">
-              ✦ {WEDDING_STYLES.find((s) => s.id === selectedStyle)?.label}{" "}
-              selecionado
-            </Badge>
-          ) : undefined
-        }
-        filters={
-          <>
-            <Group
-              gap="sm"
-              wrap="wrap"
-              align="center"
-              style={{ width: "100%" }}
-            >
-              <input
-                className="wi-input"
-                style={{ maxWidth: 260, minWidth: 220 }}
-                placeholder="Buscar estilo..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <div className="style-filters-desktop">
-                <Text size="sm" c="dimmed" fw={600}>
-                  Filtrar:
-                </Text>
-                <div
-                  className="pill-selector"
-                  style={{ display: "flex", flexWrap: "wrap", gap: 8 }}
-                >
-                  {WEDDING_STYLE_FILTERS.map((f) => (
-                    <button
-                      key={f}
-                      className={`pill ${filter === f ? "selected" : ""}`}
-                      onClick={() => setFilter(f)}
-                    >
-                      {f}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </Group>
-            <style jsx>{`
-              .style-filters-desktop {
-                display: flex;
-                gap: 12px;
-                align-items: center;
-                flex-wrap: wrap;
-              }
+    <Stack p={compact ? "xs" : "md"}>
+      {!hideHeader && (
+        <PageSectionHeader
+          eyebrow="Identidade do Casamento"
+          title="Estilo do Casamento"
+          description="Escolha o estilo que mais representa o seu sonho. Isso vai guiar todas as decisoes esteticas do grande dia."
+          actions={
+            selectedStyle ? (
+              <Badge color="yellow" variant="light">
+                ✦ {WEDDING_STYLES.find((s) => s.id === selectedStyle)?.label}{" "}
+                selecionado
+              </Badge>
+            ) : undefined
+          }
+        />
+      )}
 
-              @media (max-width: 1024px) {
-                .style-filters-desktop {
-                  display: none;
-                }
-              }
-            `}</style>
-          </>
-        }
-      />
+      <SimpleGrid
+        cols={{ base: 1, sm: 2, lg: 4 }}
+        spacing="md"
+        mt={16}
+        mb={compact ? 8 : 28}
+      >
+        {filtered.map((style) => {
+          const isSelected = selectedStyle === style.id;
 
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md" mt={20} mb={28}>
-        {filtered.map((style) => (
-          <Card
-            key={style.id}
-            className={`style-card ${
-              selectedStyle === style.id ? "selected" : ""
-            }`}
-            padding={0}
-            radius="lg"
-            withBorder
-            onClick={() => setSelectedStyle(style.id)}
-            style={{
-              cursor: "pointer",
-              width: "100%",
-              height: isMobile ? 280 : isTablet ? 400 : 500,
-            }}
-          >
-            <div
-              className="style-card-bg"
+          return (
+            <Card
+              key={style.id}
+              padding={0}
+              radius="lg"
+              withBorder
+              onClick={() => setSelectedStyle(style.id)}
               style={{
-                position: "absolute",
-                inset: 0,
+                cursor: "pointer",
+                width: "100%",
+                height: isMobile ? 250 : compact ? 300 : 340,
+                position: "relative",
                 overflow: "hidden",
-                zIndex: 0,
+                border: isSelected ? "4px solid var(--marriplan-gold)" : "1px solid var(--marriplan-border)",
+                borderColor: isSelected
+                  ? "var(--marriplan-gold)"
+                  : "var(--marriplan-border)",
+                boxShadow: isSelected
+                  ? "0 0 0 2px rgba(201,169,110,0.25)"
+                  : "0 8px 24px rgba(20,14,10,0.08)",
+                transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
               }}
             >
-              <Image
-                src={STYLE_IMAGE_MAP[style.id] || STYLE_IMAGE_MAP.vintage}
-                alt={style.label}
-                fill
-                unoptimized
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                style={{ objectFit: "cover", zIndex: 0 }}
-              />
-              <div
+              <CardSection
                 style={{
                   position: "absolute",
                   inset: 0,
-                  background:
-                    "linear-gradient(180deg, rgba(20, 14, 10, 0.08) 0%, rgba(20, 14, 10, 0.25) 45%, rgba(20, 14, 10, 0.82) 100%)",
-                  zIndex: 1,
-                }}
-              />
-            </div>
-            {selectedStyle === style.id && (
-              <div className="style-card-check" style={{ zIndex: 4 }}>
-                <Icon name="check" size={14} color="#fff" />
-              </div>
-            )}
-            <div className="style-card-content" style={{ zIndex: 3 }}>
-              <h3 style={{ color: "#fff" }}>{style.label}</h3>
-              <p>{style.subtitle}</p>
-              <div className="style-card-tags">
-                {style.tags.map((t) => (
-                  <span key={t} className="style-card-tag">
-                    {t}
-                  </span>
-                ))}
-              </div>
-              <Button
-                className="style-card-select-btn"
-                variant="primary"
-                style={
-                  selectedStyle === style.id
-                    ? { ...primaryButtonStyles}
-                    : {}
-                }
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setDetailsStyleId(style.id);
+                  overflow: "hidden",
+                  zIndex: 0,
                 }}
               >
-                {selectedStyle === style.id ? "✦ Selecionado" : "Ver Detalhes"}
-              </Button>
-            </div>
-          </Card>
-        ))}
+                <Image
+                  src={STYLE_IMAGE_MAP[style.id] || STYLE_IMAGE_MAP.vintage}
+                  alt={style.label}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                  style={{ objectFit: "cover", zIndex: 0 }}
+                />
+                <Box
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background:
+                      "linear-gradient(180deg, rgba(20, 14, 10, 0.08) 0%, rgba(20, 14, 10, 0.25) 45%, rgba(20, 14, 10, 0.82) 100%)",
+                    zIndex: 1,
+                  }}
+                />
+              </CardSection>
+
+              {isSelected && (
+                <ThemeIcon
+                  size={30}
+                  radius="xl"
+                  color="yellow"
+                  variant="filled"
+                  style={{
+                    position: "absolute",
+                    top: 12,
+                    right: 12,
+                    zIndex: 4,
+                    boxShadow: "0 6px 16px rgba(20,14,10,0.24)",
+                  }}
+                >
+                  <Icon name="check" size={14} color="#fff" />
+                </ThemeIcon>
+              )}
+
+              <Box
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  zIndex: 3,
+                  display: "flex",
+                  alignItems: "flex-end",
+                }}
+              >
+                <Stack
+                  gap="xs"
+                  p="md"
+                  style={{
+                    width: "100%",
+                    background:
+                      "linear-gradient(180deg, rgba(20,14,10,0) 0%, rgba(20,14,10,0.78) 72%, rgba(20,14,10,0.9) 100%)",
+                  }}
+                >
+                  <Group justify="space-between" align="flex-start" gap="xs" wrap="nowrap">
+                    <Text c="white" fw={700} size="lg" style={{ lineHeight: 1.1 }}>
+                      {style.label}
+                    </Text>
+                  </Group>
+
+                  <Text c="rgba(255,255,255,0.85)" size="xs" style={{ lineHeight: 1.4 }}>
+                    {style.subtitle}
+                  </Text>
+
+                  <Group gap={6} wrap="wrap">
+                    {style.tags.map((tag) => (
+                      <Badge
+                        key={tag}
+                        variant="light"
+                        radius="xl"
+                        color="gray"
+                        style={{ background: "rgba(255,255,255,0.18)", color: "#fff" }}
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                  </Group>
+
+                  <Button
+                    variant={isSelected ? "primary" : "secondary"}
+                    color={isSelected ? undefined : "gray"}
+                    styles={isSelected ? primaryButtonStyles : softButtonStyles}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setDetailsStyleId(style.id);
+                    }}
+                  >
+                    {isSelected ? "Selecionado" : "Ver Detalhes"}
+                  </Button>
+                </Stack>
+              </Box>
+            </Card>
+          );
+        })}
       </SimpleGrid>
 
       <Modal

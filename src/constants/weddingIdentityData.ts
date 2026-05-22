@@ -4,6 +4,7 @@ import {
   InspirationItem,
   NavItem,
   PaletteColor,
+  WeddingSizeOption,
   WeddingStyle,
 } from "@/types/weddingIdentity";
 
@@ -79,6 +80,84 @@ export const WEDDING_STYLES: WeddingStyle[] = [
     color: "#B8956A",
     bg: "linear-gradient(135deg,#2a1a08 0%,#5a3c18 100%)",
     emoji: "📻",
+  },
+];
+
+export const WEDDING_SIZES: WeddingSizeOption[] = [
+  {
+    id: "elopement",
+    label: "Elopement Wedding",
+    subtitle: "Apenas os Noivos",
+    guestRange: "Casamento a dois ou até 5 pessoas",
+    title: "Casamento a dois",
+    description:
+      "Casamento a dois (ou com pouquíssimas testemunhas, no máximo 5 pessoas). Foco total em intimidade ou viagem.",
+    tags: ["Íntimo", "Viagem", "Poucos convidados"],
+    color: "#8E6E53",
+    bg: "linear-gradient(135deg,#2b1d16 0%,#5a3c2d 100%)",
+    emoji: "💍",
+    imageUrl:
+      "https://res.cloudinary.com/freelancerinc/image/upload/v1779457454/elopment_ykpwmo.png",
+  },
+  {
+    id: "micro",
+    label: "Micro Wedding",
+    subtitle: "Até 40 convidados",
+    guestRange: "Evento altamente intimista",
+    title: "Evento altamente intimista",
+    description:
+      "Evento altamente intimista, geralmente restrito à família direta e amigos muito próximos.",
+    tags: ["Família próxima", "Intimista", "Aconchegante"],
+    color: "#B98B6A",
+    bg: "linear-gradient(135deg,#2c1b12 0%,#6a4a36 100%)",
+    emoji: "🌿",
+    imageUrl:
+      "https://res.cloudinary.com/freelancerinc/image/upload/v1779457454/micro_jfksm1.png",
+  },
+  {
+    id: "mini",
+    label: "Mini Wedding",
+    subtitle: "De 40 a 100 convidados",
+    guestRange: "Porte pequeno com estrutura de festa",
+    title: "Formato acolhedor",
+    description:
+      "Um formato acolhedor, mas que já comporta uma estrutura de festa tradicional de pequeno porte.",
+    tags: ["Acolhedor", "Tradicional", "Pequeno porte"],
+    color: "#C49D7B",
+    bg: "linear-gradient(135deg,#332318 0%,#7c5a42 100%)",
+    emoji: "✨",
+    imageUrl:
+      "https://res.cloudinary.com/freelancerinc/image/upload/v1779457454/mini_f8pjj1.png",
+  },
+  {
+    id: "medio",
+    label: "Casamento Médio",
+    subtitle: "De 100 a 250 convidados",
+    guestRange: "Padrão clássico brasileiro",
+    title: "Padrão clássico da maioria",
+    description:
+      "O padrão clássico da maioria dos casamentos brasileiros. Permite cobrir círculos sociais ampliados.",
+    tags: ["Clássico", "Amplo", "Equilibrado"],
+    color: "#8D6E63",
+    bg: "linear-gradient(135deg,#2d221f 0%,#6f5650 100%)",
+    emoji: "🏛️",
+    imageUrl:
+      "https://res.cloudinary.com/freelancerinc/image/upload/v1779457454/medio_ptpxsz.png",
+  },
+  {
+    id: "mega",
+    label: "Grande Casamento / Mega Wedding",
+    subtitle: "Mais de 250 convidados",
+    guestRange: "Evento de grande porte",
+    title: "Evento de grande porte",
+    description:
+      "Eventos de grande porte, festas expansivas com listas extensas de familiares, amigos e corporativo.",
+    tags: ["Grande porte", "Expansivo", "Impactante"],
+    color: "#6E5E4F",
+    bg: "linear-gradient(135deg,#231c18 0%,#56463b 100%)",
+    emoji: "👑",
+    imageUrl:
+      "https://res.cloudinary.com/freelancerinc/image/upload/v1779457454/grande_eaoucj.png",
   },
 ];
 
@@ -421,6 +500,61 @@ export const DRESS_CODE_COLOR_MAP: Record<
       },
     ],
   },
+};
+
+const clamp = (value: number) => Math.max(0, Math.min(255, value));
+
+const hexToRgb = (hex: string) => {
+  const normalized = hex.replace("#", "").slice(0, 6);
+  const parsed = Number.parseInt(normalized, 16);
+
+  return {
+    r: (parsed >> 16) & 255,
+    g: (parsed >> 8) & 255,
+    b: parsed & 255,
+  };
+};
+
+const rgbToHex = (r: number, g: number, b: number) =>
+  `#${[r, g, b]
+    .map((value) => clamp(value).toString(16).padStart(2, "0"))
+    .join("")}`;
+
+const mixHex = (hex: string, target: string, amount: number) => {
+  const sourceRgb = hexToRgb(hex);
+  const targetRgb = hexToRgb(target);
+
+  return rgbToHex(
+    Math.round(sourceRgb.r + (targetRgb.r - sourceRgb.r) * amount),
+    Math.round(sourceRgb.g + (targetRgb.g - sourceRgb.g) * amount),
+    Math.round(sourceRgb.b + (targetRgb.b - sourceRgb.b) * amount),
+  );
+};
+
+export const getDressCodeSuggestedPalette = (
+  dressCode?: string,
+): Array<{ name: string; hex: string }> => {
+  const guide = DRESS_CODE_COLOR_MAP[dressCode ?? "praia-formal"] ?? DRESS_CODE_COLOR_MAP["praia-formal"];
+
+  return guide.suggestedColors
+    .flatMap((item, index) => {
+      const base = { name: item.name, hex: item.hex ?? "#FFFFFF" };
+      const shouldLighten = index % 2 === 0;
+      const variantHex = mixHex(
+        item.hex ?? "#FFFFFF",
+        shouldLighten ? "#FFFFFF" : "#1F1F1F",
+        shouldLighten ? 0.18 : 0.14,
+      );
+
+      return [
+        base,
+        {
+          name: `${item.name} ${shouldLighten ? "suave" : "intensa"}`,
+          hex: variantHex,
+        },
+      ];
+    })
+    .slice(0, 10);
 };
 
 export const DRESS_CODE_REFERENCE_IMAGES: Record<

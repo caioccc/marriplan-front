@@ -1,6 +1,5 @@
 import { NotificationsBell } from "@/components/NotificationsBell";
 import { ProfileModal } from "@/components/ProfileModal";
-import WeddingIdentityStyles from "@/components/wedding/identity/WeddingIdentityStyles";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   ActionIcon,
@@ -25,15 +24,11 @@ import {
   IconCheck,
   IconChecklist,
   IconChevronDown,
-  IconChevronRight,
   IconGift,
   IconHome2,
-  IconLayoutGrid,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
   IconLogout,
-  IconMoodHeart,
-  IconPalette,
   IconSparkles,
   IconUser,
   IconUserCheck
@@ -172,38 +167,6 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
     },
   } as const;
 
-  const weddingIdentitySubmenuStyles = {
-    root: {
-      borderRadius: 12,
-      padding: opened ? "9px 12px" : "9px 8px",
-      color: "var(--marriplan-text)",
-      transition: "all 180ms ease",
-      fontWeight: 500,
-      justifyContent: opened ? "flex-start" : "center",
-      marginBottom: 2,
-      "&:hover": {
-        backgroundColor: "rgba(242, 230, 216, 0.45)",
-      },
-      "&[data-active]": {
-        background: "linear-gradient(90deg, #f6eee4 0%, #fbf7f2 100%)",
-        boxShadow: "inset 0 0 0 1px var(--marriplan-border)",
-      },
-    },
-    label: {
-      fontWeight: 500,
-      letterSpacing: "0.01em",
-      display: opened ? "block" : "none",
-      fontSize: 13,
-    },
-    section: {
-      color: "var(--marriplan-muted)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      marginInlineEnd: opened ? 8 : 0,
-      width: collapsedSidebar ? "100%" : "auto",
-    },
-  } as const;
 
   return (
     <AppShell
@@ -222,9 +185,6 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
         },
       }}
     >
-      {router.pathname.startsWith("/") && (
-        <WeddingIdentityStyles />
-      )}
       <AppShell.Header
         p="md"
         style={{
@@ -496,93 +456,14 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
           <NavLink
             label={opened ? "Identidade do Casamento" : ""}
             leftSection={<IconSparkles size={18} />}
-            rightSection={opened ? <IconChevronRight size={16} /> : undefined}
-            active={isWeddingIdentityRoute}
+            active={router.pathname.startsWith("/identity")}
             opened={identityMenuOpen}
             onClick={() =>
-              handleSidebarNavigation("/identidade-do-casamento/moodboard-final")
+              handleSidebarNavigation("/identity/overview")
             }
             aria-label="Identidade do Casamento"
             styles={navLinkStyles}
-          >
-            <NavLink
-              label={opened ? "Visão Geral" : ""}
-              leftSection={<IconLayoutGrid size={16} />}
-              active={
-                router.pathname === "/identidade-do-casamento/moodboard-final"
-              }
-              onClick={() =>
-                handleSidebarNavigation(
-                  "/identidade-do-casamento/moodboard-final",
-                )
-              }
-              aria-label="Moodboard Final"
-              styles={navLinkStyles}
-            />
-            <NavLink
-              label={opened ? "Estilo do Casamento" : ""}
-              leftSection={<IconMoodHeart size={16} />}
-              active={
-                router.pathname ===
-                "/identidade-do-casamento/estilo-do-casamento"
-              }
-              onClick={() =>
-                handleSidebarNavigation(
-                  "/identidade-do-casamento/estilo-do-casamento",
-                )
-              }
-              aria-label="Estilo do Casamento"
-              styles={navLinkStyles}
-            />
-            <NavLink
-              label={opened ? "Dress Code" : ""}
-              leftSection={<IconUserCheck size={16} />}
-              active={router.pathname === "/identidade-do-casamento/dress-code"}
-              onClick={() =>
-                handleSidebarNavigation("/identidade-do-casamento/dress-code")
-              }
-              aria-label="Dress Code"
-              styles={navLinkStyles}
-            />
-            <NavLink
-              label={opened ? "Paleta de Cores" : ""}
-              leftSection={<IconPalette size={16} />}
-              active={
-                router.pathname === "/identidade-do-casamento/paleta-de-cores"
-              }
-              onClick={() =>
-                handleSidebarNavigation(
-                  "/identidade-do-casamento/paleta-de-cores",
-                )
-              }
-              aria-label="Paleta de Cores"
-              styles={navLinkStyles}
-            />
-            {/* <NavLink
-              label={opened ? "Decoração" : ""}
-              leftSection={<IconChecklist size={16} />}
-              active={router.pathname === "/identidade-do-casamento/decoracao"}
-              onClick={() => handleSidebarNavigation("/identidade-do-casamento/decoracao")}
-              aria-label="Decoração"
-              styles={weddingIdentitySubmenuStyles}
-            />
-            <NavLink
-              label={opened ? "Doces & Bem-casados" : ""}
-              leftSection={<IconGift size={16} />}
-              active={router.pathname === "/identidade-do-casamento/doces-bem-casados"}
-              onClick={() => handleSidebarNavigation("/identidade-do-casamento/doces-bem-casados")}
-              aria-label="Doces & Bem-casados"
-              styles={weddingIdentitySubmenuStyles}
-            />
-            <NavLink
-              label={opened ? "Referências Visuais" : ""}
-              leftSection={<IconPhoto size={16} />}
-              active={router.pathname === "/identidade-do-casamento/referencias-visuais"}
-              onClick={() => handleSidebarNavigation("/identidade-do-casamento/referencias-visuais")}
-              aria-label="Referências Visuais"
-              styles={weddingIdentitySubmenuStyles}
-            /> */}
-          </NavLink>
+          />
           <NavLink
             label={opened ? "Checklist de Casamento" : ""}
             leftSection={<IconChecklist size={18} />} // Ícone de checklist

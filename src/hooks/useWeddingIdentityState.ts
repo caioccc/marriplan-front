@@ -1,55 +1,122 @@
-import { MOCK_PALETTE } from '@/constants/weddingIdentityData';
+import {
+  WeddingIdentityApiPayload,
+  createWeddingIdentity,
+  deleteWeddingIdentity,
+  getWeddingIdentity,
+  updateWeddingIdentity,
+} from '@/services/weddingIdentity.service';
 import { PaletteColor, WeddingIdentityPageId } from '@/types/weddingIdentity';
-import { useEffect, useMemo, useState } from 'react';
+import { Dispatch, SetStateAction } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-type WeddingIdentityStoredState = {
-  activePage?: WeddingIdentityPageId;
-  palette?: PaletteColor[];
-  selectedStyle?: string;
-  dressCode?: string;
+type WeddingIdentityState = {
+  activePage: WeddingIdentityPageId;
+  setActivePage: Dispatch<SetStateAction<WeddingIdentityPageId>>;
+  palette: PaletteColor[];
+  setPalette: Dispatch<SetStateAction<PaletteColor[]>>;
+  selectedStyle: string;
+  setSelectedStyle: Dispatch<SetStateAction<string>>;
+  weddingSize: string;
+  setWeddingSize: Dispatch<SetStateAction<string>>;
+  dressCode: string;
+  setDressCode: Dispatch<SetStateAction<string>>;
+  hasIdentity: boolean;
+  isLoading: boolean;
+  saveWeddingIdentity: () => Promise<void>;
+  refreshWeddingIdentity: () => Promise<void>;
 };
 
-const STORAGE_KEY = 'marriplan:wedding-identity';
+type WeddingIdentityDraft = {
+  activePage: WeddingIdentityPageId;
+  palette: PaletteColor[];
+  selectedStyle: string;
+  weddingSize: string;
+  dressCode: string;
+};
 
-const getInitialState = (): WeddingIdentityStoredState => {
-  if (typeof window === 'undefined') {
-    return {};
-  }
+const getEmptyDraft = (): WeddingIdentityDraft => ({
+  activePage: 'moodboard',
+  palette: [],
+  selectedStyle: '',
+  weddingSize: '',
+  dressCode: '',
+});
 
-  try {
-    const rawState = window.localStorage.getItem(STORAGE_KEY);
-    if (!rawState) {
-      return {};
+const normalizeApiState = (data: WeddingIdentityApiPayload | null): WeddingIdentityDraft => ({
+  activePage: 'moodboard',
+  palette: data?.palette ?? [],
+  selectedStyle: data?.selected_style ?? '',
+  weddingSize: data?.wedding_size ?? '',
+  dressCode: data?.dress_code ?? '',
+});
+
+export function useWeddingIdentityState(): WeddingIdentityState {
+  const [activePage, setActivePage] = useState<WeddingIdentityPageId>('moodboard');
+  const [palette, setPalette] = useState<PaletteColor[]>([]);
+  const [selectedStyle, setSelectedStyle] = useState('');
+  const [weddingSize, setWeddingSize] = useState('');
+  const [dressCode, setDressCode] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [identityExists, setIdentityExists] = useState(false);
+
+  const hasIdentity = Boolean(selectedStyle || weddingSize || dressCode || palette.length);
+
+  const applyDraft = useCallback((draft: WeddingIdentityDraft) => {
+    setActivePage(draft.activePage);
+    setPalette(draft.palette);
+    setSelectedStyle(draft.selectedStyle);
+    setWeddingSize(draft.weddingSize);
+    setDressCode(draft.dressCode);
+  }, []);
+
+  const refreshWeddingIdentity = useCallback(async () => {
+    setIsLoading(true);
+
+    try {
+      const response = await getWeddingIdentity();
+      if (!response) {
+        applyDraft(getEmptyDraft());
+        setIdentityExists(false);
+        return;
+      }
+
+      applyDraft(normalizeApiState(response));
+      setIdentityExists(true);
+    } finally {
+      setIsLoading(false);
     }
-
-    return JSON.parse(rawState) as WeddingIdentityStoredState;
-  } catch {
-    return {};
-  }
-};
-
-export function useWeddingIdentityState() {
-  const initialState = getInitialState();
-  const [activePage, setActivePage] = useState<WeddingIdentityPageId>(initialState.activePage ?? 'moodboard');
-  const [palette, setPalette] = useState<PaletteColor[]>(initialState.palette ?? MOCK_PALETTE);
-  const [selectedStyle, setSelectedStyle] = useState(initialState.selectedStyle ?? 'romantico');
-  const [dressCode, setDressCode] = useState(initialState.dressCode ?? 'social');
+  }, [applyDraft]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    void refreshWeddingIdentity();
+  }, [refreshWeddingIdentity]);
+
+  const buildPayload = useCallback((): WeddingIdentityApiPayload => ({
+    selected_style: selectedStyle,
+    wedding_size: weddingSize,
+    dress_code: dressCode,
+    palette,
+  }), [dressCode, palette, selectedStyle, weddingSize]);
+
+  const saveWeddingIdentity = useCallback(async () => {
+    if (!hasIdentity) {
+      if (identityExists) {
+        await deleteWeddingIdentity();
+        setIdentityExists(false);
+      }
       return;
     }
 
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        activePage,
-        palette,
-        selectedStyle,
-        dressCode,
-      }),
-    );
-  }, [activePage, palette, selectedStyle, dressCode]);
+    const payload = buildPayload();
+
+    if (identityExists) {
+      await updateWeddingIdentity(payload);
+      return;
+    }
+
+    await createWeddingIdentity(payload);
+    setIdentityExists(true);
+  }, [buildPayload, hasIdentity, identityExists]);
 
   return useMemo(
     () => ({
@@ -59,9 +126,25 @@ export function useWeddingIdentityState() {
       setPalette,
       selectedStyle,
       setSelectedStyle,
+      weddingSize,
+      setWeddingSize,
       dressCode,
       setDressCode,
+      hasIdentity,
+      isLoading,
+      saveWeddingIdentity,
+      refreshWeddingIdentity,
     }),
-    [activePage, palette, selectedStyle, dressCode],
+    [
+      activePage,
+      palette,
+      selectedStyle,
+      weddingSize,
+      dressCode,
+      hasIdentity,
+      isLoading,
+      saveWeddingIdentity,
+      refreshWeddingIdentity,
+    ],
   );
 }
