@@ -5,6 +5,10 @@ import {
   NAV_ITEMS,
   WEDDING_STYLES,
 } from '@/constants/weddingIdentityData';
+import {
+  WeddingIdentityInspirationApiItem,
+  WeddingIdentityInspirationSearchResponse,
+} from '@/types/weddingIdentity';
 import api from './api';
 
 export type WeddingIdentityApiPayload = {
@@ -20,6 +24,28 @@ export type WeddingIdentityApiPayload = {
 };
 
 export type WeddingIdentityApiRecord = WeddingIdentityApiPayload & {
+  id: number;
+  wedding_profile: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WeddingIdentityInspirationPayload = {
+  source_id?: string;
+  title?: string;
+  description?: string;
+  image_url: string;
+  thumbnail_url?: string;
+  source_url?: string;
+  query?: string;
+  selected_style?: string;
+  dress_code?: string;
+  is_favorite?: boolean;
+  is_liked?: boolean;
+  metadata?: Record<string, unknown>;
+};
+
+export type WeddingIdentityInspirationRecord = WeddingIdentityInspirationPayload & {
   id: number;
   wedding_profile: number;
   created_at: string;
@@ -58,4 +84,45 @@ export const updateWeddingIdentity = async (data: WeddingIdentityApiPayload) => 
 
 export const deleteWeddingIdentity = async () => {
   await api.delete('/api/wedding-identity/');
+};
+
+export const searchWeddingInspirations = async (params: {
+  selectedStyle: string;
+  dressCode: string;
+  query?: string;
+  numImages?: number;
+}): Promise<WeddingIdentityInspirationSearchResponse> => {
+  const response = await api.get('/api/wedding-identity/inspirations/search/', {
+    params: {
+      selected_style: params.selectedStyle,
+      dress_code: params.dressCode,
+      query: params.query,
+      num_images: params.numImages,
+    },
+  });
+  return response.data as WeddingIdentityInspirationSearchResponse;
+};
+
+export const listWeddingInspirations = async (): Promise<WeddingIdentityInspirationRecord[]> => {
+  const response = await api.get('/api/wedding-identity/inspirations/');
+  return response.data as WeddingIdentityInspirationRecord[];
+};
+
+export const saveWeddingInspiration = async (
+  payload: WeddingIdentityInspirationPayload,
+): Promise<WeddingIdentityInspirationRecord> => {
+  const response = await api.post('/api/wedding-identity/inspirations/', payload);
+  return response.data as WeddingIdentityInspirationRecord;
+};
+
+export const updateWeddingInspiration = async (
+  inspirationId: number,
+  payload: Partial<WeddingIdentityInspirationPayload>,
+): Promise<WeddingIdentityInspirationRecord> => {
+  const response = await api.patch(`/api/wedding-identity/inspirations/${inspirationId}/`, payload);
+  return response.data as WeddingIdentityInspirationRecord;
+};
+
+export const deleteWeddingInspiration = async (inspirationId: number): Promise<void> => {
+  await api.delete(`/api/wedding-identity/inspirations/${inspirationId}/`);
 };

@@ -76,6 +76,31 @@ export interface CompletionItem {
   icon: string;
 }
 
+export interface WeddingIdentityInspirationApiItem {
+  id?: number;
+  wedding_profile?: number;
+  source_id?: string;
+  title?: string;
+  description?: string;
+  image_url: string;
+  thumbnail_url?: string;
+  source_url?: string;
+  query?: string;
+  selected_style?: string;
+  dress_code?: string;
+  is_favorite?: boolean;
+  is_liked?: boolean;
+  metadata?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface WeddingIdentityInspirationSearchResponse {
+  query: string;
+  count: number;
+  results: WeddingIdentityInspirationApiItem[];
+}
+
 
 export type ColorGuide = {
   name: string;

@@ -36,6 +36,8 @@ const unprotectedRoutes = [
     '/gifts/share/[token]',
     '/guests/confirm/[token]',
     '/guests/thank-you',
+    '/moodboard/[id]',
+    '/public/moodboard/[id]',
 ]
 
 type AuthProviderProps = {

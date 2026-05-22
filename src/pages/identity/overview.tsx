@@ -3,6 +3,7 @@ import PageSectionHeader from "@/components/PageSectionHeader";
 import EmptyState from "@/components/wedding/identity/EmptyState";
 import DressCodePage from "@/components/wedding/identity/pages/DressCodePage";
 import PalettePage from "@/components/wedding/identity/pages/PalettePage";
+import { WeddingInspirationsPage } from "@/components/wedding/identity/pages/WeddingInspirationsPage";
 import WeddingSizePage from "@/components/wedding/identity/pages/WeddingSizePage";
 import WeddingStylePage from "@/components/wedding/identity/pages/WeddingStylePage";
 import {
@@ -12,7 +13,15 @@ import {
   WEDDING_SIZES,
   WEDDING_STYLES,
 } from "@/constants/weddingIdentityData";
+import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingIdentityState } from "@/hooks/useWeddingIdentityState";
+import {
+  listWeddingInspirations,
+  saveWeddingInspiration,
+  deleteWeddingInspiration, // Importado o service de exclusão
+  WeddingIdentityInspirationPayload,
+  WeddingIdentityInspirationRecord,
+} from "@/services/weddingIdentity.service";
 import { primaryButtonStyles } from "@/styles";
 import {
   ActionIcon,
@@ -31,15 +40,16 @@ import {
   Tooltip,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications"; // Importado para feedbacks de sucesso/erro
 import {
   IconCheck,
   IconChevronLeft,
   IconChevronRight,
-  IconDownload,
   IconEdit,
   IconShare,
+  IconTrash,
 } from "@tabler/icons-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export default function OverviewPage() {
   const {
@@ -58,6 +68,58 @@ export default function OverviewPage() {
 
   const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+
+  const { user } = useAuth();
+
+  // Estados para as inspirações selecionadas no modal e persistidas na grid principal
+  const [selectedImages, setSelectedImages] = useState<
+    WeddingIdentityInspirationPayload[]
+  >([]);
+  const [savedInspirations, setSavedInspirations] = useState<
+    WeddingIdentityInspirationRecord[]
+  >([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null); // Estado para controlar qual ID está sendo deletado
+
+  const modalTopRef = useRef<HTMLDivElement>(null);
+
+  // 1. Adicione o estado para o botão de copiar link no topo do componente
+  const weddingProfileId = user?.wedding_profile.id; // Supondo que o ID do perfil de casamento esteja disponível no contexto de autenticação
+
+  const handleShareLink = () => {
+    // Constrói a URL pública baseada no domínio atual
+    const publicUrl = `${window.location.origin}/moodboard/${weddingProfileId}`;
+
+    navigator.clipboard.writeText(publicUrl);
+    notifications.show({
+      color: "green",
+      title: "Link copiado!",
+      message:
+        "O link público do seu moodboard foi copiado para a área de transferência.",
+    });
+  };
+
+  // Efeito para rolar o modal para o topo a cada mudança de passo
+  // Atualize seu useEffect para esta abordagem
+  useEffect(() => {
+    if (isIdentityModalOpen && modalTopRef.current) {
+      setTimeout(() => {
+        modalTopRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 50);
+    }
+  }, [activeStep, isIdentityModalOpen]);
+
+  // Busca inicial das inspirações já salvas no banco para exibir no Dashboard
+  useEffect(() => {
+    if (hasIdentity) {
+      listWeddingInspirations()
+        .then((data) => setSavedInspirations(data))
+        .catch((err) => console.error("Erro ao listar inspirações", err));
+    }
+  }, [hasIdentity]);
 
   useEffect(() => {
     if (activePage !== "moodboard") {
@@ -84,6 +146,7 @@ export default function OverviewPage() {
       Boolean(weddingSize),
       Boolean(dressCode),
       palette.length > 0,
+      true,
     ],
     [selectedStyle, weddingSize, dressCode, palette.length],
   );
@@ -92,17 +155,37 @@ export default function OverviewPage() {
 
   const handleOpenIdentityModal = () => {
     setActiveStep(0);
+    setSelectedImages([]); // Reseta a seleção temporária do modal
     setIsIdentityModalOpen(true);
   };
 
-  const handleNextStep = () => {
-    if (activeStep < 3 && canMoveToNextStep) {
+  const handleNextStep = async () => {
+    if (activeStep < 4 && canMoveToNextStep) {
       setActiveStep((previous) => previous + 1);
       return;
     }
 
-    if (activeStep === 3 && canMoveToNextStep) {
-      setIsIdentityModalOpen(false);
+    if (activeStep === 4 && canMoveToNextStep) {
+      setIsSubmitting(true);
+      try {
+        const savePromises = selectedImages.map((url) =>
+          saveWeddingInspiration({
+            image_url: url.image_url,
+            selected_style: selectedStyle,
+            dress_code: dressCode,
+          }),
+        );
+        await Promise.all(savePromises);
+
+        const updatedList = await listWeddingInspirations();
+        setSavedInspirations(updatedList);
+
+        setIsIdentityModalOpen(false);
+      } catch (error) {
+        console.error("Erro ao salvar imagens de inspiração:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -112,7 +195,32 @@ export default function OverviewPage() {
     }
   };
 
-  const renderFallbackVisual = (label: string, emoji: string, background: string) => (
+  // Função para remover a inspiração do banco e atualizar o estado visual local
+  const handleRemoveInspiration = async (id: number) => {
+    setDeletingId(id);
+    try {
+      await deleteWeddingInspiration(id);
+      setSavedInspirations((prev) => prev.filter((item) => item.id !== id));
+      notifications.show({
+        color: "green",
+        message: "Inspiração removida do mural.",
+      });
+    } catch (error) {
+      console.error("Erro ao deletar inspiração:", error);
+      notifications.show({
+        color: "red",
+        message: "Não foi possível remover a inspiração.",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const renderFallbackVisual = (
+    label: string,
+    emoji: string,
+    background: string,
+  ) => (
     <CardSection
       style={{
         position: "relative",
@@ -295,6 +403,7 @@ export default function OverviewPage() {
                           radius="md"
                           p={0}
                           style={{
+                            height: 80,
                             width: "100%",
                             aspectRatio: "1",
                             background: c.hex,
@@ -313,8 +422,20 @@ export default function OverviewPage() {
 
             <Grid gutter="md" mb={28} align="stretch">
               <Grid.Col span={{ base: 12, md: 6 }}>
-                <Card withBorder radius="lg" p={0} style={{ overflow: "hidden", height: "100%", minHeight: 420 }}>
-                  <Box style={{ position: "relative", width: "100%", height: "100%", minHeight: 420 }}>
+                <Card
+                  withBorder
+                  radius="lg"
+                  p={0}
+                  style={{ overflow: "hidden", height: "100%", minHeight: 420 }}
+                >
+                  <Box
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      height: "100%",
+                      minHeight: 420,
+                    }}
+                  >
                     {styleImage ? (
                       <Image
                         src={styleImage}
@@ -341,9 +462,19 @@ export default function OverviewPage() {
                     />
                     <Stack
                       justify="flex-end"
-                      style={{ position: "absolute", inset: 0, padding: 20, zIndex: 2 }}
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        padding: 20,
+                        zIndex: 2,
+                      }}
                     >
-                      <Text c="white" fw={700} size="xl" style={{ lineHeight: 1.1 }}>
+                      <Text
+                        c="white"
+                        fw={700}
+                        size="xl"
+                        style={{ lineHeight: 1.1 }}
+                      >
                         {styleData?.label || "Estilo Nao Definido"}
                       </Text>
                       <Text c="rgba(255,255,255,0.8)" size="sm">
@@ -359,11 +490,24 @@ export default function OverviewPage() {
                   {dressesImage &&
                     Object.entries(dressesImage).map(([key, imageUrl]) => {
                       const label = key.charAt(0).toUpperCase() + key.slice(1);
-                      const emoji = key === "noivo" ? "🤵" : key === "noiva" ? "👰" : "👥";
+                      const emoji =
+                        key === "noivo" ? "🤵" : key === "noiva" ? "👰" : "👥";
 
                       return (
-                        <Card key={key} withBorder radius="lg" p={0} style={{ overflow: "hidden", minHeight: 200 }}>
-                          <Box style={{ position: "relative", width: "100%", aspectRatio: "4 / 5" }}>
+                        <Card
+                          key={key}
+                          withBorder
+                          radius="lg"
+                          p={0}
+                          style={{ overflow: "hidden", minHeight: 200 }}
+                        >
+                          <Box
+                            style={{
+                              position: "relative",
+                              width: "100%",
+                              aspectRatio: "4 / 5",
+                            }}
+                          >
                             {imageUrl ? (
                               <Image
                                 src={imageUrl}
@@ -380,8 +524,20 @@ export default function OverviewPage() {
                                 key === "noivo"
                                   ? "linear-gradient(135deg,#1a1a1a,#3a3a3a)"
                                   : key === "noiva"
-                                    ? `linear-gradient(135deg,${dressCode ? DRESS_CODE_OPTIONS.find((d) => d.id === dressCode)?.color ?? "#C9A96E" : "#C9A96E"}88,${dressCode ? DRESS_CODE_OPTIONS.find((d) => d.id === dressCode)?.color ?? "#C9A96E" : "#C9A96E"}44)`
-                                    : "linear-gradient(135deg,#2a2a3a,#3a3a5a)",
+                                  ? `linear-gradient(135deg,${
+                                      dressCode
+                                        ? DRESS_CODE_OPTIONS.find(
+                                            (d) => d.id === dressCode,
+                                          )?.color ?? "#C9A96E"
+                                        : "#C9A96E"
+                                    }88,${
+                                      dressCode
+                                        ? DRESS_CODE_OPTIONS.find(
+                                            (d) => d.id === dressCode,
+                                          )?.color ?? "#C9A96E"
+                                        : "#C9A96E"
+                                    }44)`
+                                  : "linear-gradient(135deg,#2a2a3a,#3a3a5a)",
                               )
                             )}
                             <Box
@@ -410,6 +566,61 @@ export default function OverviewPage() {
                 </SimpleGrid>
               </Grid.Col>
             </Grid>
+
+            {/* SEÇÃO PRINCIPAL DE PREVIEW DAS INSPIRAÇÕES SALVAS COM AÇÃO DE EXCLUSÃO */}
+            {savedInspirations.length > 0 && (
+              <Stack gap="md" mb="md">
+                <Text
+                  size="sm"
+                  c="dimmed"
+                  tt="uppercase"
+                  fw={700}
+                  style={{ letterSpacing: 1.2 }}
+                >
+                  Mural de Inspirações Favoritadas
+                </Text>
+                <SimpleGrid
+                  cols={{ base: 2, sm: 3, md: 4}}
+                  spacing="sm"
+                >
+                  {savedInspirations.map((item) => (
+                    <Card
+                      key={item.id}
+                      withBorder
+                      radius="md"
+                      p={0}
+                      style={{ overflow: "hidden", position: "relative" }}
+                    >
+                      <Image
+                        src={item.image_url}
+                        fit="cover"
+                        style={{ height: "350px" }}
+                        alt="Inspiração salva"
+                      />
+
+                      {/* Botão flutuante de exclusão por item */}
+                      <ActionIcon
+                        variant="filled"
+                        color="red"
+                        radius="xl"
+                        size="md"
+                        loading={deletingId === item.id}
+                        onClick={() => handleRemoveInspiration(item.id)}
+                        style={{
+                          position: "absolute",
+                          top: "10px",
+                          right: "10px",
+                          zIndex: 2,
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+                        }}
+                      >
+                        <IconTrash size={14} />
+                      </ActionIcon>
+                    </Card>
+                  ))}
+                </SimpleGrid>
+              </Stack>
+            )}
 
             <Card
               withBorder
@@ -447,22 +658,13 @@ export default function OverviewPage() {
                   </Text>
                 </Stack>
                 <Group gap="xs">
-                  <ActionIcon
-                    variant="light"
-                    color="gray"
-                    size="lg"
-                    style={{
-                      border: "1px solid var(--mantine-color-gray-3)",
-                    }}
-                  >
-                    <IconDownload size={18} />
-                  </ActionIcon>
                   <Button
                     styles={primaryButtonStyles}
                     style={{
                       borderRadius: 10,
                     }}
                     leftSection={<IconShare size={14} />}
+                    onClick={handleShareLink}
                   >
                     Exportar
                   </Button>
@@ -474,17 +676,30 @@ export default function OverviewPage() {
 
         <Modal
           opened={isIdentityModalOpen}
-          onClose={() => setIsIdentityModalOpen(false)}
+          onClose={() => !isSubmitting && setIsIdentityModalOpen(false)}
           title={hasIdentity ? "Editar Identidade" : "Criar Identidade"}
           centered
           size="90%"
           radius="lg"
         >
           <Stack gap="lg">
+            {/* Âncora invisível que serve como o ponto mais alto do Modal */}
+            <div ref={modalTopRef} style={{ scrollMarginTop: "20px" }} />
             <Stepper
               active={activeStep}
-              onStepClick={setActiveStep}
-              allowNextStepsSelect
+              onStepClick={(step) => {
+                if (isSubmitting) {
+                  return;
+                }
+
+                if (step === 4 && (!selectedStyle || !dressCode)) {
+                  return;
+                }
+
+                if (step < activeStep) {
+                  setActiveStep(step);
+                }
+              }}
             >
               <Stepper.Step label="Estilo" description="Estilo do Casamento">
                 <WeddingStylePage
@@ -519,6 +734,19 @@ export default function OverviewPage() {
                   compact
                 />
               </Stepper.Step>
+
+              <Stepper.Step
+                label="Inspirações"
+                description="Imagens de referência"
+              >
+                <WeddingInspirationsPage
+                  selectedStyle={selectedStyle}
+                  dressCode={dressCode}
+                  selectedImages={selectedImages}
+                  setSelectedImages={setSelectedImages}
+                />
+              </Stepper.Step>
+
               <Stepper.Completed>
                 <Stack align="center" gap="sm" py="xl">
                   <IconCheck size={28} />
@@ -532,14 +760,15 @@ export default function OverviewPage() {
                 variant="default"
                 leftSection={<IconChevronLeft size={14} />}
                 onClick={handleBackStep}
-                disabled={activeStep === 0}
+                disabled={activeStep === 0 || isSubmitting}
               >
                 Voltar
               </Button>
               <Button
                 styles={primaryButtonStyles}
+                loading={isSubmitting}
                 rightSection={
-                  activeStep === 3 ? (
+                  activeStep === 4 ? (
                     <IconCheck size={14} />
                   ) : (
                     <IconChevronRight size={14} />
@@ -548,7 +777,7 @@ export default function OverviewPage() {
                 onClick={handleNextStep}
                 disabled={!canMoveToNextStep}
               >
-                {activeStep === 3 ? "Concluir" : "Continuar"}
+                {activeStep === 4 ? "Concluir" : "Continuar"}
               </Button>
             </Group>
           </Stack>
