@@ -13,12 +13,12 @@ import {
   WEDDING_SIZES,
   WEDDING_STYLES,
 } from "@/constants/weddingIdentityData";
-import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingIdentityState } from "@/hooks/useWeddingIdentityState";
 import {
+  createWeddingIdentityShareToken,
+  deleteWeddingInspiration,
   listWeddingInspirations,
   saveWeddingInspiration,
-  deleteWeddingInspiration, // Importado o service de exclusão
   WeddingIdentityInspirationPayload,
   WeddingIdentityInspirationRecord,
 } from "@/services/weddingIdentity.service";
@@ -69,8 +69,6 @@ export default function OverviewPage() {
   const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
 
-  const { user } = useAuth();
-
   // Estados para as inspirações selecionadas no modal e persistidas na grid principal
   const [selectedImages, setSelectedImages] = useState<
     WeddingIdentityInspirationPayload[]
@@ -83,20 +81,26 @@ export default function OverviewPage() {
 
   const modalTopRef = useRef<HTMLDivElement>(null);
 
-  // 1. Adicione o estado para o botão de copiar link no topo do componente
-  const weddingProfileId = user?.wedding_profile.id; // Supondo que o ID do perfil de casamento esteja disponível no contexto de autenticação
+  const handleShareLink = async () => {
+    try {
+      const { token } = await createWeddingIdentityShareToken();
+      const publicUrl = `${window.location.origin}/moodboard/${token}`;
 
-  const handleShareLink = () => {
-    // Constrói a URL pública baseada no domínio atual
-    const publicUrl = `${window.location.origin}/moodboard/${weddingProfileId}`;
-
-    navigator.clipboard.writeText(publicUrl);
-    notifications.show({
-      color: "green",
-      title: "Link copiado!",
-      message:
-        "O link público do seu moodboard foi copiado para a área de transferência.",
-    });
+      await navigator.clipboard.writeText(publicUrl);
+      notifications.show({
+        color: "green",
+        title: "Link copiado!",
+        message:
+          "O link público do seu moodboard foi copiado para a área de transferência.",
+      });
+    } catch (error) {
+      console.error("Erro ao gerar link público", error);
+      notifications.show({
+        color: "red",
+        title: "Falha ao compartilhar",
+        message: "Não foi possível gerar o link público no momento.",
+      });
+    }
   };
 
   // Efeito para rolar o modal para o topo a cada mudança de passo
@@ -579,10 +583,7 @@ export default function OverviewPage() {
                 >
                   Mural de Inspirações Favoritadas
                 </Text>
-                <SimpleGrid
-                  cols={{ base: 2, sm: 3, md: 4}}
-                  spacing="sm"
-                >
+                <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="sm">
                   {savedInspirations.map((item) => (
                     <Card
                       key={item.id}

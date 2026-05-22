@@ -30,6 +30,11 @@ export type WeddingIdentityApiRecord = WeddingIdentityApiPayload & {
   updated_at: string;
 };
 
+export type WeddingIdentityShareTokenResponse = {
+  token: string;
+  created_at: string;
+};
+
 export type WeddingIdentityInspirationPayload = {
   source_id?: string;
   title?: string;
@@ -84,6 +89,11 @@ export const updateWeddingIdentity = async (data: WeddingIdentityApiPayload) => 
 
 export const deleteWeddingIdentity = async () => {
   await api.delete('/api/wedding-identity/');
+};
+
+export const createWeddingIdentityShareToken = async (): Promise<WeddingIdentityShareTokenResponse> => {
+  const response = await api.post('/api/wedding-identity/share-token/');
+  return response.data as WeddingIdentityShareTokenResponse;
 };
 
 export const searchWeddingInspirations = async (params: {
