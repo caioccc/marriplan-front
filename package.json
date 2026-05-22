@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "env-cmd -f environments/.env.dev next dev",
-    "build": "env-cmd -f environments/.env.prod next build",
-    "build:sandbox": "env-cmd -f environments/.env.sandbox next build",
-    "build:prod": "env-cmd -f environments/.env.prod next build",
+    "build": "next build",
+    "build:sandbox": "next build",
+    "build:prod": "next build",
     "start": "next start",
     "lint": "next lint",
     "cypress": "cypress open",
