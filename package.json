@@ -63,7 +63,7 @@
     "lucide-react": "^0.469.0",
     "mantine-datatable": "^8.1.2",
     "moment": "^2.29.4",
-    "next": "15.3.4",
+    "next": "^16.2.6",
     "next-compose-plugins": "^2.2.1",
     "next-i18next": "^15.4.2",
     "next-images": "^1.8.5",
