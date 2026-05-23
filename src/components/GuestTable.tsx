@@ -86,6 +86,29 @@ function validateEmail(email: string) {
   return /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email);
 }
 
+function BadgeStatus(guest: Guest) {
+  const statusColors: Record<string, string> = {
+    Pending: "yellow",
+    Confirmed: "green",
+    Refused: "red",
+  };
+  const statusLabels: Record<string, string> = {
+    Pending: "Pendente",
+    Confirmed: "Confirmado",
+    Refused: "Recusado",
+  };
+
+  return (
+    <Badge
+      size="sm"
+      variant="light"
+      color={statusColors[guest.status_presenca || ""] || "gray"}
+    >
+      {statusLabels[guest.status_presenca || ""] || "Desconhecido"}
+    </Badge>
+  );
+}
+
 export default function GuestTable() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -174,7 +197,8 @@ export default function GuestTable() {
         values.hasWhatsapp && value.replace(/\D/g, "").length < 10
           ? "WhatsApp inválido"
           : null,
-      email: (value) => (value === "" || validateEmail(value) ? null : "Email inválido"),
+      email: (value) =>
+        value === "" || validateEmail(value) ? null : "Email inválido",
       acompanhantes: (value) =>
         value === "" || (!isNaN(Number(value)) && Number(value) >= 0)
           ? null
@@ -192,7 +216,6 @@ export default function GuestTable() {
     whatsappFilter !== "all" ||
     allergyFilter !== "all" ||
     statusFilter !== "all";
-  
 
   // Busca convidados do backend conforme paginação, busca e ordenação
   useEffect(() => {
@@ -873,9 +896,9 @@ export default function GuestTable() {
               <Text fw={500} lineClamp={2}>
                 {g.name}
               </Text>
-              <Text size="sm" c="dimmed">
-                Telefone: {g.phone}
-              </Text>
+              <Group my="xs">
+                <BadgeStatus {...g} />
+              </Group>
               {g.whatsapp && (
                 <Text size="sm" c="dimmed">
                   WhatsApp: {g.whatsapp}
@@ -905,21 +928,70 @@ export default function GuestTable() {
           )}
           renderActions={(g) => (
             <>
-              {g.whatsapp && (
-                <Tooltip label="Enviar RSVP por WhatsApp" position="right">
+              {g.status_presenca === "Pending" && (
+                <Tooltip label="Confirmar Presença">
                   <Menu.Item
-                    leftSection={<IconBrandWhatsapp size={14} />}
-                    component="a"
-                    href={`https://wa.me/55${g.whatsapp.replace(
-                      /\D/g,
-                      "",
-                    )}?text=${encodeURIComponent(
-                      "Olá! Por gentileza, confirme sua presença no nosso casamento respondendo esta mensagem ou pelo site. O convite formal será enviado via papelaria. Obrigado!",
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    leftSection={<IconCheck size={16} />}
+                    onClick={() => {
+                      setSelectedGuest(g);
+                      setPresencaModalOpen(true);
+                    }}
                   >
-                    WhatsApp
+                    Confirmar Presença
+                  </Menu.Item>
+                </Tooltip>
+              )}
+              {g.whatsapp && g.status_presenca === "Pending" && (
+                <Tooltip label="Enviar RSVP por WhatsApp">
+                  <Menu.Item
+                    leftSection={<IconBrandWhatsapp size={16} />}
+                    onClick={async () => {
+                      try {
+                        const res = await guests_generate_confirmation_link(
+                          g.id,
+                        );
+                        setConfirmationData({
+                          confirmation_url: res.confirmation_url,
+                          whatsapp_link: res.whatsapp_link,
+                          token: res.token,
+                        });
+                        setConfirmationModalOpen(true);
+                      } catch {
+                        notifications.show({
+                          color: "red",
+                          message: "Erro ao gerar link de confirmação.",
+                        });
+                      }
+                    }}
+                  >
+                    Enviar RSVP
+                  </Menu.Item>
+                </Tooltip>
+              )}
+              {g.status_presenca !== "Pending" && (
+                <Tooltip label="Gerar link de confirmação">
+                  <Menu.Item
+                    leftSection={<IconLink size={16} />}
+                    onClick={async () => {
+                      try {
+                        const res = await guests_generate_confirmation_link(
+                          g.id,
+                        );
+                        setConfirmationData({
+                          confirmation_url: res.confirmation_url,
+                          whatsapp_link: res.whatsapp_link,
+                          token: res.token,
+                        });
+                        setConfirmationModalOpen(true);
+                      } catch {
+                        notifications.show({
+                          color: "red",
+                          message: "Erro ao gerar link de confirmação.",
+                        });
+                      }
+                    }}
+                  >
+                    Gerar Link
                   </Menu.Item>
                 </Tooltip>
               )}
@@ -976,9 +1048,7 @@ export default function GuestTable() {
               <Text fw={500} lineClamp={2}>
                 {g.name}
               </Text>
-              <Text size="sm" c="dimmed">
-                Telefone: {g.phone}
-              </Text>
+              <BadgeStatus {...g} />
               {g.whatsapp && (
                 <Text size="sm" c="dimmed">
                   WhatsApp: {g.whatsapp}
@@ -1008,21 +1078,70 @@ export default function GuestTable() {
           )}
           renderActions={(g) => (
             <>
-              {g.whatsapp && (
-                <Tooltip label="Enviar RSVP por WhatsApp" position="right">
+              {g.status_presenca === "Pending" && (
+                <Tooltip label="Confirmar Presença">
                   <Menu.Item
-                    leftSection={<IconBrandWhatsapp size={14} />}
-                    component="a"
-                    href={`https://wa.me/55${g.whatsapp.replace(
-                      /\D/g,
-                      "",
-                    )}?text=${encodeURIComponent(
-                      "Olá! Por gentileza, confirme sua presença no nosso casamento respondendo esta mensagem ou pelo site. Esperamos você! 🥂",
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    leftSection={<IconCheck size={16} />}
+                    onClick={() => {
+                      setSelectedGuest(g);
+                      setPresencaModalOpen(true);
+                    }}
                   >
-                    WhatsApp
+                    Confirmar Presença
+                  </Menu.Item>
+                </Tooltip>
+              )}
+              {g.whatsapp && g.status_presenca === "Pending" && (
+                <Tooltip label="Enviar RSVP por WhatsApp">
+                  <Menu.Item
+                    leftSection={<IconBrandWhatsapp size={16} />}
+                    onClick={async () => {
+                      try {
+                        const res = await guests_generate_confirmation_link(
+                          g.id,
+                        );
+                        setConfirmationData({
+                          confirmation_url: res.confirmation_url,
+                          whatsapp_link: res.whatsapp_link,
+                          token: res.token,
+                        });
+                        setConfirmationModalOpen(true);
+                      } catch {
+                        notifications.show({
+                          color: "red",
+                          message: "Erro ao gerar link de confirmação.",
+                        });
+                      }
+                    }}
+                  >
+                    Enviar RSVP
+                  </Menu.Item>
+                </Tooltip>
+              )}
+              {g.status_presenca !== "Pending" && (
+                <Tooltip label="Gerar link de confirmação">
+                  <Menu.Item
+                    leftSection={<IconLink size={16} />}
+                    onClick={async () => {
+                      try {
+                        const res = await guests_generate_confirmation_link(
+                          g.id,
+                        );
+                        setConfirmationData({
+                          confirmation_url: res.confirmation_url,
+                          whatsapp_link: res.whatsapp_link,
+                          token: res.token,
+                        });
+                        setConfirmationModalOpen(true);
+                      } catch {
+                        notifications.show({
+                          color: "red",
+                          message: "Erro ao gerar link de confirmação.",
+                        });
+                      }
+                    }}
+                  >
+                    Gerar Link
                   </Menu.Item>
                 </Tooltip>
               )}
@@ -1170,7 +1289,10 @@ export default function GuestTable() {
                 }
               }}
               onChange={async (image: unknown) => {
-                const uploaded = image as { url?: string; id_cloudinary?: string; public_id?: string } | string | null;
+                const uploaded = image as
+                  | { url?: string; id_cloudinary?: string; public_id?: string }
+                  | string
+                  | null;
                 form.setFieldValue(
                   "photo_url",
                   typeof uploaded === "string" ? uploaded : uploaded?.url || "",

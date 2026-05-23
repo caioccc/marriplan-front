@@ -113,15 +113,15 @@ export default function HomePage() {
 
               <div className="mt-10 flex flex-col gap-3 sm:flex-row">
                 <a
-                  href="/register"
-                  onClick={handleNavigate("/register")}
+                  href="/login"
+                  onClick={handleNavigate("/login")}
                   className="inline-flex items-center justify-center rounded-full bg-[#2f2822] px-7 py-4 text-sm font-semibold text-[#fffaf6] shadow-[0_18px_50px_rgba(47,40,34,0.18)] transition-transform duration-200 hover:-translate-y-0.5"
                 >
                   Começar agora
                 </a>
                 <a
-                  href="/register"
-                  onClick={handleNavigate("/register")}
+                  href="/login"
+                  onClick={handleNavigate("/login")}
                   className="inline-flex items-center justify-center rounded-full border border-[#e4d6c7] bg-white/80 px-7 py-4 text-sm font-semibold text-[#4a3f36] shadow-[0_10px_30px_rgba(70,56,43,0.05)] backdrop-blur transition-transform duration-200 hover:-translate-y-0.5"
                 >
                   Criar meu casamento
@@ -269,22 +269,22 @@ export default function HomePage() {
                   momento.
                 </h2>
                 <p className="mt-4 max-w-2xl text-base leading-8 text-[#f6efe7]">
-                  Comece agora com uma landing que comunica sofisticação,
+                  Comece agora com um sistema que comunica sofisticação,
                   cuidado e tranquilidade desde o primeiro olhar.
                 </p>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
                 <a
-                  href="/register"
-                  onClick={handleNavigate("/register")}
+                  href="/login"
+                  onClick={handleNavigate("/login")}
                   className="inline-flex items-center justify-center rounded-full bg-[#f2e6d8] px-7 py-4 text-sm font-semibold text-[#2f2822] shadow-[0_18px_40px_rgba(0,0,0,0.18)] transition-transform duration-200 hover:-translate-y-0.5"
                 >
                   Começar agora
                 </a>
                 <a
-                  href="/register"
-                  onClick={handleNavigate("/register")}
+                  href="/login"
+                  onClick={handleNavigate("/login")}
                   className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/8 px-7 py-4 text-sm font-semibold text-[#fffaf6] backdrop-blur transition-transform duration-200 hover:-translate-y-0.5"
                 >
                   Criar meu casamento

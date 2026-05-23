@@ -40,6 +40,8 @@ interface BaseLayoutProps {
   children: ReactNode;
 }
 
+const SYSTEM_VERSION = "v0.1.0";
+
 export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
   const router = useRouter();
   const { logout, user } = useAuth();
@@ -80,11 +82,15 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
     { key: "nome_noiva", label: "Nome da noiva" },
     { key: "data_casamento", label: "Data do casamento" },
     { key: "hora_casamento", label: "Hora do casamento" },
-    { key: "local", label: "Local" },
   ];
   let filled = 0;
   const completedFields: string[] = [];
   const missingFields: string[] = [];
+  const coupleName = user?.wedding_profile
+    ? `${user.wedding_profile.nome_noivo || "Noivo"} & ${
+        user.wedding_profile.nome_noiva || "Noiva"
+      }`
+    : "Noivos";
   if (user?.wedding_profile) {
     const p = user.wedding_profile;
     requiredFields.forEach((field) => {
@@ -417,7 +423,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
             </Tooltip>
           </Group>
         )}
-        <Stack gap="xs" style={{ width: "100%" }}>
+        <Stack gap="xs" style={{ width: "100%", minHeight: "100%" }}>
           {!opened && (
             <Box
               component="img"
@@ -553,6 +559,53 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
               },
             }}
           />
+
+          <Box
+            style={{
+              marginTop: "auto",
+              paddingTop: opened ? 12 : 8,
+              borderTop: "1px solid var(--marriplan-border)",
+              width: "100%",
+            }}
+          >
+            <Stack gap={2} align={opened ? "flex-start" : "center"}>
+              <Text
+                size="xs"
+                fw={600}
+                style={{
+                  color: "var(--marriplan-muted)",
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  display: opened ? "block" : "none",
+                }}
+              >
+                {coupleName}
+              </Text>
+              <Text
+                size="xs"
+                fw={600}
+                style={{
+                  color: "var(--marriplan-text)",
+                  display: opened ? "block" : "none",
+                }}
+              >
+                Sistema {SYSTEM_VERSION}
+              </Text>
+              {!opened && (
+                <Text
+                  size="xs"
+                  fw={600}
+                  ta="center"
+                  style={{
+                    color: "var(--marriplan-muted)",
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {SYSTEM_VERSION}
+                </Text>
+              )}
+            </Stack>
+          </Box>
         </Stack>
       </AppShell.Navbar>
 

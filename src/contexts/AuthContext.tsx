@@ -291,8 +291,7 @@ export const ProtectedRoute = ({
             profile.nome_noiva &&
             profile.telefone_noiva &&
             profile.data_casamento &&
-            profile.hora_casamento &&
-            profile.local
+            profile.hora_casamento
         )
     }
 

@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { toSentenceCase, toUpperCamelWords } from "@/lib/text";
 import api from "@/services/api";
 import {
   Button,
@@ -19,7 +20,6 @@ import ptBR from "date-fns/locale/pt-BR";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { IMaskInput } from "react-imask";
-import { toUpperCamelWords, toSentenceCase } from "@/lib/text";
 
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
@@ -82,7 +82,6 @@ export default function WeddingProfileOnboardingForm({
     }
   };
 
-  
   const buildNormalizedPayload = (values: Record<string, any>) => ({
     ...values,
     nome_noivo: toUpperCamelWords(values.nome_noivo ?? ""),
@@ -142,7 +141,6 @@ export default function WeddingProfileOnboardingForm({
         !v || v.replace(/\D/g, "").length < 10 ? "Obrigatorio" : null,
       data_casamento: (v) => (!v ? "Obrigatorio" : null),
       hora_casamento: (v) => (!v ? "Obrigatorio" : null),
-      local: (v) => (!v ? "Obrigatorio" : null),
       // Todos os outros campos sao opcionais
     },
   });
@@ -320,11 +318,7 @@ export default function WeddingProfileOnboardingForm({
       return !!form.values.nome_noiva && !!form.values.telefone_noiva;
     }
     if (step === 2) {
-      return (
-        !!form.values.data_casamento &&
-        !!form.values.hora_casamento &&
-        !!form.values.local
-      );
+      return !!form.values.data_casamento && !!form.values.hora_casamento;
     }
     return true;
   }
@@ -401,7 +395,6 @@ export default function WeddingProfileOnboardingForm({
     if (step === 2) {
       form.clearFieldError("data_casamento");
       form.clearFieldError("hora_casamento");
-      form.clearFieldError("local");
 
       let hasError = false;
       if (!form.values.data_casamento) {
@@ -410,10 +403,6 @@ export default function WeddingProfileOnboardingForm({
       }
       if (!form.values.hora_casamento) {
         form.setFieldError("hora_casamento", "Obrigatorio");
-        hasError = true;
-      }
-      if (!form.values.local) {
-        form.setFieldError("local", "Obrigatorio");
         hasError = true;
       }
       return !hasError;
@@ -515,7 +504,6 @@ export default function WeddingProfileOnboardingForm({
           <TextInput
             label="Local onde sera realizado"
             {...form.getInputProps("local")}
-            required
             mt="md"
           />
           {mapPosition && (

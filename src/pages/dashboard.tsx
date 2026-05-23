@@ -7,6 +7,12 @@ import BaseLayout from "@/components/Layout/_BaseLayout";
 import { MarriplanStatusBadge } from "@/components/MarriplanStatusBadge";
 import { SuppliersCarouselRow } from "@/components/SuppliersCarouselRow";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  DRESS_CODE_OPTIONS,
+  WEDDING_SIZES,
+  WEDDING_STYLES,
+} from "@/constants/weddingIdentityData";
+import { useWeddingIdentityState } from "@/hooks/useWeddingIdentityState";
 import { fetchChecklistTasks } from "@/services/checklist";
 import { giftsService } from "@/services/giftsService";
 import { guests_list_all } from "@/services/guests";
@@ -30,7 +36,9 @@ import {
   Stack,
   Text,
   Title,
+  Tooltip,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconCalendar,
   IconChecklist,
@@ -113,6 +121,12 @@ const MarriplanDashboard: React.FC = () => {
   const [checklistTasks, setChecklistTasks] = useState<ChecklistTask[]>([]);
   const [giftPage, setGiftPage] = useState(0);
   const { user } = useAuth();
+  const {
+    palette: identityPalette,
+    selectedStyle,
+    weddingSize,
+    dressCode,
+  } = useWeddingIdentityState();
   const [countdown, setCountdown] = useState<CountdownState>({
     days: 0,
     hours: 0,
@@ -336,6 +350,11 @@ const MarriplanDashboard: React.FC = () => {
     softWhite: "#FFFCF8",
   };
 
+  const sizeData = WEDDING_SIZES.find((size) => size.id === weddingSize);
+  const styleData = WEDDING_STYLES.find((style) => style.id === selectedStyle);
+  const dressData = DRESS_CODE_OPTIONS.find((dress) => dress.id === dressCode);
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
   const checklistStats = useMemo(() => {
     const total = checklistTasks.length;
     const done = checklistTasks.filter((task) => task.status === "done").length;
@@ -366,24 +385,6 @@ const MarriplanDashboard: React.FC = () => {
     allGifts.count > 0
       ? Math.round((giftsPurchased / allGifts.count) * 100)
       : 0;
-
-  const checklistSections = useMemo(() => {
-    const total = Math.max(checklistStats.total, 1);
-    return [
-      {
-        value: Math.round((checklistStats.done / total) * 100),
-        color: "#D1A48C",
-      },
-      {
-        value: Math.round((checklistStats.inProgress / total) * 100),
-        color: "#E6C9B8",
-      },
-      {
-        value: Math.round((checklistStats.pending / total) * 100),
-        color: "#EFE6DA",
-      },
-    ];
-  }, [checklistStats]);
 
   const nextTasks = useMemo(() => {
     const priorityWeight: Record<string, number> = {
@@ -533,6 +534,129 @@ const MarriplanDashboard: React.FC = () => {
               </Card>
             </Stack>
           </Card>
+
+          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
+            <Card
+              radius="xl"
+              p="lg"
+              style={{
+                background: palette.softWhite,
+                border: `1px solid ${palette.line}`,
+              }}
+            >
+              <Text
+                size="xs"
+                c={palette.warmGray}
+                tt="uppercase"
+                fw={600}
+                style={{ letterSpacing: 1 }}
+              >
+                Paleta Definida
+              </Text>
+              <Text fw={600} size="lg" c={palette.ink} mt={8}>
+                {identityPalette.length}
+              </Text>
+              <Text size="xs" c={palette.warmGray}>
+                cores selecionadas
+              </Text>
+              <Group gap={4} wrap="nowrap" mt={10}>
+                {identityPalette.map((color) => (
+                  <Card
+                    key={color.id}
+                    p={0}
+                    radius="md"
+                    withBorder
+                    style={{ flex: 1, height: 18, background: color.hex }}
+                  />
+                ))}
+              </Group>
+            </Card>
+
+            <Card
+              radius="xl"
+              p="lg"
+              style={{
+                background: palette.softWhite,
+                border: `1px solid ${palette.line}`,
+              }}
+            >
+              <Text
+                size="xs"
+                c={palette.warmGray}
+                tt="uppercase"
+                fw={600}
+                style={{ letterSpacing: 1 }}
+              >
+                Tamanho do Casamento
+              </Text>
+              <Text fw={600} size="lg" c={palette.ink} mt={8}>
+                {weddingSize ? sizeData?.label : "-"}
+              </Text>
+              <Text size="xs" c={palette.warmGray}>
+                {sizeData?.guestRange || "Selecione o porte do evento"}
+              </Text>
+            </Card>
+
+            <Card
+              radius="xl"
+              p="lg"
+              style={{
+                background: palette.softWhite,
+                border: `1px solid ${palette.line}`,
+              }}
+            >
+              <Text
+                size="xs"
+                c={palette.warmGray}
+                tt="uppercase"
+                fw={600}
+                style={{ letterSpacing: 1 }}
+              >
+                Estilo Selecionado
+              </Text>
+              <Text fw={600} size="lg" c={palette.ink} mt={8}>
+                {selectedStyle ? styleData?.label : "-"}
+              </Text>
+              <Text size="xs" c={palette.warmGray}>
+                {styleData?.subtitle || ""}
+              </Text>
+            </Card>
+
+            <Card
+              radius="xl"
+              p="lg"
+              style={{
+                background: palette.softWhite,
+                border: `1px solid ${palette.line}`,
+              }}
+            >
+              <Text
+                size="xs"
+                c={palette.warmGray}
+                tt="uppercase"
+                fw={600}
+                style={{ letterSpacing: 1 }}
+              >
+                Dress Code
+              </Text>
+              <Text fw={600} size="lg" c={palette.ink} mt={8}>
+                {dressCode ? dressData?.label : "-"}
+              </Text>
+              <Tooltip
+                label={dressData?.desc || "Descricao nao disponivel"}
+                position="bottom"
+                color="dark"
+                withArrow
+                style={{ fontSize: 11 }}
+              >
+                <Text size="xs" c={palette.warmGray}>
+                  {isMobile
+                    ? dressData?.desc
+                    : dressData?.desc?.slice(0, 30) + "..." || ""}
+                </Text>
+              </Tooltip>
+            </Card>
+          </SimpleGrid>
 
           <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="lg">
             <Card
