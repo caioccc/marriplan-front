@@ -1,7 +1,6 @@
 import PageSectionHeader from "@/components/PageSectionHeader";
 import PublicGiftListLayout from "@/components/Layout/PublicGiftListLayout";
 import PublicGiftReserveModal from "@/components/PublicGiftReserveModal";
-import api from "@/services/api";
 import { giftsService } from "@/services/giftsService";
 import { Gift } from "@/types/gift";
 import { primaryButtonStyles, segmentedTabsStyles, softButtonStyles } from "@/styles";
@@ -33,7 +32,7 @@ import {
   IconSortDescending
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getCategoryLabel } from "@/lib/giftCategories";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -93,20 +92,8 @@ type WeddingProfileLite = {
 export default function GiftsSharePage() {
   const router = useRouter();
   const { token } = router.query;
-  // Filtros e estado
-  // Dados do casamento
   const [weddingProfile, setWeddingProfile] =
     useState<WeddingProfileLite | null>(null);
-
-  // Função para buscar dados do casamento pelo wedding_profile do primeiro presente
-  const fetchWeddingProfile = useCallback(async (profileId: number) => {
-    try {
-      const res = await api.get(`/api/wedding-profile/${profileId}/`);
-      setWeddingProfile(res.data);
-    } catch {
-      setWeddingProfile(null);
-    }
-  }, []);
 
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -157,13 +144,8 @@ export default function GiftsSharePage() {
         setTotal(res.total || 0);
         setCategories(res.categories || []);
         setStatusOptions(res.status || []);
-        // Buscar dados do casamento pelo wedding_profile do primeiro presente
-        if (
-          res.results &&
-          res.results.length > 0 &&
-          res.results[0].wedding_profile
-        ) {
-          fetchWeddingProfile(res.results[0].wedding_profile);
+        if (res.wedding_profile) {
+          setWeddingProfile(res.wedding_profile);
         }
       })
       .finally(() => setLoading(false));
@@ -178,7 +160,6 @@ export default function GiftsSharePage() {
     ordering,
     page,
     pageSize,
-    fetchWeddingProfile,
   ]);
 
   // Handlers
