@@ -24,6 +24,7 @@ interface GiftFormModalProps {
   onClose: () => void;
   onSave: (gift: Gift) => void;
   initial?: Partial<Gift>;
+  title?: string;
 }
 
 export function GiftFormModal({
@@ -31,6 +32,7 @@ export function GiftFormModal({
   onClose,
   onSave,
   initial,
+  title,
 }: GiftFormModalProps) {
   const [form, setForm] = useState<Partial<Gift>>(initial || {});
   const [loading, setLoading] = useState(false);
@@ -151,7 +153,7 @@ export function GiftFormModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={form.id ? "Editar Presente" : "Adicionar Presente"}
+      title={title || (form.id ? "Editar Presente" : "Adicionar Presente")}
       size="xl"
     >
       <Box>

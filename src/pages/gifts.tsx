@@ -61,6 +61,7 @@ import {
 } from "@tabler/icons-react";
 import { DataTable } from "mantine-datatable";
 import { NextPage } from "next";
+import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
 const statusOptions = [
   { label: "Todos", value: "" },
@@ -96,6 +97,7 @@ const paginationThemeStyles = `
 `;
 
 const GiftsPage: NextPage = () => {
+  const router = useRouter();
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
@@ -459,11 +461,10 @@ const GiftsPage: NextPage = () => {
                 leftSection={<IconGiftFilled size={18} />}
                 styles={primaryButtonStyles}
                 onClick={() => {
-                  setEditingGift(undefined);
-                  setModalOpen(true);
+                  router.push("/gifts/marketplace");
                 }}
               >
-                Adicionar presente
+                Ir ao marketplace
               </Button>
               <Menu shadow="md" width={220} position="bottom-end">
                 <Menu.Target>
