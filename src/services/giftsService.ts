@@ -58,6 +58,10 @@ export const giftsService = {
     });
     return res.data;
   },
+  async generateBasicGifts() {
+    const res = await api.post('/api/gifts/generate-basic/');
+    return res.data;
+  },
   async exportPDF(params: Record<string, string | number> = {}) {
     const res = await api.get('/api/gifts/export/pdf/', { params, responseType: 'blob' });
     return res.data;

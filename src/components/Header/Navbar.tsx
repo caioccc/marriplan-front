@@ -67,20 +67,20 @@ export default function Navbar(): JSX.Element {
 
         <div className="hidden items-center gap-4 md:flex">
           <a
-            href="/login"
+            href="/dashboard"
             onClick={(e) => {
               e.preventDefault();
-              handleNavigate("/login")();
+              handleNavigate("/dashboard")();
             }}
             className="rounded-full px-3 py-2 text-sm font-medium text-[#4a3f36] border border-transparent transition-colors duration-150 hover:border-[#eadfd3] hover:bg-white/70"
           >
             Entrar
           </a>
           <a
-            href="/register"
+            href="/dashboard"
             onClick={(e) => {
               e.preventDefault();
-              handleNavigate("/register")();
+              handleNavigate("/dashboard")();
             }}
             className="rounded-full bg-[#2f2822] px-4 py-2 text-sm font-semibold text-[#fffaf6] shadow-[0_12px_30px_rgba(47,40,34,0.14)] transition-transform duration-150 hover:-translate-y-0.5"
           >

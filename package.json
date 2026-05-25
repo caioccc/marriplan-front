@@ -11,7 +11,9 @@
     "lint": "next lint",
     "cypress": "cypress open",
     "cypress:headless": "cypress run --browser chrome",
-    "cypress:ci": "cypress run --browser electron"
+    "cypress:ci": "cypress run --browser electron",
+    "sitemap": "npx next-sitemap",
+    "postbuild": "npx next-sitemap"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

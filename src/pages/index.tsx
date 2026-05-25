@@ -9,6 +9,7 @@ import {
     IconUsers,
 } from "@tabler/icons-react";
 import Head from "next/head";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import React from "react";
 
@@ -85,6 +86,75 @@ export default function HomePage() {
           name="description"
           content="Marriplan é uma experiência premium para organizar checklist, convidados, presentes, RSVP e fornecedores com leveza e elegância."
         />
+        <link rel="canonical" href="https://marriplan.com/" />
+        <meta property="og:title" content="Marriplan | Organize seu casamento sem estresse" />
+        <meta property="og:description" content="Identidade do Casamento, checklist, convidados, presentes, RSVP e fornecedores em uma experiência elegante e simples." />
+        <meta property="og:image" content="https://marriplan.com/og-image.png" />
+        <meta property="og:url" content="https://marriplan.com/" />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Marriplan | Organize seu casamento sem estresse" />
+        <meta name="twitter:description" content="Identidade do Casamento, checklist, convidados, presentes, RSVP e fornecedores em uma experiência elegante e simples." />
+        <meta name="twitter:image" content="https://marriplan.com/og-image.png" />
+        <link rel="preload" as="image" href="/mockup.png" />
+
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: `{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "name": "Marriplan",
+      "url": "https://marriplan.com/",
+      "logo": "https://marriplan.com/logo.png"
+    },
+    {
+      "@type": "WebSite",
+      "url": "https://marriplan.com/",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://marriplan.com/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    },
+      {
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Como eu convido meus amigos e familiares?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Você pode adicionar convidados manualmente ou importar uma lista; nosso fluxo de RSVP envia convites e acompanha confirmações automaticamente."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Posso gerenciar presentes e listas compartilhadas?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Sim — crie uma lista de presentes compartilhável que os convidados podem acessar e marcar itens como reservados."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "O que acontece se mudar a data do evento?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Atualize a data no painel do evento; o sistema recalcula prazos importantes no checklist e pode notificar fornecedores."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "É possível compartilhar o checklist com outras pessoas?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Sim — você pode convidar colaboradores com permissões para editar itens do checklist e ver status do planejamento."
+            }
+          }
+        ]
+      }
+  ]
+}` }} />
       </Head>
 
       <main className="min-h-screen overflow-hidden bg-[linear-gradient(180deg,#faf7f2_0%,#f6f1ea_56%,#ffffff_100%)] text-[#2f2822]">
@@ -166,9 +236,12 @@ export default function HomePage() {
             <div className="relative mx-auto w-full max-w-[760px]">
               <div className="absolute inset-x-10 top-8 h-72 rounded-full bg-[#f2e6d8]/60 blur-3xl" />
               <div className="relative flex items-center justify-center">
-                <img
+                <Image
                   src="/mockup.png"
                   alt="Mockup do Marriplan"
+                  width={760}
+                  height={420}
+                  priority
                   className="h-auto w-full max-w-[760px] object-contain lg:scale-110 lg:origin-top"
                 />
               </div>

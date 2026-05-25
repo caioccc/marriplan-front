@@ -120,6 +120,7 @@ const GiftsPage: NextPage = () => {
   const [importError, setImportError] = useState<string | null>(null);
   const [importSuccess, setImportSuccess] = useState<string | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
+  const [generatingBasicGifts, setGeneratingBasicGifts] = useState(false);
   const [exporting, setExporting] = useState<"csv" | "xlsx" | "pdf" | null>(
     null,
   );
@@ -200,6 +201,13 @@ const GiftsPage: NextPage = () => {
     return { results, count };
   }
 
+  async function refreshGiftList() {
+    const res = await giftsService.listGifts({ page, status, search, category });
+    setGifts(res.results);
+    setTotal(res.count);
+    return res;
+  }
+
   useEffect(() => {
     setLoading(true);
     giftsService
@@ -230,13 +238,7 @@ const GiftsPage: NextPage = () => {
       reserved_by: "",
       reserved_message: "",
     });
-    giftsService
-      .listGifts({ page, status, search, category })
-      .then((res) => {
-        setGifts(res.results);
-        setTotal(res.count);
-      })
-      .finally(() => setLoading(false));
+    refreshGiftList().finally(() => setLoading(false));
   };
   const handleConfirmMark = async (purchasedBy: string) => {
     if (!markModal.gift) return;
@@ -244,14 +246,33 @@ const GiftsPage: NextPage = () => {
     await giftsService.markAsPurchased(markModal.gift.id, {
       purchased_by: purchasedBy,
     });
-    giftsService
-      .listGifts({ page, status, search, category })
-      .then((res) => {
-        setGifts(res.results);
-        setTotal(res.count);
-      })
-      .finally(() => setLoading(false));
+    refreshGiftList().finally(() => setLoading(false));
     setMarkModal({ open: false });
+  };
+
+  const handleGenerateBasicGifts = async () => {
+    setGeneratingBasicGifts(true);
+    setLoading(true);
+    try {
+      const res = await giftsService.generateBasicGifts();
+      await refreshGiftList();
+      notifications.show({
+        color: "green",
+        message:
+          res.detail ||
+          `${res.created || 0} presente(s) adicionados à lista básica.`,
+      });
+    } catch (err) {
+      notifications.show({
+        color: "red",
+        message:
+          (err as { response?: { data?: { detail?: string } } })?.response?.data
+            ?.detail || "Não foi possível gerar a lista básica.",
+      });
+    } finally {
+      setGeneratingBasicGifts(false);
+      setLoading(false);
+    }
   };
 
   const handleShare = async () => {
@@ -511,6 +532,13 @@ const GiftsPage: NextPage = () => {
                     disabled={importing}
                   >
                     Importar planilha
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconGift size={18} />}
+                    onClick={handleGenerateBasicGifts}
+                    disabled={generatingBasicGifts}
+                  >
+                    Gerar lista básica
                   </Menu.Item>
                   <Menu.Item
                     leftSection={<IconFileTypePdf size={18} />}
