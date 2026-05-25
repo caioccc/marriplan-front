@@ -14,6 +14,7 @@ import {
   ActionIcon,
   Badge,
   Button,
+  Card,
   Checkbox,
   Group,
   Menu,
@@ -22,7 +23,9 @@ import {
   rem,
   SegmentedControl,
   Select,
+  SimpleGrid,
   Stack,
+  ThemeIcon,
   Text,
   TextInput,
   Tooltip,
@@ -44,12 +47,15 @@ import {
   IconMail,
   IconPlus,
   IconSearch,
+  IconUsers,
+  IconX,
   IconTrash,
   IconUpload,
   IconUser,
+  IconClock,
 } from "@tabler/icons-react";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMediaQuery } from "@mantine/hooks";
 
 import {
@@ -111,6 +117,7 @@ function BadgeStatus(guest: Guest) {
 
 export default function GuestTable() {
   const [guests, setGuests] = useState<Guest[]>([]);
+  const [allGuests, setAllGuests] = useState<Guest[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Guest | null>(null);
   const [exporting, setExporting] = useState<"csv" | "xlsx" | "pdf" | null>(
@@ -174,6 +181,11 @@ export default function GuestTable() {
     },
     [search],
   );
+
+  const refreshSummaryGuests = useCallback(async () => {
+    const data = await fetchAllGuests({ ordering: "" });
+    setAllGuests(data.results || []);
+  }, [fetchAllGuests]);
 
   const form = useForm({
     initialValues: {
@@ -247,6 +259,10 @@ export default function GuestTable() {
     }
     fetchGuests();
   }, [page, recordsPerPage, search, sortStatus, filtersActive, fetchAllGuests]);
+
+  useEffect(() => {
+    void refreshSummaryGuests();
+  }, [refreshSummaryGuests]);
 
   useEffect(() => {
     if (filtersActive) {
@@ -336,6 +352,7 @@ export default function GuestTable() {
       const created = await guests_create(payload);
       setGuests((guests) => [...guests, created]);
     }
+    void refreshSummaryGuests();
     setModalOpen(false);
     form.reset();
   }
@@ -343,6 +360,7 @@ export default function GuestTable() {
   async function handleDelete(id: number) {
     await guests_delete(id);
     setGuests((guests) => guests.filter((g) => g.id !== id));
+    void refreshSummaryGuests();
   }
 
   // Exportar convidados
@@ -450,6 +468,64 @@ export default function GuestTable() {
   const derivedTotalRecords = filtersActive
     ? filteredGuests.length
     : totalRecords;
+
+  const summaryGuests = filtersActive ? filteredGuests : allGuests;
+  const guestSummary = useMemo(
+    () =>
+      summaryGuests.reduce(
+        (acc, guest) => {
+          acc.total += 1;
+          if (guest.status_presenca === "Confirmed") acc.confirmed += 1;
+          if (guest.status_presenca === "Refused") acc.refused += 1;
+          if (guest.status_presenca === "Pending") acc.pending += 1;
+          return acc;
+        },
+        {
+          total: 0,
+          confirmed: 0,
+          refused: 0,
+          pending: 0,
+        },
+      ),
+    [summaryGuests],
+  );
+
+  const guestStatusCards = [
+    {
+      key: "total",
+      label: "Total",
+      value: guestSummary.total,
+      helper: filtersActive
+        ? "Resultado dos filtros atuais"
+        : "Todos os convidados cadastrados",
+      icon: IconUsers,
+      color: "blue",
+    },
+    {
+      key: "confirmed",
+      label: "Confirmados",
+      value: guestSummary.confirmed,
+      helper: "Presentes confirmados no sistema",
+      icon: IconCheck,
+      color: "green",
+    },
+    {
+      key: "refused",
+      label: "Recusados",
+      value: guestSummary.refused,
+      helper: "Convites recusados ou não aceitos",
+      icon: IconX,
+      color: "red",
+    },
+    {
+      key: "pending",
+      label: "Pendentes",
+      value: guestSummary.pending,
+      helper: "Aguardando resposta dos convidados",
+      icon: IconClock,
+      color: "yellow",
+    },
+  ] as const;
 
   return (
     <Stack gap="lg" py="md">
@@ -629,6 +705,94 @@ export default function GuestTable() {
           )
         }
       />
+      {isMobile ? (
+        <Card
+          radius="xl"
+          p="lg"
+          className="marriplan-card"
+          style={{ background: "var(--marriplan-surface)" }}
+        >
+          <Stack gap="md">
+            <Stack gap="sm">
+              {guestStatusCards.map((card) => {
+                const Icon = card.icon;
+
+                return (
+                  <Group
+                    key={card.key}
+                    justify="space-between"
+                    align="center"
+                    gap="md"
+                    p="sm"
+                    style={{
+                      border: "1px solid var(--marriplan-border)",
+                      borderRadius: 14,
+                      background: "var(--marriplan-surface-muted)",
+                    }}
+                  >
+                    <Group gap="sm" align="center" style={{ minWidth: 0 }}>
+                      <ThemeIcon size={34} radius="xl" variant="light" color={card.color}>
+                        <Icon size={18} />
+                      </ThemeIcon>
+                      <Stack gap={1} style={{ minWidth: 0 }}>
+                        <Text fw={700} size="sm" c="var(--marriplan-text)">
+                          {card.label}
+                        </Text>
+                        <Text size="xs" c="dimmed" lineClamp={2}>
+                          {card.helper}
+                        </Text>
+                      </Stack>
+                    </Group>
+
+                    <Text fw={700} size="xl" c="var(--marriplan-text)">
+                      {card.value}
+                    </Text>
+                  </Group>
+                );
+              })}
+            </Stack>
+          </Stack>
+        </Card>
+      ) : (
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
+          {guestStatusCards.map((card) => {
+            const Icon = card.icon;
+
+            return (
+              <Card
+                key={card.key}
+                radius="xl"
+                p="lg"
+                className="marriplan-card"
+                style={{ background: "var(--marriplan-surface)" }}
+              >
+                <Group justify="space-between" align="flex-start" gap="md">
+                  <Stack gap={6} style={{ minWidth: 0 }}>
+                    <Text
+                      size="xs"
+                      c="dimmed"
+                      tt="uppercase"
+                      fw={700}
+                      style={{ letterSpacing: 1.1 }}
+                    >
+                      {card.label}
+                    </Text>
+                    <Text fw={700} size="2xl" c="var(--marriplan-text)">
+                      {card.value}
+                    </Text>
+                    <Text size="sm" c="dimmed">
+                      {card.helper}
+                    </Text>
+                  </Stack>
+                  <ThemeIcon size={44} radius="xl" variant="light" color={card.color}>
+                    <Icon size={22} />
+                  </ThemeIcon>
+                </Group>
+              </Card>
+            );
+          })}
+        </SimpleGrid>
+      )}
       {!isMobile && viewMode === "table" && (
         <DataTable<Guest>
           className="guest-table"

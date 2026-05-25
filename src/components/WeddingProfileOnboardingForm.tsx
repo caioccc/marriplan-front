@@ -2,6 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { toSentenceCase, toUpperCamelWords } from "@/lib/text";
 import api from "@/services/api";
+import { primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
   Button,
   Group,
@@ -16,23 +17,24 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import axios from "axios";
-import ptBR from "date-fns/locale/pt-BR";
+import { ptBR } from "date-fns/locale/pt-BR";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
-import { IMaskInput } from "react-imask";
+import { useMediaQuery } from "@mantine/hooks";
 
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { Box, ScrollArea, Text, Stack } from "@mantine/core";
 dayjs.extend(relativeTime);
 dayjs.locale("pt-br");
 
 // Importar L apenas no client-side
-let L: any = null;
-if (typeof window !== "undefined") {
-  L = require("leaflet");
-  require("leaflet/dist/leaflet.css");
-}
+// let L: any = null;
+// if (typeof window !== "undefined") {
+//   L = require("leaflet");
+//   require("leaflet/dist/leaflet.css");
+// }
 
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
   ssr: false,
@@ -53,6 +55,8 @@ export default function WeddingProfileOnboardingForm({
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState<string | null>(null);
   const [mapPosition, setMapPosition] = useState<[number, number] | null>(null);
+  const L = null;
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const parseTimeToDate = (value?: string | null) => {
     if (!value) return null;
@@ -82,24 +86,31 @@ export default function WeddingProfileOnboardingForm({
     }
   };
 
-  const buildNormalizedPayload = (values: Record<string, any>) => ({
+  const buildNormalizedPayload = (
+    values: Record<string, unknown>,
+  ): Record<string, unknown> & {
+    data_casamento?: unknown;
+    hora_casamento?: unknown;
+  } => ({
     ...values,
-    nome_noivo: toUpperCamelWords(values.nome_noivo ?? ""),
-    nome_noiva: toUpperCamelWords(values.nome_noiva ?? ""),
-    local: toUpperCamelWords(values.local ?? ""),
-    bairro: toUpperCamelWords(values.bairro ?? ""),
-    cidade: toUpperCamelWords(values.cidade ?? ""),
-    estado: toUpperCamelWords(values.estado ?? ""),
-    descricao_noivo: toSentenceCase(values.descricao_noivo ?? ""),
-    descricao_noiva: toSentenceCase(values.descricao_noiva ?? ""),
-    frase_casal: toSentenceCase(values.frase_casal ?? ""),
-    historia: toSentenceCase(values.historia ?? ""),
-    email_noivo: (values.email_noivo ?? "").trim().toLowerCase(),
-    email_noiva: (values.email_noiva ?? "").trim().toLowerCase(),
-    facebook_noivo: (values.facebook_noivo ?? "").trim(),
-    instagram_noivo: (values.instagram_noivo ?? "").trim(),
-    facebook_noiva: (values.facebook_noiva ?? "").trim(),
-    instagram_noiva: (values.instagram_noiva ?? "").trim(),
+    nome_noivo: toUpperCamelWords(String(values.nome_noivo ?? "")),
+    nome_noiva: toUpperCamelWords(String(values.nome_noiva ?? "")),
+    local: toUpperCamelWords(String(values.local ?? "")),
+    bairro: toUpperCamelWords(String(values.bairro ?? "")),
+    cidade: toUpperCamelWords(String(values.cidade ?? "")),
+    estado: toUpperCamelWords(String(values.estado ?? "")),
+    descricao_noivo: toSentenceCase(String(values.descricao_noivo ?? "")),
+    descricao_noiva: toSentenceCase(String(values.descricao_noiva ?? "")),
+    frase_casal: toSentenceCase(String(values.frase_casal ?? "")),
+    historia: toSentenceCase(String(values.historia ?? "")),
+    email_noivo: String(values.email_noivo ?? "").trim().toLowerCase(),
+    email_noiva: String(values.email_noiva ?? "").trim().toLowerCase(),
+    facebook_noivo: String(values.facebook_noivo ?? "").trim(),
+    instagram_noivo: String(values.instagram_noivo ?? "").trim(),
+    facebook_noiva: String(values.facebook_noiva ?? "").trim(),
+    instagram_noiva: String(values.instagram_noiva ?? "").trim(),
+    data_casamento: values.data_casamento,
+    hora_casamento: values.hora_casamento,
   });
 
   const form = useForm({
@@ -130,7 +141,6 @@ export default function WeddingProfileOnboardingForm({
       cor_principal: initial.cor_principal ?? "",
       frase_casal: initial.frase_casal ?? "",
       historia: initial.historia ?? "",
-      cep: initial.cep ?? "",
     },
     validate: {
       nome_noivo: (v) => (!v ? "Obrigatorio" : null),
@@ -170,20 +180,24 @@ export default function WeddingProfileOnboardingForm({
     setLoading(true);
     try {
       const normalizedValues = buildNormalizedPayload(form.values);
+      const dataCasamento = normalizedValues.data_casamento;
+      const horaCasamento = normalizedValues.hora_casamento;
       // Formata data e hora para o backend
       const dataToSend = {
         ...normalizedValues,
-        data_casamento: normalizedValues.data_casamento
-          ? typeof normalizedValues.data_casamento === "string"
-            ? normalizedValues.data_casamento.slice(0, 10)
-            : normalizedValues.data_casamento.toISOString().slice(0, 10)
+        data_casamento: dataCasamento
+          ? typeof dataCasamento === "string"
+            ? dataCasamento.slice(0, 10)
+            : dataCasamento instanceof Date
+              ? dataCasamento.toISOString().slice(0, 10)
+              : ""
           : "",
-        hora_casamento: normalizedValues.hora_casamento
-          ? typeof normalizedValues.hora_casamento === "string"
-            ? normalizedValues.hora_casamento.slice(0, 5)
-            : normalizedValues.hora_casamento instanceof Date
-            ? normalizedValues.hora_casamento.toTimeString().slice(0, 5)
-            : ""
+        hora_casamento: horaCasamento
+          ? typeof horaCasamento === "string"
+            ? horaCasamento.slice(0, 5)
+            : horaCasamento instanceof Date
+              ? horaCasamento.toTimeString().slice(0, 5)
+              : ""
           : "",
       };
       await api.patch("/api/wedding-profile/me/", dataToSend);
@@ -193,7 +207,7 @@ export default function WeddingProfileOnboardingForm({
         description: "Seu perfil de casamento foi atualizado.",
       });
       onComplete();
-    } catch (e) {
+    } catch {
       toast({
         title: "Erro",
         description: "Nao foi possivel salvar o perfil. Verifique os campos.",
@@ -231,25 +245,6 @@ export default function WeddingProfileOnboardingForm({
     setCepLoading(false);
   };
 
-  // Funcao para buscar coordenadas pelo endereco (usando Nominatim)
-  async function geocodeAddress(address: string) {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-      address,
-    )}`;
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-      if (data && data.length > 0) {
-        form.setFieldValue("latitude", parseFloat(data[0].lat));
-        form.setFieldValue("longitude", parseFloat(data[0].lon));
-        return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-      }
-    } catch (e) {
-      console.error("Erro ao geocodificar endereco:", e);
-    }
-    return null;
-  }
-
   // Funcao para buscar endereco pelas coordenadas (reverse geocode)
   async function reverseGeocode(lat: number, lon: number) {
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
@@ -257,56 +252,10 @@ export default function WeddingProfileOnboardingForm({
       const res = await fetch(url);
       const data = await res.json();
       return data.address || {};
-    } catch (e) {
-      console.error("Erro ao fazer reverse geocoding:", e);
+    } catch {
+      console.error("Erro ao fazer reverse geocoding:");
       return {};
     }
-  }
-
-  // Atualiza o mapa ao preencher o CEP ou endereco
-
-  // Componente para manipular o clique no mapa
-  function LocationMarker() {
-    // So renderiza no client
-    if (typeof window === "undefined" || !useMapEvents) return null;
-    const mapEvents = useMapEvents({
-      click(e) {
-        setMapPosition([e.latlng.lat, e.latlng.lng]);
-        reverseGeocode(e.latlng.lat, e.latlng.lng).then((addr) => {
-          if (addr) {
-            form.setFieldValue("endereco", addr.road || "");
-            form.setFieldValue(
-              "bairro",
-              addr.suburb ||
-                addr.neighbourhood ||
-                addr.village ||
-                addr.town ||
-                "",
-            );
-            form.setFieldValue(
-              "cidade",
-              addr.city || addr.town || addr.village || "",
-            );
-            form.setFieldValue("estado", addr.state || "");
-            form.setFieldValue("numero", addr.house_number || "");
-            form.setFieldValue("cep", addr.postcode || form.values.cep || "");
-            form.setFieldValue("latitude", e.latlng.lat);
-            form.setFieldValue("longitude", e.latlng.lng);
-          }
-        });
-      },
-    });
-    return mapPosition && L ? (
-      <Marker
-        position={mapPosition}
-        icon={L.icon({
-          iconUrl:
-            "https://unpkg.com/leaflet@1.9.3/dist/images/marker-icon.png",
-          iconSize: [25, 41],
-          iconAnchor: [12, 41],
-        })}
-      />
-    ) : null;
   }
 
   // Funcao para checar se os campos obrigatorios do step atual estao preenchidos
@@ -411,9 +360,337 @@ export default function WeddingProfileOnboardingForm({
     return true;
   }
 
+  const mobileStepTitles = [
+    "Dados do noivo",
+    "Dados da noiva",
+    "Evento",
+    "História",
+  ];
+
+  const renderMobileStepContent = () => {
+    if (active === 0) {
+      return (
+        <>
+          <TextInput
+            label="Nome do noivo"
+            {...form.getInputProps("nome_noivo")}
+            required
+            mb="md"
+          />
+          <TextInput
+            label="Telefone do noivo"
+            {...form.getInputProps("telefone_noivo")}
+            required
+            mb="md"
+            placeholder="(00) 00000-0000"
+          />
+          <TextInput
+            label="Email do noivo"
+            {...form.getInputProps("email_noivo")}
+            mb="md"
+            type="email"
+          />
+          <Textarea
+            label="Descricao do noivo"
+            {...form.getInputProps("descricao_noivo")}
+            minRows={4}
+            autosize
+            mb="md"
+            placeholder="Idade, estilo musical, religiao, time do coracao, hobbies, profissao, formacao, temperamento etc."
+          />
+          <TextInput
+            label="Facebook do noivo"
+            {...form.getInputProps("facebook_noivo")}
+            mb="md"
+            placeholder="Link do Facebook"
+          />
+          <TextInput
+            label="Instagram do noivo"
+            {...form.getInputProps("instagram_noivo")}
+            mb="md"
+            placeholder="Link do Instagram"
+          />
+        </>
+      );
+    }
+
+    if (active === 1) {
+      return (
+        <>
+          <TextInput
+            label="Nome da noiva"
+            {...form.getInputProps("nome_noiva")}
+            required
+            mb="md"
+          />
+          <TextInput
+            label="Telefone da noiva"
+            {...form.getInputProps("telefone_noiva")}
+            required
+            mb="md"
+            placeholder="(00) 00000-0000"
+          />
+          <TextInput
+            label="Email da noiva"
+            {...form.getInputProps("email_noiva")}
+            mb="md"
+            type="email"
+          />
+          <Textarea
+            label="Descricao da noiva"
+            {...form.getInputProps("descricao_noiva")}
+            minRows={4}
+            autosize
+            mb="md"
+            placeholder="Idade, estilo musical, religiao, time do coracao, hobbies, profissao, formacao, temperamento etc."
+          />
+          <TextInput
+            label="Facebook da noiva"
+            {...form.getInputProps("facebook_noiva")}
+            mb="md"
+            placeholder="Link do Facebook"
+          />
+          <TextInput
+            label="Instagram da noiva"
+            {...form.getInputProps("instagram_noiva")}
+            mb="md"
+            placeholder="Link do Instagram"
+          />
+        </>
+      );
+    }
+
+    if (active === 2) {
+      return (
+        <>
+          <TextInput
+            label="Local onde sera realizado"
+            {...form.getInputProps("local")}
+            mt="md"
+          />
+          {mapPosition && (
+            <LeafletMap
+              mapPosition={mapPosition}
+              setMapPosition={setMapPosition}
+              reverseGeocode={reverseGeocode}
+              form={form}
+              L={L}
+            />
+          )}
+          <TextInput
+            label="CEP"
+            {...form.getInputProps("cep")}
+            maxLength={9}
+            error={cepError ?? form.errors.cep}
+            placeholder="Digite o CEP e saia do campo para buscar endereco"
+            rightSection={cepLoading ? <Loader size="xs" /> : null}
+            mt="md"
+            onBlur={handleCepBlur}
+          />
+          <TextInput
+            label="Endereco"
+            {...form.getInputProps("endereco")}
+            mt="md"
+          />
+          <Stack gap="sm" mt="md">
+            <TextInput label="Numero" {...form.getInputProps("numero")} />
+            <TextInput label="Bairro" {...form.getInputProps("bairro")} />
+            <TextInput label="Cidade" {...form.getInputProps("cidade")} />
+            <TextInput label="Estado" {...form.getInputProps("estado")} />
+          </Stack>
+          <TextInput
+            label="Cor principal do Casamento"
+            {...form.getInputProps("cor_principal")}
+            mt="md"
+          />
+          <TextInput
+            label="Frase do Casal"
+            {...form.getInputProps("frase_casal")}
+            mt="md"
+            placeholder="Alguma frase que representa a sua uniao."
+          />
+          <LocalizationProvider
+            dateAdapter={AdapterDateFns}
+            adapterLocale={ptBR}
+          >
+            <Stack gap="36px" w="100%" mt="md">
+              <DatePicker
+                label="Data do casamento"
+                value={
+                  form.values.data_casamento
+                    ? new Date(form.values.data_casamento)
+                    : null
+                }
+                onChange={(date) => form.setFieldValue("data_casamento", date)}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    required: true,
+                    placeholder: "Selecione a data",
+                    sx: {
+                      height: 36,
+                      minHeight: 36,
+                      ".MuiInputBase-input": {
+                        height: 36,
+                        minHeight: 36,
+                        padding: "0 12px",
+                      },
+                    },
+                  },
+                }}
+                format="dd/MM/yyyy"
+              />
+              <TimePicker
+                label="Hora do casamento"
+                value={form.values.hora_casamento}
+                onChange={(value) => form.setFieldValue("hora_casamento", value)}
+                ampm={false}
+                minutesStep={1}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    required: true,
+                    placeholder: "00:00",
+                    sx: {
+                      height: 36,
+                      minHeight: 36,
+                      ".MuiInputBase-input": {
+                        height: 36,
+                        minHeight: 36,
+                        padding: "0 12px",
+                      },
+                    },
+                  },
+                }}
+              />
+            </Stack>
+          </LocalizationProvider>
+        </>
+      );
+    }
+
+    return (
+      <Textarea
+        label="Conte um pouco sobre a historia do casal"
+        minRows={2}
+        autosize
+        {...form.getInputProps("historia")}
+      />
+    );
+  };
+
+  const mobileFooter = (
+    <Group grow gap="sm">
+      <Button
+        variant="default"
+        styles={softButtonStyles}
+        onClick={() => setActive((current) => Math.max(current - 1, 0))}
+        disabled={active === 0}
+        type="button"
+        fullWidth
+      >
+        Voltar
+      </Button>
+      {active < 3 ? (
+        <Button
+          type="button"
+          styles={primaryButtonStyles}
+          onClick={() => {
+            if (!validateStep(active)) return;
+            setActive((current) => Math.min(current + 1, 3));
+          }}
+          disabled={!isStepValid(active)}
+          fullWidth
+        >
+          Proximo
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          styles={primaryButtonStyles}
+          loading={loading}
+          disabled={!isStepValid(2)}
+          onClick={handleSave}
+          fullWidth
+        >
+          Salvar
+        </Button>
+      )}
+    </Group>
+  );
+
+  if (isMobile) {
+    return (
+      <Box
+        component="form"
+        onSubmit={form.onSubmit(handleSave)}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "90dvh",
+          minHeight: 0,
+          overflow: "hidden",
+        }}
+      >
+        <Box
+          px="sm"
+          py="sm"
+          style={{
+            background: "var(--marriplan-surface)",
+            borderBottom: "1px solid var(--marriplan-border)",
+          }}
+        >
+          <Text fw={700} size="lg" c="var(--marriplan-text)">
+            {mobileStepTitles[active]}
+          </Text>
+          <Group justify="center" gap={6} mt="sm">
+            {mobileStepTitles.map((_, index) => (
+              <Box
+                key={index}
+                w={index === active ? 14 : 6}
+                h={6}
+                style={{
+                  borderRadius: 999,
+                  backgroundColor:
+                    index === active
+                      ? "var(--marriplan-rose)"
+                      : "rgba(181, 139, 122, 0.22)",
+                }}
+              />
+            ))}
+          </Group>
+        </Box>
+
+        <ScrollArea
+          style={{ flex: 1, width: "100%", minHeight: 0 }}
+          type="auto"
+          offsetScrollbars
+        >
+          <Box px="sm" py="md" style={{ width: "100%" }}>
+            <Stack gap="sm" style={{ width: "100%" }}>
+              {renderMobileStepContent()}
+            </Stack>
+          </Box>
+        </ScrollArea>
+
+        <Box
+          px="sm"
+          py="md"
+          style={{
+            flexShrink: 0,
+            background: "var(--marriplan-surface)",
+            borderTop: "1px solid var(--marriplan-border)",
+          }}
+        >
+          {mobileFooter}
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <form onSubmit={form.onSubmit(handleSave)}>
-      <Stepper active={active} onStepClick={setActive} breakpoint="sm">
+      <Stepper active={active} onStepClick={setActive}>
         <Stepper.Step label="Dados do noivo">
           <TextInput
             label="Nome do noivo"
@@ -424,8 +701,6 @@ export default function WeddingProfileOnboardingForm({
           <TextInput
             label="Telefone do noivo"
             {...form.getInputProps("telefone_noivo")}
-            component={IMaskInput}
-            mask="(00) 00000-0000"
             required
             mb="md"
             placeholder="(00) 00000-0000"
@@ -467,8 +742,6 @@ export default function WeddingProfileOnboardingForm({
           <TextInput
             label="Telefone da noiva"
             {...form.getInputProps("telefone_noiva")}
-            component={IMaskInput}
-            mask="(00) 00000-0000"
             required
             mb="md"
             placeholder="(00) 00000-0000"
@@ -517,8 +790,6 @@ export default function WeddingProfileOnboardingForm({
           )}
           <TextInput
             label="CEP"
-            component={IMaskInput}
-            mask="00000-000"
             {...form.getInputProps("cep")}
             maxLength={9}
             error={cepError ?? form.errors.cep}
@@ -526,10 +797,6 @@ export default function WeddingProfileOnboardingForm({
             rightSection={cepLoading ? <Loader size="xs" /> : null}
             mt="md"
             onBlur={handleCepBlur}
-            onAccept={(value) => {
-              form.setFieldValue("cep", value ?? "");
-              if (cepError) setCepError(null);
-            }}
           />
           <TextInput
             label="Endereco"
@@ -641,6 +908,7 @@ export default function WeddingProfileOnboardingForm({
       <Group justify="space-between" mt="xl">
         <Button
           variant="default"
+          styles={softButtonStyles}
           onClick={() => setActive((a) => Math.max(a - 1, 0))}
           disabled={active === 0}
           type="button"
@@ -650,6 +918,7 @@ export default function WeddingProfileOnboardingForm({
         {active < 3 ? (
           <Button
             type="button"
+            styles={primaryButtonStyles}
             onClick={() => {
               if (!validateStep(active)) return;
               setActive((a) => Math.min(a + 1, 3));
@@ -661,6 +930,7 @@ export default function WeddingProfileOnboardingForm({
         ) : (
           <Button
             type="button"
+            styles={primaryButtonStyles}
             loading={loading}
             disabled={!isStepValid(2)}
             onClick={handleSave}

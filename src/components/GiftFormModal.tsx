@@ -14,10 +14,12 @@ import {
   Textarea,
   TextInput,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { IconBox, IconGift, IconHeart, IconHome } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { ImageDropzone } from "./ImageUpload";
 import { uploadCloudinaryImage } from "@/services/weddingImage";
+import { MobileFullscreenModal } from "@/components/MobileFullscreenModal";
 
 interface GiftFormModalProps {
   opened: boolean;
@@ -34,6 +36,7 @@ export function GiftFormModal({
   initial,
   title,
 }: GiftFormModalProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [form, setForm] = useState<Partial<Gift>>(initial || {});
   const [loading, setLoading] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -147,6 +150,190 @@ export function GiftFormModal({
     }
     setValueStr(v);
     setForm((f) => ({ ...f, value: v === "" ? undefined : Number(v) }));
+  }
+
+  const formContent = (
+    <Box>
+      {submitError && (
+        <Notification color="red" mb="sm">
+          {submitError}
+        </Notification>
+      )}
+      <TextInput
+        label="Nome"
+        required
+        value={form.name || ""}
+        onChange={(e) => handleChange("name", e.target.value)}
+        mb="sm"
+        error={errors.name}
+        styles={inputStyles}
+      />
+      <TextInput
+        label="Valor"
+        required
+        value={valueStr}
+        onChange={(e) => handleValueChange(e.currentTarget.value)}
+        mb="sm"
+        placeholder="0.00"
+        rightSection={<span style={{ paddingRight: 8 }}>R$</span>}
+        error={errors.value}
+        styles={inputStyles}
+      />
+      <TextInput
+        label="Link"
+        value={form.link || ""}
+        onChange={(e) => handleChange("link", e.target.value)}
+        mb="sm"
+      />
+      <Textarea
+        label="Descrição"
+        value={form.description || ""}
+        onChange={(e) => handleChange("description", e.target.value)}
+        mb="sm"
+      />
+      <Select
+        label="Categoria"
+        required
+        value={form.category || ""}
+        onChange={(v) => handleChange("category", v)}
+        data={getAllCategoryOptions()}
+        mb="sm"
+        error={errors.category}
+      />
+      <Select
+        label="Ícone"
+        value={form.icon || ""}
+        onChange={(v) => handleChange("icon", v)}
+        data={iconOptions.map((opt) => ({
+          value: opt.value,
+          label: opt.label,
+          icon: opt.icon,
+        }))}
+        mb="sm"
+      />
+      <Select
+        label="Status"
+        required
+        value={form.status || "available"}
+        onChange={(v) => handleChange("status", v)}
+        data={[
+          { value: "available", label: "Disponível" },
+          { value: "purchased", label: "Comprado" },
+          { value: "reserved", label: "Reservado" },
+        ]}
+        mb="sm"
+        error={errors.status}
+      />
+      <ImageDropzone
+        title="Imagem do presente"
+        label="Adicionar imagem"
+        value={form.image || null}
+        uploadFile={async (file) => {
+          try {
+            return await uploadCloudinaryImage(file, "gift-images");
+          } catch {
+            return null;
+          }
+        }}
+        onChange={async (image: unknown) => {
+          const uploaded = image as { url?: string; id_cloudinary?: string; public_id?: string } | string | null;
+          handleChange(
+            "image",
+            typeof uploaded === "string" ? uploaded : uploaded?.url || ""
+          );
+          handleChange(
+            "image_public_id",
+            typeof uploaded === "string" ? "" : uploaded?.id_cloudinary || uploaded?.public_id || ""
+          );
+        }}
+        onRemove={async () => {
+          handleChange("image", "");
+          handleChange("image_public_id", "");
+        }}
+      />
+      <MantineModal
+        opened={showDetails}
+        onClose={() => setShowDetails(false)}
+        title="Detalhes do Presente"
+        size="lg"
+      >
+        <Box>
+          <TextInput label="Nome" value={form.name || ""} readOnly mb="sm" />
+          <TextInput
+            label="Valor"
+            value={form.value || ""}
+            readOnly
+            mb="sm"
+          />
+          <TextInput
+            label="Categoria"
+            value={getCategoryLabel(form.category || "")}
+            readOnly
+            mb="sm"
+          />
+          <TextInput
+            label="Status"
+            value={form.status || ""}
+            readOnly
+            mb="sm"
+          />
+          <TextInput
+            label="Comprado por"
+            value={form.purchased_by || ""}
+            readOnly
+            mb="sm"
+          />
+          <TextInput
+            label="Data da compra"
+            value={form.purchase_date || ""}
+            readOnly
+            mb="sm"
+          />
+          <TextInput
+            label="Código do produto"
+            value={form.product_code || ""}
+            readOnly
+            mb="sm"
+          />
+          <Textarea
+            label="Descrição"
+            value={form.description || ""}
+            readOnly
+            mb="sm"
+          />
+        </Box>
+      </MantineModal>
+    </Box>
+  );
+
+  const formFooter = (
+    <Group grow>
+      <Button onClick={onClose} variant="default" fullWidth>
+        Cancelar
+      </Button>
+      <Button
+        onClick={handleSubmit}
+        loading={loading}
+        styles={primaryButtonStylesWithDisabled}
+        disabled={!isValid}
+        fullWidth
+      >
+        {form.id ? "Salvar" : "Adicionar"}
+      </Button>
+    </Group>
+  );
+
+  if (isMobile) {
+    return (
+      <MobileFullscreenModal
+        opened={opened}
+        onClose={onClose}
+        title={title || (form.id ? "Editar Presente" : "Adicionar Presente")}
+        footer={formFooter}
+      >
+        {formContent}
+      </MobileFullscreenModal>
+    );
   }
 
   return (

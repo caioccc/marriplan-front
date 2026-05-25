@@ -17,7 +17,9 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { ptBR } from "date-fns/locale";
 import { useEffect, useState } from "react";
+import { useMediaQuery } from "@mantine/hooks";
 import { toSentenceCase } from "@/lib/text";
+import { MobileFullscreenModal } from "@/components/MobileFullscreenModal";
 
 const PRIORITY_OPTIONS = [
   { value: "high", label: "Alta" },
@@ -43,6 +45,7 @@ export default function ChecklistTaskModal({
   onSave,
   initial,
 }: ChecklistTaskModalProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [description, setDescription] = useState(initial?.description || "");
   const [startDate, setStartDate] = useState<Date | null>(
     initial?.start_date ? new Date(initial.start_date) : null,
@@ -86,12 +89,8 @@ export default function ChecklistTaskModal({
     );
   }
 
-  return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title={isEditing ? "Editar Tarefa" : "Adicionar Tarefa"}
-    >
+  const formFields = (
+    <>
       <TextInput
         label="Descrição"
         value={description}
@@ -172,6 +171,45 @@ export default function ChecklistTaskModal({
         onChange={(e) => setNotes(e.currentTarget.value)}
         mb="sm"
       />
+    </>
+  );
+
+  const formFooter = (
+    <Group grow>
+      <Button onClick={onClose} variant="default" fullWidth>
+        Cancelar
+      </Button>
+      <Button
+        onClick={handleSave}
+        disabled={!isValid}
+        styles={primaryButtonStylesWithDisabled}
+        fullWidth
+      >
+        {isEditing ? "Salvar" : "Adicionar"}
+      </Button>
+    </Group>
+  );
+
+  if (isMobile) {
+    return (
+      <MobileFullscreenModal
+        opened={opened}
+        onClose={onClose}
+        title={isEditing ? "Editar Tarefa" : "Adicionar Tarefa"}
+        footer={formFooter}
+      >
+        {formFields}
+      </MobileFullscreenModal>
+    );
+  }
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={isEditing ? "Editar Tarefa" : "Adicionar Tarefa"}
+    >
+      {formFields}
       {/* <FileInput label="Anexo (opcional)" value={file} onChange={setFile} mb="sm" /> */}
       <Group position="right">
         <Button onClick={onClose} variant="default">

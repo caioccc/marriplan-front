@@ -10,8 +10,19 @@ interface LeafletMapProps {
   mapPosition: [number, number] | null;
   setMapPosition: (pos: [number, number]) => void;
   reverseGeocode: (lat: number, lng: number) => Promise<Record<string, unknown>>;
-  form: Record<string, unknown>;
-  L: Record<string, unknown>;
+  form: {
+    setFieldValue: (field: string, value: unknown) => void;
+    values: {
+      cep?: string | null;
+    };
+  };
+  L: {
+    icon: (options: {
+      iconUrl: string;
+      iconSize: [number, number];
+      iconAnchor: [number, number];
+    }) => unknown;
+  } | null;
 }
 
 const LeafletMapComponent: React.FC<LeafletMapProps> = ({

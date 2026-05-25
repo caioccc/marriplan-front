@@ -1,11 +1,24 @@
-import BaseLayout from '@/components/Layout/_BaseLayout';
-import WeddingProfileOnboardingForm from '@/components/WeddingProfileOnboardingForm';
-import { Box, Card, Container, Text, Title } from '@mantine/core';
-import { useRouter } from 'next/router';
-import React from 'react';
+import BaseLayout from "@/components/Layout/_BaseLayout";
+import WeddingProfileOnboardingForm from "@/components/WeddingProfileOnboardingForm";
+import { Box, Card, Container, Text, Title } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
+import { useRouter } from "next/router";
+import React from "react";
 
 const OnboardingPage: React.FC = () => {
   const router = useRouter();
+
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
+  if (isMobile) {
+    return (
+      <BaseLayout>
+        <WeddingProfileOnboardingForm
+          onComplete={() => router.push("/dashboard")}
+        />
+      </BaseLayout>
+    );
+  }
 
   return (
     <BaseLayout>
@@ -18,7 +31,9 @@ const OnboardingPage: React.FC = () => {
         </Box>
 
         <Card radius="lg" p="xl" withBorder>
-          <WeddingProfileOnboardingForm onComplete={() => router.push('/dashboard')} />
+          <WeddingProfileOnboardingForm
+            onComplete={() => router.push("/dashboard")}
+          />
         </Card>
       </Container>
     </BaseLayout>

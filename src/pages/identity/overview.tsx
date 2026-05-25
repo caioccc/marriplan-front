@@ -1,4 +1,5 @@
 import BaseLayout from "@/components/Layout/_BaseLayout";
+import { MobileFullscreenModal } from "@/components/MobileFullscreenModal";
 import PageSectionHeader from "@/components/PageSectionHeader";
 import EmptyState from "@/components/wedding/identity/EmptyState";
 import DressCodePage from "@/components/wedding/identity/pages/DressCodePage";
@@ -157,6 +158,96 @@ export default function OverviewPage() {
   );
 
   const canMoveToNextStep = stepValidation[activeStep];
+
+  const identityStepTitles = [
+    "Estilo do Casamento",
+    "Tamanho do Casamento",
+    "Código de Vestuário",
+    "Paleta de Cores",
+    "Inspirações",
+  ];
+
+  const renderMobileIdentityContent = () => {
+    switch (activeStep) {
+      case 0:
+        return (
+          <WeddingStylePage
+            selectedStyle={selectedStyle}
+            setSelectedStyle={setSelectedStyle}
+            hideHeader
+            compact
+          />
+        );
+      case 1:
+        return (
+          <WeddingSizePage
+            weddingSize={weddingSize}
+            setWeddingSize={setWeddingSize}
+            hideHeader
+            compact
+          />
+        );
+      case 2:
+        return (
+          <DressCodePage
+            dressCode={dressCode}
+            setDressCode={setDressCode}
+            hideHeader
+            compact
+          />
+        );
+      case 3:
+        return (
+          <PalettePage
+            palette={palette}
+            setPalette={setPalette}
+            dressCode={dressCode}
+            hideHeader
+            compact
+          />
+        );
+      case 4:
+      default:
+        return (
+          <WeddingInspirationsPage
+            selectedStyle={selectedStyle}
+            dressCode={dressCode}
+            selectedImages={selectedImages}
+            setSelectedImages={setSelectedImages}
+          />
+        );
+    }
+  };
+
+  const renderMobileIdentityFooter = () => (
+    <Group grow>
+      <Button
+        variant="default"
+        leftSection={<IconChevronLeft size={14} />}
+        onClick={handleBackStep}
+        disabled={activeStep === 0 || isSubmitting}
+        fullWidth
+      >
+        Voltar
+      </Button>
+      <Button
+        styles={primaryButtonStyles}
+        loading={isSubmitting}
+        rightSection={
+          activeStep === 4 ? (
+            <IconCheck size={14} />
+          ) : (
+            <IconChevronRight size={14} />
+          )
+        }
+        onClick={handleNextStep}
+        disabled={!canMoveToNextStep}
+        fullWidth
+      >
+        {activeStep === 4 ? "Concluir" : "Continuar"}
+      </Button>
+    </Group>
+  );
 
   const handleOpenIdentityModal = () => {
     setActiveStep(0);
@@ -684,114 +775,134 @@ export default function OverviewPage() {
           </>
         )}
 
-        <Modal
-          opened={isIdentityModalOpen}
-          onClose={() => !isSubmitting && setIsIdentityModalOpen(false)}
-          title={hasIdentity ? "Editar Identidade" : "Criar Identidade"}
-          centered
-          size="90%"
-          radius="lg"
-        >
-          <Stack gap="lg">
-            {/* Âncora invisível que serve como o ponto mais alto do Modal */}
-            <div ref={modalTopRef} style={{ scrollMarginTop: "20px" }} />
-            <Stepper
-              active={activeStep}
-              onStepClick={(step) => {
-                if (isSubmitting) {
-                  return;
-                }
-
-                if (step === 4 && (!selectedStyle || !dressCode)) {
-                  return;
-                }
-
-                if (step < activeStep) {
-                  setActiveStep(step);
-                }
-              }}
-            >
-              <Stepper.Step label="Estilo" description="Estilo do Casamento">
-                <WeddingStylePage
-                  selectedStyle={selectedStyle}
-                  setSelectedStyle={setSelectedStyle}
-                  hideHeader
-                  compact
-                />
-              </Stepper.Step>
-              <Stepper.Step label="Tamanho" description="Porte do evento">
-                <WeddingSizePage
-                  weddingSize={weddingSize}
-                  setWeddingSize={setWeddingSize}
-                  hideHeader
-                  compact
-                />
-              </Stepper.Step>
-              <Stepper.Step label="Dress Code" description="Formalidade">
-                <DressCodePage
-                  dressCode={dressCode}
-                  setDressCode={setDressCode}
-                  hideHeader
-                  compact
-                />
-              </Stepper.Step>
-              <Stepper.Step label="Paleta" description="Cores principais">
-                <PalettePage
-                  palette={palette}
-                  setPalette={setPalette}
-                  dressCode={dressCode}
-                  hideHeader
-                  compact
-                />
-              </Stepper.Step>
-
-              <Stepper.Step
-                label="Inspirações"
-                description="Imagens de referência"
-              >
-                <WeddingInspirationsPage
-                  selectedStyle={selectedStyle}
-                  dressCode={dressCode}
-                  selectedImages={selectedImages}
-                  setSelectedImages={setSelectedImages}
-                />
-              </Stepper.Step>
-
-              <Stepper.Completed>
+        {isMobile ? (
+          <MobileFullscreenModal
+            opened={isIdentityModalOpen}
+            onClose={() => !isSubmitting && setIsIdentityModalOpen(false)}
+            title={identityStepTitles[activeStep]}
+            progress={{ active: activeStep, total: identityStepTitles.length }}
+            footer={renderMobileIdentityFooter()}
+          >
+            <Stack gap="lg">
+              <div ref={modalTopRef} style={{ scrollMarginTop: "20px" }} />
+              {renderMobileIdentityContent()}
+              {activeStep === 4 ? (
                 <Stack align="center" gap="sm" py="xl">
                   <IconCheck size={28} />
                   <Text fw={700}>Identidade configurada com sucesso.</Text>
                 </Stack>
-              </Stepper.Completed>
-            </Stepper>
+              ) : null}
+            </Stack>
+          </MobileFullscreenModal>
+        ) : (
+          <Modal
+            opened={isIdentityModalOpen}
+            onClose={() => !isSubmitting && setIsIdentityModalOpen(false)}
+            title={hasIdentity ? "Editar Identidade" : "Criar Identidade"}
+            centered
+            size="90%"
+            radius="lg"
+          >
+            <Stack gap="lg">
+              <div ref={modalTopRef} style={{ scrollMarginTop: "20px" }} />
+              <Stepper
+                active={activeStep}
+                onStepClick={(step) => {
+                  if (isSubmitting) {
+                    return;
+                  }
 
-            <Group justify="space-between" wrap="wrap">
-              <Button
-                variant="default"
-                leftSection={<IconChevronLeft size={14} />}
-                onClick={handleBackStep}
-                disabled={activeStep === 0 || isSubmitting}
+                  if (step === 4 && (!selectedStyle || !dressCode)) {
+                    return;
+                  }
+
+                  if (step < activeStep) {
+                    setActiveStep(step);
+                  }
+                }}
               >
-                Voltar
-              </Button>
-              <Button
-                styles={primaryButtonStyles}
-                loading={isSubmitting}
-                rightSection={
-                  activeStep === 4 ? (
-                    <IconCheck size={14} />
-                  ) : (
-                    <IconChevronRight size={14} />
-                  )
-                }
-                onClick={handleNextStep}
-                disabled={!canMoveToNextStep}
-              >
-                {activeStep === 4 ? "Concluir" : "Continuar"}
-              </Button>
-            </Group>
-          </Stack>
-        </Modal>
+                <Stepper.Step label="Estilo" description="Estilo do Casamento">
+                  <WeddingStylePage
+                    selectedStyle={selectedStyle}
+                    setSelectedStyle={setSelectedStyle}
+                    hideHeader
+                    compact
+                  />
+                </Stepper.Step>
+                <Stepper.Step label="Tamanho" description="Porte do evento">
+                  <WeddingSizePage
+                    weddingSize={weddingSize}
+                    setWeddingSize={setWeddingSize}
+                    hideHeader
+                    compact
+                  />
+                </Stepper.Step>
+                <Stepper.Step label="Dress Code" description="Formalidade">
+                  <DressCodePage
+                    dressCode={dressCode}
+                    setDressCode={setDressCode}
+                    hideHeader
+                    compact
+                  />
+                </Stepper.Step>
+                <Stepper.Step label="Paleta" description="Cores principais">
+                  <PalettePage
+                    palette={palette}
+                    setPalette={setPalette}
+                    dressCode={dressCode}
+                    hideHeader
+                    compact
+                  />
+                </Stepper.Step>
+
+                <Stepper.Step
+                  label="Inspirações"
+                  description="Imagens de referência"
+                >
+                  <WeddingInspirationsPage
+                    selectedStyle={selectedStyle}
+                    dressCode={dressCode}
+                    selectedImages={selectedImages}
+                    setSelectedImages={setSelectedImages}
+                  />
+                </Stepper.Step>
+
+                <Stepper.Completed>
+                  <Stack align="center" gap="sm" py="xl">
+                    <IconCheck size={28} />
+                    <Text fw={700}>Identidade configurada com sucesso.</Text>
+                  </Stack>
+                </Stepper.Completed>
+              </Stepper>
+
+              <Group justify="space-between" wrap="wrap">
+                <Button
+                  variant="default"
+                  leftSection={<IconChevronLeft size={14} />}
+                  onClick={handleBackStep}
+                  disabled={activeStep === 0 || isSubmitting}
+                >
+                  Voltar
+                </Button>
+                <Button
+                  styles={primaryButtonStyles}
+                  loading={isSubmitting}
+                  rightSection={
+                    activeStep === 4 ? (
+                      <IconCheck size={14} />
+                    ) : (
+                      <IconChevronRight size={14} />
+                    )
+                  }
+                  onClick={handleNextStep}
+                  disabled={!canMoveToNextStep}
+                >
+                  {activeStep === 4 ? "Concluir" : "Continuar"}
+                </Button>
+              </Group>
+            </Stack>
+          </Modal>
+        )}
       </Stack>
     </BaseLayout>
   );

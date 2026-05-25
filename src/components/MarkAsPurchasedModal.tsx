@@ -7,6 +7,8 @@ import {
   TextInput
 } from "@mantine/core";
 import { useState } from "react";
+import { useMediaQuery } from "@mantine/hooks";
+import { MobileFullscreenModal } from "@/components/MobileFullscreenModal";
 
 interface MarkAsPurchasedModalProps {
   opened: boolean;
@@ -21,6 +23,7 @@ export function MarkAsPurchasedModal({
   onConfirm,
   guests = [],
 }: MarkAsPurchasedModalProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [useCustomName, setUseCustomName] = useState(false);
   const [customName, setCustomName] = useState("");
   const [selectedGuest, setSelectedGuest] = useState<string | null>(null);
@@ -35,13 +38,8 @@ export function MarkAsPurchasedModal({
     onClose();
   };
 
-  return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      title="Marcar como comprado"
-      centered
-    >
+  const content = (
+    <>
       <Group mb="md">
         <Switch
           label="Preencher nome manualmente"
@@ -67,6 +65,45 @@ export function MarkAsPurchasedModal({
           mb="md"
         />
       )}
+    </>
+  );
+
+  const footer = (
+    <Group grow>
+      <Button variant="default" onClick={onClose} fullWidth>
+        Cancelar
+      </Button>
+      <Button
+        onClick={handleConfirm}
+        disabled={useCustomName ? !customName : !selectedGuest}
+        fullWidth
+      >
+        Confirmar
+      </Button>
+    </Group>
+  );
+
+  if (isMobile) {
+    return (
+      <MobileFullscreenModal
+        opened={opened}
+        onClose={onClose}
+        title="Marcar como comprado"
+        footer={footer}
+      >
+        {content}
+      </MobileFullscreenModal>
+    );
+  }
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title="Marcar como comprado"
+      centered
+    >
+      {content}
       <Group justify="flex-end">
         <Button variant="default" onClick={onClose}>
           Cancelar

@@ -1,5 +1,7 @@
 import { Modal } from "@mantine/core";
 import WeddingProfileOnboardingForm from "./WeddingProfileOnboardingForm";
+import { useMediaQuery } from "@mantine/hooks";
+import { MobileFullscreenModal } from "@/components/MobileFullscreenModal";
 
 type WeddingProfileOnboardingModalProps = {
   opened: boolean;
@@ -14,6 +16,20 @@ export default function WeddingProfileOnboardingModal({
   onComplete,
   disableClose = false,
 }: WeddingProfileOnboardingModalProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
+  if (isMobile) {
+    return (
+      <MobileFullscreenModal
+        opened={opened}
+        onClose={onClose}
+        title="Complete seu perfil de casamento"
+      >
+        <WeddingProfileOnboardingForm onComplete={onComplete} />
+      </MobileFullscreenModal>
+    );
+  }
+
   return (
     <Modal
       opened={opened}

@@ -1,4 +1,5 @@
 import { useToast } from "@/hooks/use-toast";
+import { MobileFullscreenModal } from "@/components/MobileFullscreenModal";
 import { primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
   Box,
@@ -21,6 +22,7 @@ import {
 } from "@tabler/icons-react";
 import { DataTable } from "mantine-datatable";
 import { useEffect, useState } from "react";
+import { useMediaQuery } from "@mantine/hooks";
 import { useDropzone } from "react-dropzone";
 import * as XLSX from "xlsx";
 
@@ -59,6 +61,7 @@ export default function ImportGiftsModal({
   downloadTemplate,
   finalizeImport,
 }: ImportGiftsModalProps) {
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const [active, setActive] = useState(0);
   const [importing, setImporting] = useState(false);
   const [columns, setColumns] = useState<string[]>([]);
@@ -230,6 +233,254 @@ export default function ImportGiftsModal({
             : "Clique ou arraste o arquivo .xlsx ou .csv aqui"}
         </Text>
       </Box>
+    );
+  }
+
+  const stepLabels = ["Modelo de Planilha", "Importar Planilha", "Mapeamento de Colunas", "Preview de Dados"];
+
+  const renderMobileContent = () => {
+    switch (active) {
+      case 0:
+        return (
+          <Stack align="center" gap="md">
+            <Text size="lg" fw={500} ta="center">
+              Baixe o modelo de planilha
+            </Text>
+            <Text ta="center">
+              Faça o download do modelo para garantir que os dados estejam no
+              formato correto. Utilize um editor de planilhas para preencher os
+              presentes.
+            </Text>
+            <Button
+              leftSection={<IconDownload size={18} />}
+              onClick={handleDownload}
+              styles={softButtonStyles}
+              fullWidth
+            >
+              Baixar modelo de planilha
+            </Button>
+          </Stack>
+        );
+      case 1:
+        return (
+          <Stack align="center" gap="md">
+            <Text size="lg" fw={500} ta="center">
+              Selecione ou arraste sua planilha preenchida
+            </Text>
+            <DropzoneArea onDrop={handleDrop} importing={importing} />
+            {importError && (
+              <Notification color="red" mt="md">
+                {importError}
+              </Notification>
+            )}
+          </Stack>
+        );
+      case 2:
+        return (
+          <Stack gap="md">
+            <Text size="lg" fw={500}>
+              Mapeie as colunas da sua planilha
+            </Text>
+            <Text c="dimmed">
+              Verifique se cada coluna da sua planilha está corretamente
+              associada ao campo esperado.
+            </Text>
+            <Stack gap="sm">
+              {EXPECTED_COLUMNS.map((col, index) => (
+                <Box
+                  key={col.key}
+                  p="md"
+                  style={{
+                    border: "1px solid var(--marriplan-border)",
+                    borderRadius: 16,
+                    background:
+                      index % 2 === 0
+                        ? "var(--marriplan-surface-muted)"
+                        : "#fff",
+                  }}
+                >
+                  <Text fw={700} size="sm" mb={8}>
+                    {col.label}
+                  </Text>
+                  <select
+                    value={mapping[col.key] || ""}
+                    onChange={(e) =>
+                      handleMappingChange(col.key, e.target.value)
+                    }
+                    style={{
+                      width: "100%",
+                      height: 40,
+                      fontSize: 15,
+                      borderRadius: 10,
+                      border: "1px solid var(--marriplan-border)",
+                      background: "#fff",
+                    }}
+                  >
+                    <option value="">Selecione...</option>
+                    {columns.map((column) => (
+                      <option key={column} value={column}>
+                        {column}
+                      </option>
+                    ))}
+                  </select>
+                </Box>
+              ))}
+            </Stack>
+          </Stack>
+        );
+      case 3:
+      default:
+        return (
+          <Stack gap="md">
+            <Text size="lg" fw={500}>
+              Pré-visualização dos dados
+            </Text>
+            <Text c="dimmed">
+              Confira as 5 primeiras linhas da planilha de acordo com o
+              mapeamento.
+            </Text>
+            <DataTable
+              withColumnBorders
+              striped
+              highlightOnHover
+              minHeight={120}
+              records={preview.slice(0, 5)}
+              columns={EXPECTED_COLUMNS.map((col) => ({
+                accessor: col.label,
+                title: col.label,
+                render: (row: ImportPreviewRow) => {
+                  const value = row[mapping[col.key]] || "";
+                  const display =
+                    value && value.length > 30
+                      ? `${value.slice(0, 30)}...`
+                      : value;
+                  return value ? (
+                    <Tooltip
+                      label={value}
+                      multiline
+                      maw={400}
+                      withArrow
+                      position="top-start"
+                    >
+                      <span>{display}</span>
+                    </Tooltip>
+                  ) : (
+                    <span>{display}</span>
+                  );
+                },
+                textAlign: "center" as const,
+                maxWidth: 200,
+              }))}
+              styles={{ table: { minWidth: 600 } }}
+              scrollAreaProps={{
+                style: { maxWidth: "100%", overflowX: "auto" },
+              }}
+            />
+            {finalizeError && finalizeError.length > 0 && (
+              <Box
+                bg="var(--marriplan-surface-muted)"
+                p="md"
+                style={{
+                  border: "1px solid var(--marriplan-border)",
+                  borderRadius: 6,
+                }}
+              >
+                <Text fw={500} mb={4} c="orange">
+                  Erros encontrados na importação:
+                </Text>
+                <ul style={{ margin: 0, paddingLeft: 18 }}>
+                  {finalizeError.map((err, index) => {
+                    const message =
+                      typeof err === "string"
+                        ? err
+                        : err.error || JSON.stringify(err);
+                    return (
+                      <li key={index} style={{ color: "#ad6800" }}>
+                        {message}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Box>
+            )}
+            {success && (
+              <Notification color="green" mt="md">
+                Importação realizada com sucesso!
+              </Notification>
+            )}
+          </Stack>
+        );
+    }
+  };
+
+  const renderMobileFooter = () => {
+    if (active === 0) {
+      return (
+        <Button onClick={() => setActive(1)} styles={primaryButtonStyles} fullWidth>
+          Avançar
+        </Button>
+      );
+    }
+
+    if (active === 1) {
+      return (
+        <Group grow>
+          <Button onClick={() => setActive(0)} styles={softButtonStyles} fullWidth>
+            Voltar
+          </Button>
+        </Group>
+      );
+    }
+
+    if (active === 2) {
+      return (
+        <Group grow>
+          <Button onClick={() => setActive(1)} styles={softButtonStyles} fullWidth>
+            Voltar
+          </Button>
+          <Button
+            onClick={() => setActive(3)}
+            disabled={Object.values(mapping).some((value) => !value)}
+            styles={primaryButtonStyles}
+            fullWidth
+          >
+            Avançar
+          </Button>
+        </Group>
+      );
+    }
+
+    return (
+      <Group grow>
+        <Button onClick={() => setActive(2)} styles={softButtonStyles} fullWidth>
+          Voltar
+        </Button>
+        <Button
+          onClick={handleFinalize}
+          disabled={
+            preview.length === 0 || Object.values(mapping).some((value) => !value)
+          }
+          loading={importing}
+          styles={primaryButtonStyles}
+          fullWidth
+        >
+          Finalizar importação
+        </Button>
+      </Group>
+    );
+  };
+
+  if (isMobile) {
+    return (
+      <MobileFullscreenModal
+        opened={opened}
+        onClose={onClose}
+        title={stepLabels[active]}
+        progress={{ active, total: stepLabels.length }}
+        footer={renderMobileFooter()}
+      >
+        {renderMobileContent()}
+      </MobileFullscreenModal>
     );
   }
 

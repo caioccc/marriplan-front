@@ -24,6 +24,7 @@ import { notifications } from "@mantine/notifications";
 import { useEffect, useMemo, useState } from "react";
 import { ImageDropzone } from "./ImageUpload";
 import { uploadCloudinaryImage } from "@/services/weddingImage";
+import { MobileFullscreenModal } from "@/components/MobileFullscreenModal";
 
 type SupplierFormModalProps = {
   opened: boolean;
@@ -109,6 +110,7 @@ export function SupplierFormModal({
 }: SupplierFormModalProps) {
   const [form, setForm] = useState<SupplierFormState>(emptyForm);
   const [saving, setSaving] = useState(false);
+  const isMobile = useMediaQuery("(max-width: 768px)");
   const isCompactLayout = useMediaQuery("(max-width: 1024px)");
 
   const categoryOptions = useMemo(
@@ -183,6 +185,236 @@ export function SupplierFormModal({
       setSaving(false);
     }
   };
+
+  const mobileContent = (
+    <Stack gap="md">
+      <Group justify="space-between" align="center" wrap="wrap">
+        <Text size="sm" c="dimmed">
+          {mode === "edit"
+            ? "Atualize as informações visíveis do fornecedor."
+            : "Fornecedores criados por usuários começam como Solo."}
+        </Text>
+      </Group>
+
+      <Select
+        label="Categoria"
+        data={categoryOptions}
+        value={form.category_id}
+        onChange={(value) =>
+          setForm((prev) => ({ ...prev, category_id: value || "" }))
+        }
+        required
+        styles={inputStyles}
+      />
+
+      <TextInput
+        label="Nome"
+        value={form.name}
+        onChange={(event) =>
+          setForm((prev) => ({
+            ...prev,
+            name: event.currentTarget.value,
+          }))
+        }
+        required
+        styles={inputStyles}
+      />
+
+      <TextInput
+        label="Empresa"
+        value={form.company_name}
+        onChange={(event) =>
+          setForm((prev) => ({
+            ...prev,
+            company_name: event.currentTarget.value,
+          }))
+        }
+        styles={inputStyles}
+      />
+
+      <Textarea
+        label="Descrição"
+        minRows={3}
+        value={form.description}
+        onChange={(event) =>
+          setForm((prev) => ({
+            ...prev,
+            description: event.currentTarget.value,
+          }))
+        }
+        styles={inputStyles}
+      />
+
+      <TextInput
+        label="Telefone"
+        placeholder="(00) 00000-0000"
+        value={form.phone}
+        onChange={(event) =>
+          setForm((prev) => ({
+            ...prev,
+            phone: event.currentTarget.value,
+          }))
+        }
+        styles={inputStyles}
+      />
+
+      <TextInput
+        label="WhatsApp"
+        placeholder="(00) 00000-0000"
+        value={form.whatsapp}
+        onChange={(event) =>
+          setForm((prev) => ({
+            ...prev,
+            whatsapp: event.currentTarget.value,
+          }))
+        }
+        styles={inputStyles}
+      />
+
+      <TextInput
+        label="E-mail"
+        value={form.email}
+        onChange={(event) =>
+          setForm((prev) => ({
+            ...prev,
+            email: event.currentTarget.value,
+          }))
+        }
+        styles={inputStyles}
+      />
+
+      <TextInput
+        label="CNPJ"
+        placeholder="00.000.000/0000-00"
+        value={form.cnpj}
+        onChange={(event) =>
+          setForm((prev) => ({
+            ...prev,
+            cnpj: event.currentTarget.value,
+          }))
+        }
+        styles={inputStyles}
+      />
+
+      <TextInput
+        label="Instagram"
+        value={form.instagram}
+        onChange={(event) =>
+          setForm((prev) => ({
+            ...prev,
+            instagram: event.currentTarget.value,
+          }))
+        }
+        styles={inputStyles}
+      />
+
+      <TextInput
+        label="Website"
+        value={form.website}
+        onChange={(event) =>
+          setForm((prev) => ({
+            ...prev,
+            website: event.currentTarget.value,
+          }))
+        }
+        styles={inputStyles}
+      />
+
+      <TextInput
+        label="Cidade"
+        value={form.city}
+        onChange={(event) =>
+          setForm((prev) => ({
+            ...prev,
+            city: event.currentTarget.value,
+          }))
+        }
+        styles={inputStyles}
+      />
+
+      <TextInput
+        label="Estado"
+        value={form.state}
+        onChange={(event) =>
+          setForm((prev) => ({
+            ...prev,
+            state: event.currentTarget.value,
+          }))
+        }
+        styles={inputStyles}
+      />
+
+      <TextInput
+        label="Imagem de capa"
+        placeholder="URL da imagem (opcional)"
+        value={form.cover_image_url}
+        onChange={(event) =>
+          setForm((prev) => ({
+            ...prev,
+            cover_image_url: event.currentTarget.value,
+          }))
+        }
+        styles={inputStyles}
+      />
+      <ImageDropzone
+        title="Foto de capa"
+        label="Adicionar imagem"
+        value={form.cover_image_url || null}
+        uploadFile={async (file) => {
+          try {
+            return await uploadCloudinaryImage(file, "supplier-covers");
+          } catch {
+            return null;
+          }
+        }}
+        onChange={async (image: unknown) =>
+          setForm((prev) => {
+            const uploaded = image as { url?: string; id_cloudinary?: string; public_id?: string } | string | null;
+            return {
+              ...prev,
+              cover_image_url:
+                typeof uploaded === "string" ? uploaded : uploaded?.url || "",
+              cover_image_public_id:
+                typeof uploaded === "string"
+                  ? ""
+                  : uploaded?.id_cloudinary || uploaded?.public_id || "",
+            };
+          })
+        }
+        onRemove={async () =>
+          setForm((prev) => ({
+            ...prev,
+            cover_image_url: "",
+            cover_image_public_id: "",
+          }))
+        }
+      />
+    </Stack>
+  );
+
+  const mobileFooter = (
+    <Group grow>
+      <Button variant="default" styles={softButtonStyles} onClick={handleClose} fullWidth>
+        Cancelar
+      </Button>
+      <Button loading={saving} styles={primaryButtonStyles} onClick={handleSave} fullWidth>
+        {mode === "edit" ? "Salvar alterações" : "Criar fornecedor"}
+      </Button>
+    </Group>
+  );
+
+  if (isMobile) {
+    return (
+      <MobileFullscreenModal
+        opened={opened}
+        onClose={handleClose}
+        title={mode === "edit" ? "Editar fornecedor" : "Novo fornecedor"}
+        footer={mobileFooter}
+      >
+        {mobileContent}
+      </MobileFullscreenModal>
+    );
+  }
 
   return (
     <Modal
