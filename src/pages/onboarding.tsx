@@ -1,5 +1,5 @@
 import BaseLayout from "@/components/Layout/_BaseLayout";
-import WeddingProfileOnboardingForm from "@/components/WeddingProfileOnboardingForm";
+import WeddingProfileOnboardingSimpleForm from "@/components/WeddingProfileOnboardingSimpleForm";
 import { Box, Card, Container, Text, Title } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { useRouter } from "next/router";
@@ -10,28 +10,18 @@ const OnboardingPage: React.FC = () => {
 
   const isMobile = useMediaQuery("(max-width: 768px)");
 
-  if (isMobile) {
-    return (
-      <BaseLayout>
-        <WeddingProfileOnboardingForm
-          onComplete={() => router.push("/dashboard")}
-        />
-      </BaseLayout>
-    );
-  }
-
   return (
     <BaseLayout>
-      <Container size="md" py="xl">
+      <Container size="md" py={isMobile ? "" : "xl"}>
         <Box mb="md">
-          <Title order={2}>Complete o perfil do casal</Title>
+          <Title order={2}>Complete os dados iniciais</Title>
           <Text c="dimmed" mt="xs">
-            Precisamos dessas informacoes para liberar a sua dashboard.
+            Precisamos apenas das informacoes essenciais para liberar a sua dashboard.
           </Text>
         </Box>
 
-        <Card radius="lg" p="xl" withBorder>
-          <WeddingProfileOnboardingForm
+        <Card radius="lg" py={isMobile ? "" : "xl"} withBorder>
+          <WeddingProfileOnboardingSimpleForm
             onComplete={() => router.push("/dashboard")}
           />
         </Card>

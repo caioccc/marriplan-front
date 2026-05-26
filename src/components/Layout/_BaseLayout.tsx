@@ -1,5 +1,5 @@
 import { NotificationsBell } from "@/components/NotificationsBell";
-import { ProfileModal } from "@/components/ProfileModal";
+import WeddingProfileDataModal from "@/components/WeddingProfileDataModal";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   ActionIcon,
@@ -31,7 +31,7 @@ import {
   IconLogout,
   IconSparkles,
   IconUser,
-  IconUserCheck
+  IconUserCheck,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { ReactNode, useEffect, useState } from "react";
@@ -54,7 +54,6 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
       setOpened(false);
     }
   }, [isMobile]);
-  
 
   const toggleSidebar = () => {
     setOpened((current) => !current);
@@ -172,7 +171,6 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
     },
   } as const;
 
-
   return (
     <AppShell
       layout="alt"
@@ -244,106 +242,108 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
           {/* Ícones e menu à direita */}
           <Group align="center" h="100%">
             <NotificationsBell />
-            <Menu
-              shadow="xl"
-              width={300}
-              position="bottom-end"
-              withArrow
-              styles={menuStyles}
-            >
-              <Menu.Target>
-                <Indicator
-                  color={progressTone}
-                  size={10}
-                  offset={4}
-                  processing={profileProgress < 100}
-                >
-                  <Group gap={4} style={{ cursor: "pointer" }}>
-                    <ThemeIcon
-                      variant="light"
-                      size="lg"
-                      style={{
-                        backgroundColor: "var(--marriplan-champagne)",
-                        color: "var(--marriplan-rose)",
+            {!isMobile && (
+              <Menu
+                shadow="xl"
+                width={300}
+                position="bottom-end"
+                withArrow
+                styles={menuStyles}
+              >
+                <Menu.Target>
+                  <Indicator
+                    color={progressTone}
+                    size={10}
+                    offset={4}
+                    processing={profileProgress < 100}
+                  >
+                    <Group gap={4} style={{ cursor: "pointer" }}>
+                      <ThemeIcon
+                        variant="light"
+                        size="lg"
+                        style={{
+                          backgroundColor: "var(--marriplan-champagne)",
+                          color: "var(--marriplan-rose)",
+                        }}
+                      >
+                        <IconUserCheck size={20} />
+                      </ThemeIcon>
+                      {profileProgress !== 100 && (
+                        <>
+                          <Text
+                            size="sm"
+                            fw={500}
+                            style={{ color: "var(--marriplan-muted)" }}
+                          >
+                            Perfil {profileProgress}%
+                          </Text>
+                          <IconChevronDown size={16} />
+                        </>
+                      )}
+                    </Group>
+                  </Indicator>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Box p="xs">
+                    <Text size="sm" fw={600} mb={4}>
+                      Progresso do perfil de casamento
+                    </Text>
+                    <Progress
+                      value={profileProgress}
+                      size="md"
+                      radius="xl"
+                      mb={8}
+                      styles={{
+                        section: {
+                          background: progressTone,
+                        },
                       }}
-                    >
-                      <IconUserCheck size={20} />
-                    </ThemeIcon>
-                    {profileProgress !== 100 && (
-                      <>
-                        <Text
-                          size="sm"
-                          fw={500}
-                          style={{ color: "var(--marriplan-muted)" }}
-                        >
-                          Perfil {profileProgress}%
-                        </Text>
-                        <IconChevronDown size={16} />
-                      </>
-                    )}
-                  </Group>
-                </Indicator>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Box p="xs">
-                  <Text size="sm" fw={600} mb={4}>
-                    Progresso do perfil de casamento
-                  </Text>
-                  <Progress
-                    value={profileProgress}
-                    size="md"
-                    radius="xl"
-                    mb={8}
-                    styles={{
-                      section: {
-                        background: progressTone,
-                      },
-                    }}
-                  />
-                  <Text size="xs" c="dimmed" mb={6}>
-                    Complete todos os campos obrigatórios para liberar todos os
-                    recursos do Marriplan.
-                  </Text>
-                  <Box>
-                    {requiredFields.map((field) => (
-                      <Group key={field.key} gap={6} align="center" mb={2}>
-                        {user?.wedding_profile?.[field.key] ? (
-                          <ThemeIcon
-                            size={18}
-                            radius="xl"
-                            variant="light"
-                            style={{
-                              backgroundColor: "rgba(181, 139, 122, 0.18)",
-                              color: "var(--marriplan-rose)",
-                            }}
+                    />
+                    <Text size="xs" c="dimmed" mb={6}>
+                      Complete todos os campos obrigatórios para liberar todos
+                      os recursos do Marriplan.
+                    </Text>
+                    <Box>
+                      {requiredFields.map((field) => (
+                        <Group key={field.key} gap={6} align="center" mb={2}>
+                          {user?.wedding_profile?.[field.key] ? (
+                            <ThemeIcon
+                              size={18}
+                              radius="xl"
+                              variant="light"
+                              style={{
+                                backgroundColor: "rgba(181, 139, 122, 0.18)",
+                                color: "var(--marriplan-rose)",
+                              }}
+                            >
+                              <IconCheck size={14} />
+                            </ThemeIcon>
+                          ) : (
+                            <ThemeIcon
+                              size={18}
+                              radius="xl"
+                              variant="light"
+                              style={{
+                                backgroundColor: "rgba(200, 176, 138, 0.18)",
+                                color: "var(--marriplan-gold)",
+                              }}
+                            >
+                              <IconAlertCircle size={14} />
+                            </ThemeIcon>
+                          )}
+                          <Text
+                            size="sm"
+                            style={{ color: "var(--marriplan-text)" }}
                           >
-                            <IconCheck size={14} />
-                          </ThemeIcon>
-                        ) : (
-                          <ThemeIcon
-                            size={18}
-                            radius="xl"
-                            variant="light"
-                            style={{
-                              backgroundColor: "rgba(200, 176, 138, 0.18)",
-                              color: "var(--marriplan-gold)",
-                            }}
-                          >
-                            <IconAlertCircle size={14} />
-                          </ThemeIcon>
-                        )}
-                        <Text
-                          size="sm"
-                          style={{ color: "var(--marriplan-text)" }}
-                        >
-                          {field.label}
-                        </Text>
-                      </Group>
-                    ))}
+                            {field.label}
+                          </Text>
+                        </Group>
+                      ))}
+                    </Box>
                   </Box>
-                </Box>
-              </Menu.Dropdown>
-            </Menu>
+                </Menu.Dropdown>
+              </Menu>
+            )}
             <Menu
               shadow="xl"
               width={220}
@@ -365,7 +365,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                 <Menu.Label>Conta</Menu.Label>
                 <Menu.Item
                   leftSection={<IconUserCheck size={16} />}
-                  onClick={() => router.push("/onboarding")}
+                  onClick={() => setProfileModalOpen(true)}
                 >
                   Meus dados
                 </Menu.Item>
@@ -463,9 +463,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
             leftSection={<IconSparkles size={18} />}
             active={router.pathname.startsWith("/identity")}
             opened={identityMenuOpen}
-            onClick={() =>
-              handleSidebarNavigation("/identity/overview")
-            }
+            onClick={() => handleSidebarNavigation("/identity/overview")}
             aria-label="Identidade do Casamento"
             styles={navLinkStyles}
           />
@@ -622,9 +620,10 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
         </Box>
       </AppShell.Main>
 
-      <ProfileModal
+      <WeddingProfileDataModal
         opened={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
+        onComplete={() => setProfileModalOpen(false)}
       />
       {/* <SettingsModal
                 opened={settingsModalOpen}
