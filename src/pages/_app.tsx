@@ -12,6 +12,7 @@ import Script from "next/script";
 import { ThemeProvider } from "styled-components";
 
 import PageWithTransition from "@/components/Layout/_PageWithTransition";
+import { FirstStepsFloatingMenu } from "@/components/FirstStepsFloatingMenu";
 import { AuthProvider, ProtectedRoute } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
@@ -61,6 +62,7 @@ const MyApp = (props: AppProps) => {
                   <NotificationProvider>
                     <ProtectedRoute>
                       <PageWithTransition {...props} />
+                      <FirstStepsFloatingMenu />
 
                       {/* <props.Component {...props.pageProps} /> */}
                     </ProtectedRoute>

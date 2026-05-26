@@ -19,7 +19,7 @@ import {
 } from '../interfaces/common'
 import api from '../services/api'
 
-const unprotectedRoutes = [
+export const unprotectedRoutes = [
     '/',
     '/login',
     '/register',
@@ -57,9 +57,7 @@ type IAuthContext = {
 
 
 const isExternalPage = (path: string) => {
-    return !!unprotectedRoutes.find((route) =>
-        path.startsWith(route.replaceAll('[key]', ''))
-    )
+    return unprotectedRoutes.includes(path)
 }
 
 const buildLoginRedirectUrl = (redirectPath: string, reason = 'session_expired') => {

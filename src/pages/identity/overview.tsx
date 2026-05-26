@@ -55,6 +55,8 @@ import {
 } from "@tabler/icons-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+const FIRST_STEPS_REFRESH_EVENT = "marriplan:first-steps-refresh";
+
 type FullscreenImageState = {
   src: string;
   alt: string;
@@ -297,6 +299,10 @@ export default function OverviewPage() {
         const updatedList = await listWeddingInspirations();
         setSavedInspirations(updatedList);
 
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event(FIRST_STEPS_REFRESH_EVENT));
+        }
+
         setIsIdentityModalOpen(false);
       } catch (error) {
         console.error("Erro ao salvar imagens de inspiração:", error);
@@ -324,6 +330,11 @@ export default function OverviewPage() {
     try {
       await deleteWeddingInspiration(id);
       setSavedInspirations((prev) => prev.filter((item) => item.id !== id));
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event(FIRST_STEPS_REFRESH_EVENT));
+      }
+
       notifications.show({
         color: "green",
         message: "Inspiração removida do mural.",
@@ -857,7 +868,7 @@ export default function OverviewPage() {
                     leftSection={<IconShare size={14} />}
                     onClick={handleShareLink}
                   >
-                    Exportar
+                    Compartilhar
                   </Button>
                 </Group>
               </Group>

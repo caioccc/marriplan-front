@@ -1,5 +1,6 @@
 import axios, { HttpStatusCode } from 'axios'
 const baseURL = process.env.NEXT_PUBLIC_BASE_URL
+const FIRST_STEPS_REFRESH_EVENT = 'marriplan:first-steps-refresh'
 
 const api = axios.create({ baseURL: `${baseURL}/` })
 
@@ -48,8 +49,52 @@ const buildLoginRedirectUrl = (pathname: string) => {
     return `/login?redirect=${encodeURIComponent(pathname)}&reason=session_expired`
 }
 
+const FIRST_STEPS_MUTATION_PREFIXES = [
+    '/api/checklist-tasks/',
+    '/api/guests/',
+    '/api/gifts/',
+    '/api/wedding-suppliers/',
+    '/api/wedding-identity/',
+    '/api/wedding-identity/inspirations/',
+]
+
+const shouldRefreshFirstSteps = (method?: string, url?: string) => {
+    if (!method || !url) {
+        return false
+    }
+
+    const normalizedMethod = method.toLowerCase()
+    const isMutationMethod =
+        normalizedMethod === 'post' ||
+        normalizedMethod === 'put' ||
+        normalizedMethod === 'patch' ||
+        normalizedMethod === 'delete'
+
+    if (!isMutationMethod) {
+        return false
+    }
+
+    const normalizedUrl = url.split('?')[0]
+
+    return FIRST_STEPS_MUTATION_PREFIXES.some((prefix) =>
+        normalizedUrl.startsWith(prefix)
+    )
+}
+
+const dispatchFirstStepsRefresh = () => {
+    if (typeof window === 'undefined') {
+        return
+    }
+
+    window.dispatchEvent(new Event(FIRST_STEPS_REFRESH_EVENT))
+}
+
 api.interceptors.response.use(
     (response) => {
+        if (shouldRefreshFirstSteps(response.config?.method, response.config?.url)) {
+            dispatchFirstStepsRefresh()
+        }
+
         return response
     },
     async (error) => {

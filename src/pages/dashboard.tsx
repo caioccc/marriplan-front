@@ -354,6 +354,12 @@ const MarriplanDashboard: React.FC = () => {
   const styleData = WEDDING_STYLES.find((style) => style.id === selectedStyle);
   const dressData = DRESS_CODE_OPTIONS.find((dress) => dress.id === dressCode);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const hasPalette = identityPalette.length > 0;
+  const hasWeddingSize = Boolean(weddingSize && sizeData);
+  const hasSelectedStyle = Boolean(selectedStyle && styleData);
+  const hasDressCode = Boolean(dressCode && dressData);
+  const hasIdentityHighlights =
+    hasPalette || hasWeddingSize || hasSelectedStyle || hasDressCode;
 
   const checklistStats = useMemo(() => {
     const total = checklistTasks.length;
@@ -418,7 +424,7 @@ const MarriplanDashboard: React.FC = () => {
     : "Seu casamento";
 
   return (
-    <BaseLayout title="Dashboard">
+    <BaseLayout>
       <Container size="xl" py="md">
         <Stack gap="md">
           <Card
@@ -535,132 +541,142 @@ const MarriplanDashboard: React.FC = () => {
             </Stack>
           </Card>
 
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
-            <Card
-              className="marriplan-card"
-              radius="xl"
-              p="lg"
-              style={{
-                background: palette.softWhite,
-                border: `1px solid ${palette.line}`,
-              }}
-            >
-              <Text
-                size="xs"
-                c={palette.warmGray}
-                tt="uppercase"
-                fw={600}
-                style={{ letterSpacing: 1 }}
-              >
-                Paleta Definida
-              </Text>
-              <Text fw={600} size="lg" c={palette.ink} mt={8}>
-                {identityPalette.length}
-              </Text>
-              <Text size="xs" c={palette.warmGray}>
-                cores selecionadas
-              </Text>
-              <Group gap={4} wrap="nowrap" mt={10}>
-                {identityPalette.map((color) => (
-                  <Card
-                    key={color.id}
-                    p={0}
-                    radius="md"
-                    withBorder
-                    style={{ flex: 1, height: 18, background: color.hex }}
-                  />
-                ))}
-              </Group>
-            </Card>
+          {hasIdentityHighlights && (
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
+              {hasPalette && (
+                <Card
+                  className="marriplan-card"
+                  radius="xl"
+                  p="lg"
+                  style={{
+                    background: palette.softWhite,
+                    border: `1px solid ${palette.line}`,
+                  }}
+                >
+                  <Text
+                    size="xs"
+                    c={palette.warmGray}
+                    tt="uppercase"
+                    fw={600}
+                    style={{ letterSpacing: 1 }}
+                  >
+                    Paleta Definida
+                  </Text>
+                  <Text fw={600} size="lg" c={palette.ink} mt={8}>
+                    {identityPalette.length}
+                  </Text>
+                  <Text size="xs" c={palette.warmGray}>
+                    cores selecionadas
+                  </Text>
+                  <Group gap={4} wrap="nowrap" mt={10}>
+                    {identityPalette.map((color) => (
+                      <Card
+                        key={color.id}
+                        p={0}
+                        radius="md"
+                        withBorder
+                        style={{ flex: 1, height: 18, background: color.hex }}
+                      />
+                    ))}
+                  </Group>
+                </Card>
+              )}
 
-            <Card
-              className="marriplan-card"
-              radius="xl"
-              p="lg"
-              style={{
-                background: palette.softWhite,
-                border: `1px solid ${palette.line}`,
-              }}
-            >
-              <Text
-                size="xs"
-                c={palette.warmGray}
-                tt="uppercase"
-                fw={600}
-                style={{ letterSpacing: 1 }}
-              >
-                Tamanho do Casamento
-              </Text>
-              <Text fw={600} size="lg" c={palette.ink} mt={8}>
-                {weddingSize ? sizeData?.label : "-"}
-              </Text>
-              <Text size="xs" c={palette.warmGray}>
-                {sizeData?.guestRange || "Selecione o porte do evento"}
-              </Text>
-            </Card>
+              {hasWeddingSize && (
+                <Card
+                  className="marriplan-card"
+                  radius="xl"
+                  p="lg"
+                  style={{
+                    background: palette.softWhite,
+                    border: `1px solid ${palette.line}`,
+                  }}
+                >
+                  <Text
+                    size="xs"
+                    c={palette.warmGray}
+                    tt="uppercase"
+                    fw={600}
+                    style={{ letterSpacing: 1 }}
+                  >
+                    Tamanho do Casamento
+                  </Text>
+                  <Text fw={600} size="lg" c={palette.ink} mt={8}>
+                    {sizeData?.label}
+                  </Text>
+                  <Text size="xs" c={palette.warmGray}>
+                    {sizeData?.guestRange}
+                  </Text>
+                </Card>
+              )}
 
-            <Card
-              className="marriplan-card"
-              radius="xl"
-              p="lg"
-              style={{
-                background: palette.softWhite,
-                border: `1px solid ${palette.line}`,
-              }}
-            >
-              <Text
-                size="xs"
-                c={palette.warmGray}
-                tt="uppercase"
-                fw={600}
-                style={{ letterSpacing: 1 }}
-              >
-                Estilo Selecionado
-              </Text>
-              <Text fw={600} size="lg" c={palette.ink} mt={8}>
-                {selectedStyle ? styleData?.label : "-"}
-              </Text>
-              <Text size="xs" c={palette.warmGray}>
-                {styleData?.subtitle || ""}
-              </Text>
-            </Card>
+              {hasSelectedStyle && (
+                <Card
+                  className="marriplan-card"
+                  radius="xl"
+                  p="lg"
+                  style={{
+                    background: palette.softWhite,
+                    border: `1px solid ${palette.line}`,
+                  }}
+                >
+                  <Text
+                    size="xs"
+                    c={palette.warmGray}
+                    tt="uppercase"
+                    fw={600}
+                    style={{ letterSpacing: 1 }}
+                  >
+                    Estilo Selecionado
+                  </Text>
+                  <Text fw={600} size="lg" c={palette.ink} mt={8}>
+                    {styleData?.label}
+                  </Text>
+                  <Text size="xs" c={palette.warmGray}>
+                    {styleData?.subtitle || ""}
+                  </Text>
+                </Card>
+              )}
 
-            <Card
-              className="marriplan-card"
-              radius="xl"
-              p="lg"
-              style={{
-                background: palette.softWhite,
-                border: `1px solid ${palette.line}`,
-              }}
-            >
-              <Text
-                size="xs"
-                c={palette.warmGray}
-                tt="uppercase"
-                fw={600}
-                style={{ letterSpacing: 1 }}
-              >
-                Dress Code
-              </Text>
-              <Text fw={600} size="lg" c={palette.ink} mt={8}>
-                {dressCode ? dressData?.label : "-"}
-              </Text>
-              <Tooltip
-                label={dressData?.desc || "Descricao nao disponivel"}
-                position="bottom"
-                color="dark"
-                withArrow
-                style={{ fontSize: 11 }}
-              >
-                <Text size="xs" c={palette.warmGray}>
-                  {isMobile
-                    ? dressData?.desc
-                    : dressData?.desc?.slice(0, 30) + "..." || ""}
-                </Text>
-              </Tooltip>
-            </Card>
-          </SimpleGrid>
+              {hasDressCode && (
+                <Card
+                  className="marriplan-card"
+                  radius="xl"
+                  p="lg"
+                  style={{
+                    background: palette.softWhite,
+                    border: `1px solid ${palette.line}`,
+                  }}
+                >
+                  <Text
+                    size="xs"
+                    c={palette.warmGray}
+                    tt="uppercase"
+                    fw={600}
+                    style={{ letterSpacing: 1 }}
+                  >
+                    Dress Code
+                  </Text>
+                  <Text fw={600} size="lg" c={palette.ink} mt={8}>
+                    {dressData?.label}
+                  </Text>
+                  <Tooltip
+                    label={dressData?.desc || "Descricao nao disponivel"}
+                    position="bottom"
+                    color="dark"
+                    withArrow
+                    style={{ fontSize: 11 }}
+                  >
+                    <Text size="xs" c={palette.warmGray}>
+                      {isMobile
+                        ? dressData?.desc
+                        : dressData?.desc?.slice(0, 30) + "..." || ""}
+                    </Text>
+                  </Tooltip>
+                </Card>
+              )}
+            </SimpleGrid>
+          )}
 
           <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="lg">
             <Card
@@ -1001,10 +1017,18 @@ const MarriplanDashboard: React.FC = () => {
                               .join("")}
                           </Avatar>
                           <Box>
-                            <Text fw={500} size="sm" c={palette.ink}>
-                              {guest.name}
-                            </Text>
-                            <Text size="xs" c={palette.warmGray}>
+                            <Tooltip
+                              label={guest.name}
+                              position="top-start"
+                              withArrow
+                              multiline
+                              maw={320}
+                            >
+                              <Text fw={500} size="sm" c={palette.ink} lineClamp={1}>
+                                {guest.name}
+                              </Text>
+                            </Tooltip>
+                            <Text size="xs" c={palette.warmGray} lineClamp={2}>
                               {guest.plusOne
                                 ? "Com acompanhante"
                                 : "Sem acompanhante"}
@@ -1013,7 +1037,7 @@ const MarriplanDashboard: React.FC = () => {
                         </Group>
                         <MarriplanStatusBadge
                           kind="guest"
-                          status={guest.status}
+                          status={guest.status_presenca}
                         />
                       </Group>
                     </Paper>
@@ -1080,9 +1104,17 @@ const MarriplanDashboard: React.FC = () => {
                     >
                       <Group justify="space-between" align="flex-start">
                         <Box style={{ flex: 1 }}>
-                          <Text fw={500} size="sm" c={palette.ink}>
-                            {gift.name}
-                          </Text>
+                          <Tooltip
+                            label={gift.name}
+                            position="top-start"
+                            withArrow
+                            multiline
+                            maw={320}
+                          >
+                            <Text fw={500} size="sm" c={palette.ink} lineClamp={1}>
+                              {gift.name}
+                            </Text>
+                          </Tooltip>
                           {gift.description && (
                             <Text
                               size="xs"
@@ -1094,15 +1126,8 @@ const MarriplanDashboard: React.FC = () => {
                             </Text>
                           )}
                           <Group gap="xs" mt={2}>
-                            <Text size="xs" c={palette.warmGray}>
-                              {gift.category}
-                            </Text>
                             <Text size="xs" fw={600} c={palette.ink}>
-                              {typeof gift.value === "number"
-                                ? `R$ ${Number(gift.value).toFixed(2)}`
-                                : typeof gift.price === "number"
-                                ? `R$ ${Number(gift.price).toFixed(2)}`
-                                : "-"}
+                              {`R$ ${Number(gift.value).toFixed(2)}`}
                             </Text>
                           </Group>
                           {gift.link && (

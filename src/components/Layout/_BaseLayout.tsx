@@ -579,7 +579,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
               >
                 {coupleName}
               </Text>
-              <Text
+              {/* <Text
                 size="xs"
                 fw={600}
                 style={{
@@ -588,8 +588,8 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                 }}
               >
                 Sistema {SYSTEM_VERSION}
-              </Text>
-              {!opened && (
+              </Text> */}
+              {/* {!opened && (
                 <Text
                   size="xs"
                   fw={600}
@@ -601,7 +601,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                 >
                   {SYSTEM_VERSION}
                 </Text>
-              )}
+              )} */}
             </Stack>
           </Box>
         </Stack>
