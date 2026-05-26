@@ -6,7 +6,7 @@ import {
   guests_delete,
   guests_export,
   guests_generate_confirmation_link,
-  guests_list,
+  guests_list_all,
   guests_partial_update,
   guests_update,
 } from "@/services/guests";
@@ -131,7 +131,6 @@ export default function GuestTable() {
     direction: "asc",
   });
   const [search, setSearch] = useState("");
-  const [totalRecords, setTotalRecords] = useState(0);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState("table");
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -165,33 +164,17 @@ export default function GuestTable() {
 
   const pageTopRef = useRef<HTMLDivElement>(null);
 
-  const fetchAllGuests = useCallback(
-    async ({ ordering }: { ordering: string }) => {
-      const pageSize = 200;
-      let currentPage = 1;
-      let results: Guest[] = [];
-      let count = 0;
-      while (true) {
-        const data = await guests_list({
-          page: currentPage,
-          page_size: pageSize,
-          search,
-          ordering,
-        });
-        if (currentPage === 1) count = data.count || 0;
-        results = results.concat(data.results || []);
-        if (!data.results?.length || results.length >= count) break;
-        currentPage += 1;
-      }
-      return { results, count };
-    },
-    [search],
-  );
-
-  const refreshSummaryGuests = useCallback(async () => {
-    const data = await fetchAllGuests({ ordering: "" });
-    setAllGuests(data.results || []);
-  }, [fetchAllGuests]);
+  const loadGuests = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await guests_list_all();
+      const loadedGuests = data.results || [];
+      setGuests(loadedGuests);
+      setAllGuests(loadedGuests);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const form = useForm({
     initialValues: {
@@ -228,12 +211,14 @@ export default function GuestTable() {
     10,
     ...guests.map((g) => g.acompanhantes ?? 0),
   );
+  const searchQuery = search.trim().toLowerCase();
   const filtersActive =
     companionsRange[0] > 0 ||
     companionsRange[1] < maxCompanionsValue ||
     whatsappFilter !== "all" ||
     allergyFilter !== "all" ||
     statusFilter !== "all";
+  const hasFilteredView = Boolean(searchQuery) || filtersActive;
 
 
   useEffect(() => {
@@ -243,41 +228,89 @@ export default function GuestTable() {
     });
   }, [page]);
 
-
-  // Busca convidados do backend conforme paginação, busca e ordenação
   useEffect(() => {
-    async function fetchGuests() {
-      setLoading(true);
-      try {
-        const ordering = sortStatus.columnAccessor
-          ? `${sortStatus.direction === "desc" ? "-" : ""}${
-              sortStatus.columnAccessor
-            }`
-          : "";
-        if (filtersActive) {
-          const data = await fetchAllGuests({ ordering });
-          setGuests(data.results || []);
-          setTotalRecords(data.count || 0);
-        } else {
-          const data = await guests_list({
-            page,
-            page_size: recordsPerPage,
-            search,
-            ordering,
-          });
-          setGuests(data.results || []);
-          setTotalRecords(data.count || 0);
-        }
-      } finally {
-        setLoading(false);
+    void loadGuests();
+  }, [loadGuests]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, companionsRange, whatsappFilter, allergyFilter, statusFilter]);
+
+  const filteredGuests = useMemo(() => {
+    return guests.filter((guest) => {
+      if (
+        searchQuery &&
+        ![
+          guest.name,
+          guest.email,
+          guest.phone,
+          guest.whatsapp,
+        ].some((value) => (value || "").toLowerCase().includes(searchQuery))
+      ) {
+        return false;
       }
-    }
-    fetchGuests();
-  }, [page, recordsPerPage, search, sortStatus, filtersActive, fetchAllGuests]);
 
-  useEffect(() => {
-    void refreshSummaryGuests();
-  }, [refreshSummaryGuests]);
+      if (
+        companionsRange[0] > 0 &&
+        (guest.acompanhantes === undefined ||
+          guest.acompanhantes < companionsRange[0])
+      ) {
+        return false;
+      }
+      if (
+        companionsRange[1] < maxCompanionsValue &&
+        (guest.acompanhantes === undefined ||
+          guest.acompanhantes > companionsRange[1])
+      ) {
+        return false;
+      }
+
+      if (whatsappFilter === "with" && !guest.whatsapp) return false;
+      if (whatsappFilter === "without" && guest.whatsapp) return false;
+
+      const hasAllergy = !!guest.alergias?.trim();
+      if (allergyFilter === "with" && !hasAllergy) return false;
+      if (allergyFilter === "without" && hasAllergy) return false;
+
+      if (statusFilter !== "all" && guest.status_presenca !== statusFilter) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [
+    guests,
+    searchQuery,
+    companionsRange,
+    maxCompanionsValue,
+    whatsappFilter,
+    allergyFilter,
+    statusFilter,
+  ]);
+
+  const sortedGuests = useMemo(() => {
+    const nextGuests = [...filteredGuests];
+    const accessor = sortStatus.columnAccessor;
+    if (!accessor) {
+      return nextGuests;
+    }
+
+    nextGuests.sort((left, right) => {
+      const leftValue = left[accessor as keyof Guest];
+      const rightValue = right[accessor as keyof Guest];
+
+      const leftText = String(leftValue ?? "");
+      const rightText = String(rightValue ?? "");
+      const comparison = leftText.localeCompare(rightText, "pt-BR", {
+        numeric: true,
+        sensitivity: "base",
+      });
+
+      return sortStatus.direction === "desc" ? -comparison : comparison;
+    });
+
+    return nextGuests;
+  }, [filteredGuests, sortStatus]);
 
   useEffect(() => {
     if (filtersActive) {
@@ -359,15 +392,11 @@ export default function GuestTable() {
       payload.status_presenca = values.status_presenca;
     }
     if (editing) {
-      const updated = await guests_update(editing.id, payload);
-      setGuests((guests) =>
-        guests.map((g) => (g.id === editing.id ? updated : g)),
-      );
+      await guests_update(editing.id, payload);
     } else {
-      const created = await guests_create(payload);
-      setGuests((guests) => [...guests, created]);
+      await guests_create(payload);
     }
-    void refreshSummaryGuests();
+    await loadGuests();
     setModalOpen(false);
     form.reset();
   }
@@ -383,10 +412,7 @@ export default function GuestTable() {
     setDeletingGuest(true);
     try {
       await guests_delete(guestToDelete.id);
-      setGuests((currentGuests) =>
-        currentGuests.filter((guest) => guest.id !== guestToDelete.id),
-      );
-      void refreshSummaryGuests();
+      await loadGuests();
       setDeleteModalOpen(false);
       setGuestToDelete(null);
       notifications.show({
@@ -407,20 +433,13 @@ export default function GuestTable() {
   async function handleExport(format: "csv" | "xlsx" | "pdf") {
     setExporting(format);
     try {
-      const ordering = sortStatus.columnAccessor
-        ? `${sortStatus.direction === "desc" ? "-" : ""}${
-            sortStatus.columnAccessor
-          }`
-        : "";
       if (format === "pdf") {
         const [{ jsPDF }, autoTableModule] = await Promise.all([
           import("jspdf"),
           import("jspdf-autotable"),
         ]);
         const autoTable = autoTableModule.default;
-        const data = filtersActive
-          ? { results: filteredGuests, count: filteredGuests.length }
-          : await fetchAllGuests({ ordering });
+        const data = { results: sortedGuests, count: sortedGuests.length };
 
         const doc = new jsPDF("p", "mm", "a4");
         doc.setFontSize(14);
@@ -476,40 +495,14 @@ export default function GuestTable() {
     }
   }
 
-  const filteredGuests = guests.filter((g) => {
-    if (
-      companionsRange[0] > 0 &&
-      (g.acompanhantes === undefined || g.acompanhantes < companionsRange[0])
-    )
-      return false;
-    if (
-      companionsRange[1] < maxCompanionsValue &&
-      (g.acompanhantes === undefined || g.acompanhantes > companionsRange[1])
-    )
-      return false;
+  const paginatedGuests = sortedGuests.slice(
+    (page - 1) * recordsPerPage,
+    page * recordsPerPage,
+  );
 
-    if (whatsappFilter === "with" && !g.whatsapp) return false;
-    if (whatsappFilter === "without" && g.whatsapp) return false;
+  const derivedTotalRecords = sortedGuests.length;
 
-    const hasAllergy = !!g.alergias?.trim();
-    if (allergyFilter === "with" && !hasAllergy) return false;
-    if (allergyFilter === "without" && hasAllergy) return false;
-
-    if (statusFilter !== "all" && g.status_presenca !== statusFilter)
-      return false;
-
-    return true;
-  });
-
-  const paginatedGuests = filtersActive
-    ? filteredGuests.slice((page - 1) * recordsPerPage, page * recordsPerPage)
-    : guests;
-
-  const derivedTotalRecords = filtersActive
-    ? filteredGuests.length
-    : totalRecords;
-
-  const summaryGuests = filtersActive ? filteredGuests : allGuests;
+  const summaryGuests = hasFilteredView ? sortedGuests : allGuests;
   const guestSummary = useMemo(
     () =>
       summaryGuests.reduce(
@@ -535,7 +528,7 @@ export default function GuestTable() {
       key: "total",
       label: "Total",
       value: guestSummary.total,
-      helper: filtersActive
+      helper: hasFilteredView
         ? "Resultado dos filtros atuais"
         : "Todos os convidados cadastrados",
       icon: IconUsers,
@@ -1726,20 +1719,7 @@ export default function GuestTable() {
                         color: "green",
                       });
                       setPresencaModalOpen(false);
-                      // Recarregar lista
-                      const ordering = sortStatus.columnAccessor
-                        ? `${sortStatus.direction === "desc" ? "-" : ""}${
-                            sortStatus.columnAccessor
-                          }`
-                        : "";
-                      const data = await guests_list({
-                        page,
-                        page_size: recordsPerPage,
-                        search,
-                        ordering,
-                      });
-                      setGuests(data.results || []);
-                      setTotalRecords(data.count || 0);
+                      await loadGuests();
                     } catch {
                       notifications.show({
                         title: "Erro",
@@ -1764,20 +1744,7 @@ export default function GuestTable() {
                         color: "red",
                       });
                       setPresencaModalOpen(false);
-                      // Recarregar lista
-                      const ordering = sortStatus.columnAccessor
-                        ? `${sortStatus.direction === "desc" ? "-" : ""}${
-                            sortStatus.columnAccessor
-                          }`
-                        : "";
-                      const data = await guests_list({
-                        page,
-                        page_size: recordsPerPage,
-                        search,
-                        ordering,
-                      });
-                      setGuests(data.results || []);
-                      setTotalRecords(data.count || 0);
+                      await loadGuests();
                     } catch {
                       notifications.show({
                         title: "Erro",
@@ -1804,22 +1771,9 @@ export default function GuestTable() {
       <ImportGuestsModal
         opened={importModalOpen}
         onClose={() => setImportModalOpen(false)}
-        onSuccess={() => {
+        onSuccess={async () => {
           setImportModalOpen(false);
-          // Refresh guests list after successful import
-          guests_list({
-            page,
-            page_size: recordsPerPage,
-            search,
-            ordering: sortStatus.columnAccessor
-              ? `${sortStatus.direction === "desc" ? "-" : ""}${
-                  sortStatus.columnAccessor
-                }`
-              : "",
-          }).then((data) => {
-            setGuests(data.results || []);
-            setTotalRecords(data.count || 0);
-          });
+          await loadGuests();
         }}
       />
       {/* Responsividade customizada para mobile */}
