@@ -30,7 +30,7 @@ import {
   IconSearch,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const pageSize = 12;
 
@@ -287,6 +287,7 @@ export default function ProductMarketplacePage() {
     new Set(),
   );
   const [addingProductKey, setAddingProductKey] = useState<string | null>(null);
+  const pageTopRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -361,6 +362,13 @@ export default function ProductMarketplacePage() {
     setSearchTerm(searchInput.trim());
   };
 
+  useEffect(() => {
+    pageTopRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [page]);
+
   const visibleProducts = useMemo(() => {
     const start = (page - 1) * pageSize;
     return products.slice(start, start + pageSize);
@@ -428,6 +436,7 @@ export default function ProductMarketplacePage() {
   return (
     <BaseLayout>
       <Stack gap="lg" py="md">
+        <div ref={pageTopRef} style={{ scrollMarginTop: "20px" }} />
         <PageSectionHeader
           eyebrow="Marketplace do casal"
           title="Marketplace de Produtos"

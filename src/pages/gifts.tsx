@@ -56,6 +56,7 @@ import {
   IconSearch,
   IconShare,
   IconStatusChange,
+  IconTrash,
   IconUpload,
   IconWorldPin,
 } from "@tabler/icons-react";
@@ -115,6 +116,10 @@ const GiftsPage: NextPage = () => {
   const [markModal, setMarkModal] = useState<{ open: boolean; gift?: Gift }>({
     open: false,
   });
+  const [deleteModal, setDeleteModal] = useState<{
+    open: boolean;
+    gift?: Gift;
+  }>({ open: false });
   const [guests, setGuests] = useState<{ id: string; name: string }[]>([]);
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -134,6 +139,7 @@ const GiftsPage: NextPage = () => {
   const [categoryOptions, setCategoryOptions] = useState(
     getAllCategoryOptions(),
   );
+  const pageTopRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -174,6 +180,13 @@ const GiftsPage: NextPage = () => {
       setViewMode("cards");
     }
   }, [isCompactLayout, viewMode]);
+
+  useEffect(() => {
+    pageTopRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [page]);
 
   function translateStatus(g: Gift) {
     switch (g.status) {
@@ -248,6 +261,29 @@ const GiftsPage: NextPage = () => {
     });
     refreshGiftList().finally(() => setLoading(false));
     setMarkModal({ open: false });
+  };
+
+  const handleConfirmDeleteGift = async () => {
+    if (!deleteModal.gift) return;
+    setLoading(true);
+    try {
+      await giftsService.deleteGift(deleteModal.gift.id);
+      await refreshGiftList();
+      setDeleteModal({ open: false });
+      notifications.show({
+        color: "green",
+        message: "Presente excluído com sucesso.",
+      });
+    } catch (err) {
+      notifications.show({
+        color: "red",
+        message:
+          (err as { response?: { data?: { detail?: string } } })?.response?.data
+            ?.detail || "Não foi possível excluir o presente.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGenerateBasicGifts = async () => {
@@ -436,6 +472,7 @@ const GiftsPage: NextPage = () => {
   return (
     <BaseLayout>
       <Stack gap="lg" py="md">
+        <div ref={pageTopRef} style={{ scrollMarginTop: "20px" }} />
         <PageSectionHeader
           eyebrow="Gestão do casamento"
           title="Lista de Presentes"
@@ -730,6 +767,15 @@ const GiftsPage: NextPage = () => {
                           <IconEdit size={18} />
                         </ActionIcon>
                       </Tooltip>
+                      <Tooltip label="Excluir presente">
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          onClick={() => setDeleteModal({ open: true, gift: g })}
+                        >
+                          <IconTrash size={18} />
+                        </ActionIcon>
+                      </Tooltip>
                     </Group>
                   ),
                 },
@@ -824,6 +870,13 @@ const GiftsPage: NextPage = () => {
                 >
                   Editar
                 </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconTrash size={14} />}
+                  color="red"
+                  onClick={() => setDeleteModal({ open: true, gift: g })}
+                >
+                  Excluir
+                </Menu.Item>
               </>
             )}
           />
@@ -884,6 +937,13 @@ const GiftsPage: NextPage = () => {
                   }}
                 >
                   Editar
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconTrash size={14} />}
+                  color="red"
+                  onClick={() => setDeleteModal({ open: true, gift: g })}
+                >
+                  Excluir
                 </Menu.Item>
               </>
             )}
@@ -980,6 +1040,30 @@ const GiftsPage: NextPage = () => {
           onConfirm={handleConfirmMark}
           guests={guests}
         />
+        <Modal
+          opened={deleteModal.open}
+          onClose={() => setDeleteModal({ open: false })}
+          title="Excluir presente?"
+          centered
+        >
+          <Text mb="md">
+            Tem certeza que deseja excluir este presente?
+            <br />
+            <b>Essa ação não pode ser desfeita.</b>
+          </Text>
+          <Group justify="flex-end">
+            <Button
+              variant="default"
+              onClick={() => setDeleteModal({ open: false })}
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button color="red" onClick={handleConfirmDeleteGift} loading={loading}>
+              Excluir
+            </Button>
+          </Group>
+        </Modal>
         <Modal
           opened={shareModal}
           onClose={() => setShareModal(false)}

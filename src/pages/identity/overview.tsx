@@ -30,10 +30,12 @@ import {
   Button,
   Card,
   CardSection,
+  CloseButton,
   Grid,
   Group,
   Image,
   Modal,
+  ScrollArea,
   SimpleGrid,
   Stack,
   Stepper,
@@ -47,10 +49,16 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconEdit,
+  IconMaximize,
   IconShare,
   IconTrash,
 } from "@tabler/icons-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+type FullscreenImageState = {
+  src: string;
+  alt: string;
+};
 
 export default function OverviewPage() {
   const {
@@ -80,6 +88,8 @@ export default function OverviewPage() {
   >([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null); // Estado para controlar qual ID está sendo deletado
+  const [fullscreenImage, setFullscreenImage] =
+    useState<FullscreenImageState | null>(null);
 
   const modalTopRef = useRef<HTMLDivElement>(null);
 
@@ -103,6 +113,14 @@ export default function OverviewPage() {
         message: "Não foi possível gerar o link público no momento.",
       });
     }
+  };
+
+  const openFullscreenImage = (src: string, alt: string) => {
+    setFullscreenImage({ src, alt });
+  };
+
+  const closeFullscreenImage = () => {
+    setFullscreenImage(null);
   };
 
   // Efeito para rolar o modal para o topo a cada mudança de passo
@@ -214,6 +232,7 @@ export default function OverviewPage() {
             dressCode={dressCode}
             selectedImages={selectedImages}
             setSelectedImages={setSelectedImages}
+            onOpenImageFullscreen={openFullscreenImage}
           />
         );
     }
@@ -387,7 +406,7 @@ export default function OverviewPage() {
         ) : (
           <>
             <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
-              <Card withBorder radius="lg" padding="lg">
+              <Card withBorder radius="lg" padding="lg" className="marriplan-card">
                 <Text
                   size="sm"
                   c="dimmed"
@@ -415,7 +434,7 @@ export default function OverviewPage() {
                   ))}
                 </Group>
               </Card>
-              <Card withBorder radius="lg" padding="lg">
+              <Card withBorder radius="lg" padding="lg" className="marriplan-card">
                 <Text
                   size="sm"
                   c="dimmed"
@@ -432,7 +451,7 @@ export default function OverviewPage() {
                   {sizeData?.guestRange || "Selecione o porte do evento"}
                 </Text>
               </Card>
-              <Card withBorder radius="lg" padding="lg">
+              <Card withBorder radius="lg" padding="lg" className="marriplan-card">
                 <Text
                   size="sm"
                   c="dimmed"
@@ -462,7 +481,7 @@ export default function OverviewPage() {
                   </Text>
                 </Tooltip>
               </Card>
-              <Card withBorder radius="lg" padding="lg">
+              <Card withBorder radius="lg" padding="lg" className="marriplan-card">
                 <Text
                   size="sm"
                   c="dimmed"
@@ -503,6 +522,7 @@ export default function OverviewPage() {
                         style={{ flex: 1 }}
                       >
                         <Card
+                          className="marriplan-card"
                           withBorder
                           radius="md"
                           p={0}
@@ -527,6 +547,7 @@ export default function OverviewPage() {
             <Grid gutter="md" mb={28} align="stretch">
               <Grid.Col span={{ base: 12, md: 6 }}>
                 <Card
+                  className="marriplan-card"
                   withBorder
                   radius="lg"
                   p={0}
@@ -585,6 +606,28 @@ export default function OverviewPage() {
                         {styleData?.subtitle || ""}
                       </Text>
                     </Stack>
+                    <ActionIcon
+                      variant="filled"
+                      color="dark"
+                      radius="xl"
+                      size="md"
+                      aria-label="Abrir imagem em fullscreen"
+                      onClick={() =>
+                        openFullscreenImage(
+                          styleImage,
+                          styleData?.label || "Estilo Não Definido",
+                        )
+                      }
+                      style={{
+                        position: "absolute",
+                        top: 12,
+                        right: 12,
+                        zIndex: 3,
+                        boxShadow: "0 2px 10px rgba(0,0,0,0.22)",
+                      }}
+                    >
+                      <IconMaximize size={14} />
+                    </ActionIcon>
                   </Box>
                 </Card>
               </Grid.Col>
@@ -599,6 +642,7 @@ export default function OverviewPage() {
 
                       return (
                         <Card
+                          className="marriplan-card"
                           key={key}
                           withBorder
                           radius="lg"
@@ -663,6 +707,25 @@ export default function OverviewPage() {
                             >
                               {label}
                             </Text>
+                            <ActionIcon
+                              variant="filled"
+                              color="dark"
+                              radius="xl"
+                              size="sm"
+                              aria-label="Abrir imagem em fullscreen"
+                              onClick={() =>
+                                openFullscreenImage(imageUrl, label)
+                              }
+                              style={{
+                                position: "absolute",
+                                top: 10,
+                                right: 10,
+                                zIndex: 3,
+                                boxShadow: "0 2px 10px rgba(0,0,0,0.22)",
+                              }}
+                            >
+                              <IconMaximize size={13} />
+                            </ActionIcon>
                           </Box>
                         </Card>
                       );
@@ -683,40 +746,66 @@ export default function OverviewPage() {
                 >
                   Mural de Inspirações Favoritadas
                 </Text>
-                <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="sm">
+                <SimpleGrid cols={{ base: 1, sm: 3, md: 4 }} spacing="sm">
                   {savedInspirations.map((item) => (
                     <Card
+                      className="marriplan-card"
                       key={item.id}
                       withBorder
                       radius="md"
                       p={0}
                       style={{ overflow: "hidden", position: "relative" }}
                     >
-                      <Image
-                        src={item.image_url}
-                        fit="cover"
-                        style={{ height: "350px" }}
-                        alt="Inspiração salva"
-                      />
+                      <Box style={{ position: "relative" }}>
+                        <Image
+                          src={item.image_url}
+                          fit="cover"
+                          style={{ height: "350px" }}
+                          alt="Inspiração salva"
+                        />
 
-                      {/* Botão flutuante de exclusão por item */}
-                      <ActionIcon
-                        variant="filled"
-                        color="red"
-                        radius="xl"
-                        size="md"
-                        loading={deletingId === item.id}
-                        onClick={() => handleRemoveInspiration(item.id)}
-                        style={{
-                          position: "absolute",
-                          top: "10px",
-                          right: "10px",
-                          zIndex: 2,
-                          boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
-                        }}
-                      >
-                        <IconTrash size={14} />
-                      </ActionIcon>
+                        <ActionIcon
+                          variant="filled"
+                          color="dark"
+                          radius="xl"
+                          size="sm"
+                          aria-label="Abrir imagem em fullscreen"
+                          onClick={() =>
+                            openFullscreenImage(
+                              item.image_url,
+                              "Inspiração salva",
+                            )
+                          }
+                          style={{
+                            position: "absolute",
+                            top: 10,
+                            left: 10,
+                            zIndex: 3,
+                            boxShadow: "0 2px 10px rgba(0,0,0,0.22)",
+                          }}
+                        >
+                          <IconMaximize size={13} />
+                        </ActionIcon>
+
+                        {/* Botão flutuante de exclusão por item */}
+                        <ActionIcon
+                          variant="filled"
+                          color="red"
+                          radius="xl"
+                          size="md"
+                          loading={deletingId === item.id}
+                          onClick={() => handleRemoveInspiration(item.id)}
+                          style={{
+                            position: "absolute",
+                            top: "10px",
+                            right: "10px",
+                            zIndex: 2,
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+                          }}
+                        >
+                          <IconTrash size={14} />
+                        </ActionIcon>
+                      </Box>
                     </Card>
                   ))}
                 </SimpleGrid>
@@ -724,6 +813,7 @@ export default function OverviewPage() {
             )}
 
             <Card
+              className="marriplan-card"
               withBorder
               radius="lg"
               p="lg"
@@ -786,12 +876,6 @@ export default function OverviewPage() {
             <Stack gap="lg">
               <div ref={modalTopRef} style={{ scrollMarginTop: "20px" }} />
               {renderMobileIdentityContent()}
-              {activeStep === 4 ? (
-                <Stack align="center" gap="sm" py="xl">
-                  <IconCheck size={28} />
-                  <Text fw={700}>Identidade configurada com sucesso.</Text>
-                </Stack>
-              ) : null}
             </Stack>
           </MobileFullscreenModal>
         ) : (
@@ -802,107 +886,203 @@ export default function OverviewPage() {
             centered
             size="90%"
             radius="lg"
+            padding={0}
+            styles={{
+              content: {
+                height: "90dvh",
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              },
+              body: {
+                height: "100%",
+                padding: 0,
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              },
+            }}
           >
-            <Stack gap="lg">
-              <div ref={modalTopRef} style={{ scrollMarginTop: "20px" }} />
-              <Stepper
-                active={activeStep}
-                onStepClick={(step) => {
-                  if (isSubmitting) {
-                    return;
-                  }
+            <Stack gap={0} h="100%" style={{ overflow: "hidden" }}>
+              <ScrollArea
+                style={{ flex: 1, minHeight: 0 }}
+                type="auto"
+                offsetScrollbars
+              >
+                <Stack gap="lg" p="md">
+                  <div ref={modalTopRef} style={{ scrollMarginTop: "20px" }} />
+                  <Stepper
+                    active={activeStep}
+                    onStepClick={(step) => {
+                      if (isSubmitting) {
+                        return;
+                      }
 
-                  if (step === 4 && (!selectedStyle || !dressCode)) {
-                    return;
-                  }
+                      if (step === 4 && (!selectedStyle || !dressCode)) {
+                        return;
+                      }
 
-                  if (step < activeStep) {
-                    setActiveStep(step);
-                  }
+                      if (step < activeStep) {
+                        setActiveStep(step);
+                      }
+                    }}
+                  >
+                    <Stepper.Step
+                      label="Estilo"
+                      description="Estilo do Casamento"
+                    >
+                      <WeddingStylePage
+                        selectedStyle={selectedStyle}
+                        setSelectedStyle={setSelectedStyle}
+                        hideHeader
+                        compact
+                      />
+                    </Stepper.Step>
+                    <Stepper.Step label="Tamanho" description="Porte do evento">
+                      <WeddingSizePage
+                        weddingSize={weddingSize}
+                        setWeddingSize={setWeddingSize}
+                        hideHeader
+                        compact
+                      />
+                    </Stepper.Step>
+                    <Stepper.Step label="Dress Code" description="Formalidade">
+                      <DressCodePage
+                        dressCode={dressCode}
+                        setDressCode={setDressCode}
+                        hideHeader
+                        compact
+                      />
+                    </Stepper.Step>
+                    <Stepper.Step label="Paleta" description="Cores principais">
+                      <PalettePage
+                        palette={palette}
+                        setPalette={setPalette}
+                        dressCode={dressCode}
+                        hideHeader
+                        compact
+                      />
+                    </Stepper.Step>
+
+                    <Stepper.Step
+                      label="Inspirações"
+                      description="Imagens de referência"
+                    >
+                      <WeddingInspirationsPage
+                        selectedStyle={selectedStyle}
+                        dressCode={dressCode}
+                        selectedImages={selectedImages}
+                        setSelectedImages={setSelectedImages}
+                        onOpenImageFullscreen={openFullscreenImage}
+                      />
+                    </Stepper.Step>
+
+                    <Stepper.Completed>
+                      <Stack align="center" gap="sm" py="xl">
+                        <IconCheck size={28} />
+                        <Text fw={700}>
+                          Identidade configurada com sucesso.
+                        </Text>
+                      </Stack>
+                    </Stepper.Completed>
+                  </Stepper>
+                </Stack>
+              </ScrollArea>
+
+              <Box
+                p="md"
+                style={{
+                  borderTop: "1px solid var(--mantine-color-gray-3)",
+                  background: "var(--mantine-color-body)",
+                  boxShadow: "0 -8px 20px rgba(0,0,0,0.04)",
                 }}
               >
-                <Stepper.Step label="Estilo" description="Estilo do Casamento">
-                  <WeddingStylePage
-                    selectedStyle={selectedStyle}
-                    setSelectedStyle={setSelectedStyle}
-                    hideHeader
-                    compact
-                  />
-                </Stepper.Step>
-                <Stepper.Step label="Tamanho" description="Porte do evento">
-                  <WeddingSizePage
-                    weddingSize={weddingSize}
-                    setWeddingSize={setWeddingSize}
-                    hideHeader
-                    compact
-                  />
-                </Stepper.Step>
-                <Stepper.Step label="Dress Code" description="Formalidade">
-                  <DressCodePage
-                    dressCode={dressCode}
-                    setDressCode={setDressCode}
-                    hideHeader
-                    compact
-                  />
-                </Stepper.Step>
-                <Stepper.Step label="Paleta" description="Cores principais">
-                  <PalettePage
-                    palette={palette}
-                    setPalette={setPalette}
-                    dressCode={dressCode}
-                    hideHeader
-                    compact
-                  />
-                </Stepper.Step>
-
-                <Stepper.Step
-                  label="Inspirações"
-                  description="Imagens de referência"
-                >
-                  <WeddingInspirationsPage
-                    selectedStyle={selectedStyle}
-                    dressCode={dressCode}
-                    selectedImages={selectedImages}
-                    setSelectedImages={setSelectedImages}
-                  />
-                </Stepper.Step>
-
-                <Stepper.Completed>
-                  <Stack align="center" gap="sm" py="xl">
-                    <IconCheck size={28} />
-                    <Text fw={700}>Identidade configurada com sucesso.</Text>
-                  </Stack>
-                </Stepper.Completed>
-              </Stepper>
-
-              <Group justify="space-between" wrap="wrap">
-                <Button
-                  variant="default"
-                  leftSection={<IconChevronLeft size={14} />}
-                  onClick={handleBackStep}
-                  disabled={activeStep === 0 || isSubmitting}
-                >
-                  Voltar
-                </Button>
-                <Button
-                  styles={primaryButtonStyles}
-                  loading={isSubmitting}
-                  rightSection={
-                    activeStep === 4 ? (
-                      <IconCheck size={14} />
-                    ) : (
-                      <IconChevronRight size={14} />
-                    )
-                  }
-                  onClick={handleNextStep}
-                  disabled={!canMoveToNextStep}
-                >
-                  {activeStep === 4 ? "Concluir" : "Continuar"}
-                </Button>
-              </Group>
+                <Group justify="space-between" wrap="wrap">
+                  <Button
+                    variant="default"
+                    leftSection={<IconChevronLeft size={14} />}
+                    onClick={handleBackStep}
+                    disabled={activeStep === 0 || isSubmitting}
+                  >
+                    Voltar
+                  </Button>
+                  <Button
+                    styles={primaryButtonStyles}
+                    loading={isSubmitting}
+                    rightSection={
+                      activeStep === 4 ? (
+                        <IconCheck size={14} />
+                      ) : (
+                        <IconChevronRight size={14} />
+                      )
+                    }
+                    onClick={handleNextStep}
+                    disabled={!canMoveToNextStep}
+                  >
+                    {activeStep === 4 ? "Concluir" : "Continuar"}
+                  </Button>
+                </Group>
+              </Box>
             </Stack>
           </Modal>
         )}
+
+        <Modal
+          opened={Boolean(fullscreenImage)}
+          onClose={closeFullscreenImage}
+          fullScreen
+          withCloseButton={false}
+          centered={false}
+          zIndex={1000}
+          size="100%"
+          radius="lg"
+          padding={0}
+          styles={{
+            content: {
+              background: "var(--mantine-color-body)",
+            },
+            body: {
+              height: "100%",
+              padding: 0,
+              background: "var(--mantine-color-body)",
+            },
+          }}
+        >
+          {fullscreenImage ? (
+            <Box
+              style={{
+                width: "100%",
+                height: "100dvh",
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: 24,
+                background: "var(--mantine-color-body)",
+              }}
+            >
+              <CloseButton
+                onClick={closeFullscreenImage}
+                aria-label="Fechar fullscreen"
+                size="lg"
+                style={{
+                  position: "absolute",
+                  top: 16,
+                  right: 16,
+                  zIndex: 3,
+                }}
+              />
+              <Image
+                src={fullscreenImage.src}
+                alt={fullscreenImage.alt}
+                fit="contain"
+                w="100%"
+                h="100%"
+                style={{ maxHeight: "100%" }}
+              />
+            </Box>
+          ) : null}
+        </Modal>
       </Stack>
     </BaseLayout>
   );

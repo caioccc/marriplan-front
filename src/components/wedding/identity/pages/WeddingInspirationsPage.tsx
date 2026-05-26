@@ -1,47 +1,61 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { 
-  SimpleGrid, 
-  Card, 
-  Image, 
-  Text, 
-  ActionIcon, 
-  TextInput, 
-  Button, 
-  Group, 
-  Loader, 
-  Stack, 
+import {
+  searchWeddingInspirations,
+  WeddingIdentityInspirationPayload,
+} from "@/services/weddingIdentity.service";
+import {
+  ActionIcon,
+  Button,
+  Card,
   Center,
-  Overlay
-} from '@mantine/core';
-import { notifications } from '@mantine/notifications';
-import { IconSearch, IconHeart, IconHeartFilled } from '@tabler/icons-react';
-import { searchWeddingInspirations, WeddingIdentityInspirationPayload } from '@/services/weddingIdentity.service';
+  Group,
+  Image,
+  Loader,
+  Overlay,
+  SimpleGrid,
+  Stack,
+  Text,
+  TextInput,
+} from "@mantine/core";
+import { notifications } from "@mantine/notifications";
+import {
+  IconHeart,
+  IconHeartFilled,
+  IconMaximize,
+  IconSearch,
+} from "@tabler/icons-react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface WeddingInspirationsPageProps {
   selectedStyle: string;
   dressCode: string;
   selectedImages: WeddingIdentityInspirationPayload[];
-  setSelectedImages: React.Dispatch<React.SetStateAction<WeddingIdentityInspirationPayload[]>>;
+  setSelectedImages: React.Dispatch<
+    React.SetStateAction<WeddingIdentityInspirationPayload[]>
+  >;
+  onOpenImageFullscreen?: (src: string, alt: string) => void;
 }
 
-export const WeddingInspirationsPage: React.FC<WeddingInspirationsPageProps> = ({
+export const WeddingInspirationsPage: React.FC<
+  WeddingInspirationsPageProps
+> = ({
   selectedStyle,
   dressCode,
   selectedImages,
   setSelectedImages,
+  onOpenImageFullscreen,
 }) => {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
-  
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeQuery, setActiveQuery] = useState(''); // Controla o termo submetido de fato
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeQuery, setActiveQuery] = useState(""); // Controla o termo submetido de fato
   const [images, setImages] = useState<WeddingIdentityInspirationPayload[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  
+
   // Estados para controle de paginação infinita
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  
+
   const pageSize = 12;
   const hasMore = images.length < total;
   const initialLoading = loading && images.length === 0;
@@ -70,16 +84,15 @@ export const WeddingInspirationsPage: React.FC<WeddingInspirationsPageProps> = (
         const totalCount = data.count || results.length || 0;
 
         setImages((currentItems) =>
-          page === 1 ? results : [...currentItems, ...results]
+          page === 1 ? results : [...currentItems, ...results],
         );
         setTotal(totalCount);
-
       } catch {
         if (mounted) {
           setLoadError(true);
           notifications.show({
-            color: 'red',
-            message: 'Não foi possível carregar mais imagens de inspiração.',
+            color: "red",
+            message: "Não foi possível carregar mais imagens de inspiração.",
           });
         }
       } finally {
@@ -106,7 +119,7 @@ export const WeddingInspirationsPage: React.FC<WeddingInspirationsPageProps> = (
           setPage((currentPage) => currentPage + 1);
         }
       },
-      { rootMargin: '180px 0px' } // Ajustado margem ligeiramente menor para encaixe em containers modais
+      { rootMargin: "180px 0px" }, // Ajustado margem ligeiramente menor para encaixe em containers modais
     );
 
     observer.observe(sentinel);
@@ -120,16 +133,20 @@ export const WeddingInspirationsPage: React.FC<WeddingInspirationsPageProps> = (
   };
 
   const toggleImageSelection = (item: WeddingIdentityInspirationPayload) => {
-    const imageUrl = typeof item === 'string' ? item : item.image_url;
-    const isAlreadySelected = selectedImages.some((img) => img.image_url === imageUrl);
+    const imageUrl = typeof item === "string" ? item : item.image_url;
+    const isAlreadySelected = selectedImages.some(
+      (img) => img.image_url === imageUrl,
+    );
 
     if (isAlreadySelected) {
-      setSelectedImages((prev) => prev.filter((img) => img.image_url !== imageUrl));
+      setSelectedImages((prev) =>
+        prev.filter((img) => img.image_url !== imageUrl),
+      );
     } else {
       const payload: WeddingIdentityInspirationPayload = {
         image_url: imageUrl,
         title: item.title || `Inspiração ${selectedStyle}`,
-        description: item.description || '',
+        description: item.description || "",
         selected_style: selectedStyle,
         dress_code: dressCode,
         is_favorite: true,
@@ -142,7 +159,7 @@ export const WeddingInspirationsPage: React.FC<WeddingInspirationsPageProps> = (
   };
 
   return (
-    <Stack gap="md" style={{ minHeight: '450px' }}>
+    <Stack gap="md" style={{ minHeight: "450px" }}>
       <form onSubmit={handleSearchSubmit}>
         <Group align="flex-end">
           <TextInput
@@ -164,21 +181,27 @@ export const WeddingInspirationsPage: React.FC<WeddingInspirationsPageProps> = (
         <Center py="xl" style={{ flex: 1 }}>
           <Stack align="center" gap="xs">
             <Loader size="md" type="dots" />
-            <Text size="sm" c="dimmed">Buscando referências perfeitas...</Text>
+            <Text size="sm" c="dimmed">
+              Buscando referências perfeitas...
+            </Text>
           </Stack>
         </Center>
       ) : images.length === 0 ? (
         <Center py="xl">
-          <Text c="dimmed" size="sm">Nenhuma imagem encontrada para os critérios atuais.</Text>
+          <Text c="dimmed" size="sm">
+            Nenhuma imagem encontrada para os critérios atuais.
+          </Text>
         </Center>
       ) : (
         <>
           {/* Grid de renderização das imagens */}
           <SimpleGrid cols={{ base: 1, sm: 3, md: 4 }} spacing="md">
             {images.map((item, index) => {
-              const url = typeof item === 'string' ? item : item.image_url;
-              const isSelected = selectedImages.some((img) => img.image_url === url);
-              
+              const url = typeof item === "string" ? item : item.image_url;
+              const isSelected = selectedImages.some(
+                (img) => img.image_url === url,
+              );
+
               return (
                 <Card
                   key={`${url}-${index}`}
@@ -187,43 +210,74 @@ export const WeddingInspirationsPage: React.FC<WeddingInspirationsPageProps> = (
                   radius="md"
                   withBorder
                   style={{
-                    cursor: 'pointer',
-                    overflow: 'hidden',
-                    position: 'relative',
-                    transform: isSelected ? 'scale(0.98)' : 'none',
-                    transition: 'transform 0.2s ease',
-                    borderColor: isSelected ? 'var(--mantine-color-blue-filled)' : undefined
+                    cursor: "pointer",
+                    overflow: "hidden",
+                    position: "relative",
+                    transform: isSelected ? "scale(0.98)" : "none",
+                    transition: "transform 0.2s ease",
+                    borderColor: isSelected
+                      ? "var(--mantine-color-blue-filled)"
+                      : undefined,
                   }}
                   onClick={() => toggleImageSelection(item)}
                 >
                   <Image
                     src={url}
                     fit="cover"
-                    style={{ height: '350px' }}
+                    style={{ height: "350px" }}
                     alt={`Inspiração ${index + 1}`}
                     fallbackSrc="https://placehold.co/600x400?text=Sem+Imagem"
                   />
 
-                  {isSelected && <Overlay color="#000" opacity={0.15} zIndex={1} />}
+                  {isSelected && (
+                    <Overlay color="#000" opacity={0.15} zIndex={1} />
+                  )}
+
+                  {onOpenImageFullscreen ? (
+                    <ActionIcon
+                      variant="filled"
+                      color="dark"
+                      radius="xl"
+                      size="md"
+                      aria-label="Abrir imagem em fullscreen"
+                      style={{
+                        position: "absolute",
+                        top: "10px",
+                        left: "10px",
+                        zIndex: 2,
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onOpenImageFullscreen(url, `Inspiração ${index + 1}`);
+                      }}
+                    >
+                      <IconMaximize size={16} />
+                    </ActionIcon>
+                  ) : null}
 
                   <ActionIcon
-                    variant={isSelected ? 'filled' : 'white'}
+                    variant={isSelected ? "filled" : "white"}
                     color="red"
                     radius="xl"
                     size="md"
                     style={{
-                      position: 'absolute',
-                      top: '10px',
-                      right: '10px',
+                      position: "absolute",
+                      top: "10px",
+                      right: "10px",
                       zIndex: 2,
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
                     }}
                     onClick={(e) => {
                       e.stopPropagation();
                       toggleImageSelection(item);
                     }}
                   >
-                    {isSelected ? <IconHeartFilled size={16} /> : <IconHeart size={16} />}
+                    {isSelected ? (
+                      <IconHeartFilled size={16} />
+                    ) : (
+                      <IconHeart size={16} />
+                    )}
                   </ActionIcon>
                 </Card>
               );

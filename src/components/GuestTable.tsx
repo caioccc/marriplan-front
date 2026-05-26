@@ -34,6 +34,7 @@ import { useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
 import {
   IconBrandWhatsapp,
+  IconAlertTriangle,
   IconCards,
   IconCheck,
   IconDotsVertical,
@@ -55,7 +56,7 @@ import {
   IconClock,
 } from "@tabler/icons-react";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMediaQuery } from "@mantine/hooks";
 
 import {
@@ -149,6 +150,9 @@ export default function GuestTable() {
   >("all");
   const [presencaModalOpen, setPresencaModalOpen] = useState(false);
   const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [guestToDelete, setGuestToDelete] = useState<Guest | null>(null);
+  const [deletingGuest, setDeletingGuest] = useState(false);
   const [confirmationModalOpen, setConfirmationModalOpen] = useState(false);
   const [confirmationData, setConfirmationData] = useState<{
     confirmation_url?: string;
@@ -158,6 +162,8 @@ export default function GuestTable() {
   const isCompactLayout = useMediaQuery("(max-width: 1024px)");
   const isMobile = useMediaQuery("(max-width: 768px)");
   const isTablet = useMediaQuery("(min-width: 768px)");
+
+  const pageTopRef = useRef<HTMLDivElement>(null);
 
   const fetchAllGuests = useCallback(
     async ({ ordering }: { ordering: string }) => {
@@ -228,6 +234,15 @@ export default function GuestTable() {
     whatsappFilter !== "all" ||
     allergyFilter !== "all" ||
     statusFilter !== "all";
+
+
+  useEffect(() => {
+    pageTopRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [page]);
+
 
   // Busca convidados do backend conforme paginação, busca e ordenação
   useEffect(() => {
@@ -357,10 +372,35 @@ export default function GuestTable() {
     form.reset();
   }
 
-  async function handleDelete(id: number) {
-    await guests_delete(id);
-    setGuests((guests) => guests.filter((g) => g.id !== id));
-    void refreshSummaryGuests();
+  function openDeleteConfirm(guest: Guest) {
+    setGuestToDelete(guest);
+    setDeleteModalOpen(true);
+  }
+
+  async function handleDeleteConfirmed() {
+    if (!guestToDelete) return;
+
+    setDeletingGuest(true);
+    try {
+      await guests_delete(guestToDelete.id);
+      setGuests((currentGuests) =>
+        currentGuests.filter((guest) => guest.id !== guestToDelete.id),
+      );
+      void refreshSummaryGuests();
+      setDeleteModalOpen(false);
+      setGuestToDelete(null);
+      notifications.show({
+        color: "green",
+        message: "Convidado removido com sucesso.",
+      });
+    } catch {
+      notifications.show({
+        color: "red",
+        message: "Não foi possível remover o convidado.",
+      });
+    } finally {
+      setDeletingGuest(false);
+    }
   }
 
   // Exportar convidados
@@ -529,6 +569,7 @@ export default function GuestTable() {
 
   return (
     <Stack gap="lg" py="md">
+      <div ref={pageTopRef} style={{ scrollMarginTop: "-50px" }} />
       <PageSectionHeader
         eyebrow="Gestão do casamento"
         title="Meus Convidados"
@@ -966,7 +1007,7 @@ export default function GuestTable() {
                       <ActionIcon
                         variant="subtle"
                         styles={actionIconDangerStyles}
-                        onClick={() => handleDelete(guest.id)}
+                        onClick={() => openDeleteConfirm(guest)}
                       >
                         <IconTrash size={18} />
                       </ActionIcon>
@@ -1047,6 +1088,52 @@ export default function GuestTable() {
           </Group>
         </Stack>
       </Modal>
+      <Modal
+        opened={deleteModalOpen}
+        onClose={() => {
+          if (!deletingGuest) {
+            setDeleteModalOpen(false);
+            setGuestToDelete(null);
+          }
+        }}
+        title="Confirmar exclusão"
+        centered
+        size="sm"
+        overlayProps={{ blur: 2 }}
+      >
+        <Stack gap="md">
+          <Group gap="sm" align="flex-start" wrap="nowrap">
+            <IconAlertTriangle size={22} color="var(--mantine-color-red-6)" />
+            <Text size="sm">
+              {guestToDelete
+                ? `Tem certeza que deseja remover ${guestToDelete.name}? Essa ação não pode ser desfeita.`
+                : "Tem certeza que deseja remover este convidado? Essa ação não pode ser desfeita."}
+            </Text>
+          </Group>
+          <Group justify="flex-end">
+            <Button
+              variant="default"
+              onClick={() => {
+                if (deletingGuest) return;
+                setDeleteModalOpen(false);
+                setGuestToDelete(null);
+              }}
+              styles={softButtonStyles}
+              disabled={deletingGuest}
+            >
+              Cancelar
+            </Button>
+            <Button
+              color="red"
+              leftSection={<IconTrash size={16} />}
+              onClick={handleDeleteConfirmed}
+              loading={deletingGuest}
+            >
+              Remover
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
       {viewMode === "cards" && (
         <ListView
           items={paginatedGuests}
@@ -1068,24 +1155,9 @@ export default function GuestTable() {
                   WhatsApp: {g.whatsapp}
                 </Text>
               )}
-              {g.email && (
-                <Text size="sm" c="dimmed">
-                  Email: {g.email}
-                </Text>
-              )}
               {g.acompanhantes !== undefined && (
                 <Text size="sm" c="dimmed">
                   Acompanhantes: {g.acompanhantes}
-                </Text>
-              )}
-              {g.alergias && (
-                <Text size="sm" c="dimmed">
-                  Alergias: {g.alergias}
-                </Text>
-              )}
-              {g.observacoes && (
-                <Text size="sm" c="dimmed">
-                  Observações: {g.observacoes}
                 </Text>
               )}
             </>
@@ -1189,7 +1261,7 @@ export default function GuestTable() {
                   leftSection={
                     <IconTrash size={14} color="var(--marriplan-rose)" />
                   }
-                  onClick={() => handleDelete(g.id)}
+                  onClick={() => openDeleteConfirm(g)}
                   color="red"
                 >
                   Excluir
@@ -1218,24 +1290,9 @@ export default function GuestTable() {
                   WhatsApp: {g.whatsapp}
                 </Text>
               )}
-              {g.email && (
-                <Text size="sm" c="dimmed">
-                  Email: {g.email}
-                </Text>
-              )}
               {g.acompanhantes !== undefined && (
                 <Text size="sm" c="dimmed">
                   Acompanhantes: {g.acompanhantes}
-                </Text>
-              )}
-              {g.alergias && (
-                <Text size="sm" c="dimmed">
-                  Alergias: {g.alergias}
-                </Text>
-              )}
-              {g.observacoes && (
-                <Text size="sm" c="dimmed">
-                  Observações: {g.observacoes}
                 </Text>
               )}
             </Stack>
@@ -1339,7 +1396,7 @@ export default function GuestTable() {
                   leftSection={
                     <IconTrash size={14} color="var(--marriplan-rose)" />
                   }
-                  onClick={() => handleDelete(g.id)}
+                  onClick={() => openDeleteConfirm(g)}
                   color="red"
                 >
                   Excluir

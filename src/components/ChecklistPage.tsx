@@ -47,7 +47,7 @@ import {
   IconFilter,
   IconPlus,
   IconSearch,
-  IconTrash
+  IconTrash,
 } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import ChecklistTaskModal from "./ChecklistTaskModal";
@@ -524,7 +524,25 @@ export default function ChecklistPage() {
                       verticalSpacing="lg"
                     >
                       {periods.map((period, idx) => {
-                        const periodTasks = filteredTasks.filter(period.test);
+                        const periodTasks = filteredTasks
+                          .filter(period.test)
+                          .slice()
+                          .sort((a, b) => {
+                            const dateA =
+                              a.due_date || a.start_date || a.created_at;
+                            const dateB =
+                              b.due_date || b.start_date || b.created_at;
+                            const timeA = dateA
+                              ? new Date(dateA).getTime()
+                              : Number.MAX_SAFE_INTEGER;
+                            const timeB = dateB
+                              ? new Date(dateB).getTime()
+                              : Number.MAX_SAFE_INTEGER;
+
+                            if (timeA !== timeB) return timeA - timeB;
+
+                            return a.id - b.id;
+                          });
                         const progress = getMonthProgress(periodTasks);
                         const opened = openedCards[phase.key]?.[idx];
                         return (
@@ -630,15 +648,39 @@ export default function ChecklistPage() {
                                   {periodTasks.map((task) => (
                                     <Group
                                       key={task.id}
+                                      onClick={() => handleToggleDone(task)}
                                       style={{
                                         borderBottom:
                                           "1px solid var(--marriplan-border)",
                                         padding: "8px 6px",
+                                        cursor:
+                                          loadingTaskId === task.id
+                                            ? "wait"
+                                            : "pointer",
+                                      }}
+                                      role="button"
+                                      tabIndex={0}
+                                      aria-label={`Marcar tarefa ${task.description} como concluída`}
+                                      onKeyDown={(event) => {
+                                        if (
+                                          event.key === "Enter" ||
+                                          event.key === " "
+                                        ) {
+                                          event.preventDefault();
+                                          handleToggleDone(task);
+                                        }
                                       }}
                                     >
-                                      <Group>
+                                      <Group
+                                        onClick={(event) =>
+                                          event.stopPropagation()
+                                        }
+                                      >
                                         <Checkbox
                                           checked={task.status === "done"}
+                                          onClick={(event) =>
+                                            event.stopPropagation()
+                                          }
                                           onChange={() =>
                                             handleToggleDone(task)
                                           }
@@ -662,6 +704,10 @@ export default function ChecklistPage() {
                                         />
                                         <Text
                                           size="sm"
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+                                            handleToggleDone(task);
+                                          }}
                                           c={
                                             task.status === "done"
                                               ? "dimmed"
@@ -672,6 +718,10 @@ export default function ChecklistPage() {
                                               task.status === "done"
                                                 ? "line-through"
                                                 : undefined,
+                                            cursor:
+                                              loadingTaskId === task.id
+                                                ? "wait"
+                                                : "pointer",
                                           }}
                                         >
                                           {task.description}
@@ -686,9 +736,10 @@ export default function ChecklistPage() {
                                             <ActionIcon
                                               variant="subtle"
                                               styles={actionIconEditStyles}
-                                              onClick={() =>
-                                                handleEditTask(task)
-                                              }
+                                              onClick={(event) => {
+                                                event.stopPropagation();
+                                                handleEditTask(task);
+                                              }}
                                               disabled={
                                                 loadingTaskId === task.id
                                               }
@@ -703,9 +754,10 @@ export default function ChecklistPage() {
                                             <ActionIcon
                                               variant="subtle"
                                               styles={actionIconDangerStyles}
-                                              onClick={() =>
-                                                handleDeleteTask(task.id)
-                                              }
+                                              onClick={(event) => {
+                                                event.stopPropagation();
+                                                handleDeleteTask(task.id);
+                                              }}
                                               disabled={
                                                 loadingTaskId === task.id
                                               }

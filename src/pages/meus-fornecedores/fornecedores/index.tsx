@@ -29,7 +29,7 @@ import {
   Text,
   Textarea,
   TextInput,
-  Title
+  Title,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
@@ -73,6 +73,7 @@ export default function SuppliersMarketplacePage() {
   const router = useRouter();
   const { user } = useAuth();
   const contractInputRef = useRef<HTMLInputElement>(null);
+  const [shuffleSeed] = useState(() => Math.random().toString(36).slice(2));
   const [items, setItems] = useState<Supplier[]>([]);
   const [categories, setCategories] = useState<SupplierCategory[]>([]);
   const [loading, setLoading] = useState(false);
@@ -129,6 +130,7 @@ export default function SuppliersMarketplacePage() {
             category,
             city,
             state,
+            seed: shuffleSeed,
             ordering: "-is_featured,name",
           }),
           listSupplierCategories(),
@@ -145,7 +147,14 @@ export default function SuppliersMarketplacePage() {
     return () => {
       mounted = false;
     };
-  }, [page, search, category, city, state]);
+  }, [page, search, category, city, state, shuffleSeed]);
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 50,
+      behavior: "smooth",
+    });
+  }, [page]);
 
   const handleOpenCreateSupplier = () => {
     setEditingSupplier(null);
@@ -465,87 +474,8 @@ export default function SuppliersMarketplacePage() {
         size="xl"
       >
         <Stack gap="md">
-        {isCompactLayout ? (
-          <Stack gap="md">
-            <Select
-              label="Status"
-              data={[
-                { value: "QUOTING", label: "Cotando" },
-                { value: "NEGOTIATING", label: "Negociando" },
-                { value: "HIRED", label: "Contratado" },
-                { value: "PAID", label: "Pago" },
-                { value: "CANCELED", label: "Cancelado" },
-              ]}
-              value={weddingForm.status}
-              onChange={(value) =>
-                setWeddingForm((prev) => ({
-                  ...prev,
-                  status: (value || "QUOTING") as typeof weddingForm.status,
-                }))
-              }
-              styles={inputStyles}
-            />
-            <Checkbox
-              label="Favorito"
-              checked={weddingForm.is_favorite}
-              onChange={(event) =>
-                setWeddingForm((prev) => ({
-                  ...prev,
-                  is_favorite: event.currentTarget.checked,
-                }))
-              }
-            />
-
-            <TextInput
-              label="Valor estimado"
-              value={weddingForm.estimated_price}
-              onChange={(event) =>
-                setWeddingForm((prev) => ({
-                  ...prev,
-                  estimated_price: event.currentTarget.value,
-                }))
-              }
-              styles={inputStyles}
-            />
-            <TextInput
-              label="Valor negociado"
-              value={weddingForm.negotiated_price}
-              onChange={(event) =>
-                setWeddingForm((prev) => ({
-                  ...prev,
-                  negotiated_price: event.currentTarget.value,
-                }))
-              }
-              styles={inputStyles}
-            />
-            <TextInput
-              label="Valor pago"
-              value={weddingForm.paid_amount}
-              onChange={(event) =>
-                setWeddingForm((prev) => ({
-                  ...prev,
-                  paid_amount: event.currentTarget.value,
-                }))
-              }
-              styles={inputStyles}
-            />
-
-            <Textarea
-              label="Observações"
-              minRows={4}
-              value={weddingForm.notes}
-              onChange={(event) =>
-                setWeddingForm((prev) => ({
-                  ...prev,
-                  notes: event.currentTarget.value,
-                }))
-              }
-              styles={inputStyles}
-            />
-          </Stack>
-        ) : (
-          <Stack gap="md">
-            <Group grow align="flex-start" wrap="wrap">
+          {isCompactLayout ? (
+            <Stack gap="md">
               <Select
                 label="Status"
                 data={[
@@ -565,7 +495,6 @@ export default function SuppliersMarketplacePage() {
                 styles={inputStyles}
               />
               <Checkbox
-                mt={28}
                 label="Favorito"
                 checked={weddingForm.is_favorite}
                 onChange={(event) =>
@@ -575,9 +504,7 @@ export default function SuppliersMarketplacePage() {
                   }))
                 }
               />
-            </Group>
 
-            <Group grow align="flex-start" wrap="wrap">
               <TextInput
                 label="Valor estimado"
                 value={weddingForm.estimated_price}
@@ -611,22 +538,104 @@ export default function SuppliersMarketplacePage() {
                 }
                 styles={inputStyles}
               />
-            </Group>
 
-            <Textarea
-              label="Observações"
-              minRows={4}
-              value={weddingForm.notes}
-              onChange={(event) =>
-                setWeddingForm((prev) => ({
-                  ...prev,
-                  notes: event.currentTarget.value,
-                }))
-              }
-              styles={inputStyles}
-            />
-          </Stack>
-        )}
+              <Textarea
+                label="Observações"
+                minRows={4}
+                value={weddingForm.notes}
+                onChange={(event) =>
+                  setWeddingForm((prev) => ({
+                    ...prev,
+                    notes: event.currentTarget.value,
+                  }))
+                }
+                styles={inputStyles}
+              />
+            </Stack>
+          ) : (
+            <Stack gap="md">
+              <Group grow align="flex-start" wrap="wrap">
+                <Select
+                  label="Status"
+                  data={[
+                    { value: "QUOTING", label: "Cotando" },
+                    { value: "NEGOTIATING", label: "Negociando" },
+                    { value: "HIRED", label: "Contratado" },
+                    { value: "PAID", label: "Pago" },
+                    { value: "CANCELED", label: "Cancelado" },
+                  ]}
+                  value={weddingForm.status}
+                  onChange={(value) =>
+                    setWeddingForm((prev) => ({
+                      ...prev,
+                      status: (value || "QUOTING") as typeof weddingForm.status,
+                    }))
+                  }
+                  styles={inputStyles}
+                />
+                <Checkbox
+                  mt={28}
+                  label="Favorito"
+                  checked={weddingForm.is_favorite}
+                  onChange={(event) =>
+                    setWeddingForm((prev) => ({
+                      ...prev,
+                      is_favorite: event.currentTarget.checked,
+                    }))
+                  }
+                />
+              </Group>
+
+              <Group grow align="flex-start" wrap="wrap">
+                <TextInput
+                  label="Valor estimado"
+                  value={weddingForm.estimated_price}
+                  onChange={(event) =>
+                    setWeddingForm((prev) => ({
+                      ...prev,
+                      estimated_price: event.currentTarget.value,
+                    }))
+                  }
+                  styles={inputStyles}
+                />
+                <TextInput
+                  label="Valor negociado"
+                  value={weddingForm.negotiated_price}
+                  onChange={(event) =>
+                    setWeddingForm((prev) => ({
+                      ...prev,
+                      negotiated_price: event.currentTarget.value,
+                    }))
+                  }
+                  styles={inputStyles}
+                />
+                <TextInput
+                  label="Valor pago"
+                  value={weddingForm.paid_amount}
+                  onChange={(event) =>
+                    setWeddingForm((prev) => ({
+                      ...prev,
+                      paid_amount: event.currentTarget.value,
+                    }))
+                  }
+                  styles={inputStyles}
+                />
+              </Group>
+
+              <Textarea
+                label="Observações"
+                minRows={4}
+                value={weddingForm.notes}
+                onChange={(event) =>
+                  setWeddingForm((prev) => ({
+                    ...prev,
+                    notes: event.currentTarget.value,
+                  }))
+                }
+                styles={inputStyles}
+              />
+            </Stack>
+          )}
 
           <Card
             radius="lg"

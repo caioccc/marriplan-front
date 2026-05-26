@@ -21,6 +21,16 @@ import { useMediaQuery } from "@mantine/hooks";
 import { toSentenceCase } from "@/lib/text";
 import { MobileFullscreenModal } from "@/components/MobileFullscreenModal";
 
+function getDefaultTaskDates() {
+  const startDate = new Date();
+  startDate.setHours(0, 0, 0, 0);
+
+  const dueDate = new Date(startDate);
+  dueDate.setDate(dueDate.getDate() + 1);
+
+  return { startDate, dueDate };
+}
+
 const PRIORITY_OPTIONS = [
   { value: "high", label: "Alta" },
   { value: "medium", label: "Média" },
@@ -46,12 +56,13 @@ export default function ChecklistTaskModal({
   initial,
 }: ChecklistTaskModalProps) {
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const defaultDates = getDefaultTaskDates();
   const [description, setDescription] = useState(initial?.description || "");
   const [startDate, setStartDate] = useState<Date | null>(
-    initial?.start_date ? new Date(initial.start_date) : null,
+    initial?.start_date ? new Date(initial.start_date) : defaultDates.startDate,
   );
   const [dueDate, setDueDate] = useState<Date | null>(
-    initial?.due_date ? new Date(initial.due_date) : null,
+    initial?.due_date ? new Date(initial.due_date) : defaultDates.dueDate,
   );
   const [priority, setPriority] = useState<ChecklistTaskPriority>(
     initial?.priority || "medium",
@@ -66,9 +77,14 @@ export default function ChecklistTaskModal({
   const isValid = Boolean(description.trim()) && !!startDate && !!dueDate;
 
   useEffect(() => {
+    const { startDate: nextStartDate, dueDate: nextDueDate } =
+      getDefaultTaskDates();
+
     setDescription(initial?.description || "");
-    setStartDate(initial?.start_date ? new Date(initial.start_date) : null);
-    setDueDate(initial?.due_date ? new Date(initial.due_date) : null);
+    setStartDate(
+      initial?.start_date ? new Date(initial.start_date) : nextStartDate,
+    );
+    setDueDate(initial?.due_date ? new Date(initial.due_date) : nextDueDate);
     setPriority(initial?.priority || "medium");
     setStatus(initial?.status || "pending");
     setFile(null);
@@ -211,7 +227,7 @@ export default function ChecklistTaskModal({
     >
       {formFields}
       {/* <FileInput label="Anexo (opcional)" value={file} onChange={setFile} mb="sm" /> */}
-      <Group position="right">
+      <Group justify="flex-end">
         <Button onClick={onClose} variant="default">
           Cancelar
         </Button>

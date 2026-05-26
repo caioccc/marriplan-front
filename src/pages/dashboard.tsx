@@ -537,6 +537,7 @@ const MarriplanDashboard: React.FC = () => {
 
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
             <Card
+              className="marriplan-card"
               radius="xl"
               p="lg"
               style={{
@@ -573,6 +574,7 @@ const MarriplanDashboard: React.FC = () => {
             </Card>
 
             <Card
+              className="marriplan-card"
               radius="xl"
               p="lg"
               style={{
@@ -598,6 +600,7 @@ const MarriplanDashboard: React.FC = () => {
             </Card>
 
             <Card
+              className="marriplan-card"
               radius="xl"
               p="lg"
               style={{
@@ -623,6 +626,7 @@ const MarriplanDashboard: React.FC = () => {
             </Card>
 
             <Card
+              className="marriplan-card"
               radius="xl"
               p="lg"
               style={{
@@ -660,6 +664,7 @@ const MarriplanDashboard: React.FC = () => {
 
           <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="lg">
             <Card
+              className="marriplan-card"
               radius="xl"
               p="lg"
               style={{
@@ -702,6 +707,7 @@ const MarriplanDashboard: React.FC = () => {
 
             <Card
               radius="xl"
+              className="marriplan-card"
               p="lg"
               style={{
                 background: palette.softWhite,
@@ -738,6 +744,7 @@ const MarriplanDashboard: React.FC = () => {
 
             <Card
               radius="xl"
+              className="marriplan-card"
               p="lg"
               style={{
                 background: palette.softWhite,
@@ -777,6 +784,7 @@ const MarriplanDashboard: React.FC = () => {
 
             <Card
               radius="xl"
+              className="marriplan-card"
               p="lg"
               style={{
                 background: palette.softWhite,
@@ -853,6 +861,7 @@ const MarriplanDashboard: React.FC = () => {
                 {nextTasks.map((task) => (
                   <Paper
                     key={task.id}
+                      className="marriplan-card"
                     radius="lg"
                     p="sm"
                     style={{ border: `1px solid ${palette.line}` }}
@@ -881,6 +890,7 @@ const MarriplanDashboard: React.FC = () => {
             </Card>
 
             <Card
+              className="marriplan-card"
               radius="xl"
               p="lg"
               style={{
@@ -977,6 +987,7 @@ const MarriplanDashboard: React.FC = () => {
                   {guests.results.map((guest) => (
                     <Paper
                       key={guest.id}
+                      className="marriplan-card"
                       p="sm"
                       radius="lg"
                       style={{ border: `1px solid ${palette.line}` }}
@@ -1031,6 +1042,7 @@ const MarriplanDashboard: React.FC = () => {
             </Card>
 
             <Card
+              className="marriplan-card"
               radius="xl"
               p="lg"
               style={{
@@ -1061,6 +1073,7 @@ const MarriplanDashboard: React.FC = () => {
                   {gifts.results.map((gift) => (
                     <Paper
                       key={gift.id}
+                      className="marriplan-card"
                       p="sm"
                       radius="lg"
                       style={{ border: `1px solid ${palette.line}` }}

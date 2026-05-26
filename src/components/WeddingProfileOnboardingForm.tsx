@@ -26,6 +26,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Box, ScrollArea, Text, Stack } from "@mantine/core";
+import { IMaskInput } from "react-imask";
 dayjs.extend(relativeTime);
 dayjs.locale("pt-br");
 
@@ -103,8 +104,12 @@ export default function WeddingProfileOnboardingForm({
     descricao_noiva: toSentenceCase(String(values.descricao_noiva ?? "")),
     frase_casal: toSentenceCase(String(values.frase_casal ?? "")),
     historia: toSentenceCase(String(values.historia ?? "")),
-    email_noivo: String(values.email_noivo ?? "").trim().toLowerCase(),
-    email_noiva: String(values.email_noiva ?? "").trim().toLowerCase(),
+    email_noivo: String(values.email_noivo ?? "")
+      .trim()
+      .toLowerCase(),
+    email_noiva: String(values.email_noiva ?? "")
+      .trim()
+      .toLowerCase(),
     facebook_noivo: String(values.facebook_noivo ?? "").trim(),
     instagram_noivo: String(values.instagram_noivo ?? "").trim(),
     facebook_noiva: String(values.facebook_noiva ?? "").trim(),
@@ -189,15 +194,15 @@ export default function WeddingProfileOnboardingForm({
           ? typeof dataCasamento === "string"
             ? dataCasamento.slice(0, 10)
             : dataCasamento instanceof Date
-              ? dataCasamento.toISOString().slice(0, 10)
-              : ""
+            ? dataCasamento.toISOString().slice(0, 10)
+            : ""
           : "",
         hora_casamento: horaCasamento
           ? typeof horaCasamento === "string"
             ? horaCasamento.slice(0, 5)
             : horaCasamento instanceof Date
-              ? horaCasamento.toTimeString().slice(0, 5)
-              : ""
+            ? horaCasamento.toTimeString().slice(0, 5)
+            : ""
           : "",
       };
       await api.patch("/api/wedding-profile/me/", dataToSend);
@@ -543,7 +548,9 @@ export default function WeddingProfileOnboardingForm({
               <TimePicker
                 label="Hora do casamento"
                 value={form.values.hora_casamento}
-                onChange={(value) => form.setFieldValue("hora_casamento", value)}
+                onChange={(value) =>
+                  form.setFieldValue("hora_casamento", value)
+                }
                 ampm={false}
                 minutesStep={1}
                 slotProps={{
@@ -704,6 +711,8 @@ export default function WeddingProfileOnboardingForm({
             required
             mb="md"
             placeholder="(00) 00000-0000"
+            mask="(00) 00000-0000"
+            component={IMaskInput}
           />
           <TextInput
             label="Email do noivo"
@@ -745,6 +754,8 @@ export default function WeddingProfileOnboardingForm({
             required
             mb="md"
             placeholder="(00) 00000-0000"
+            mask="(00) 00000-0000"
+            component={IMaskInput}
           />
           <TextInput
             label="Email da noiva"
