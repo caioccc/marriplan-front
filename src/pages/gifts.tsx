@@ -471,7 +471,7 @@ const GiftsPage: NextPage = () => {
 
   return (
     <BaseLayout>
-      <Stack gap="lg" py="md">
+      <Stack gap="lg">
         <div ref={pageTopRef} style={{ scrollMarginTop: "20px" }} />
         <PageSectionHeader
           eyebrow="Gestão do casamento"

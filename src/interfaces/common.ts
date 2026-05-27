@@ -41,6 +41,7 @@ export interface UserFullData {
   id: number;
   username: string;
   email: string;
+  image_url?: string;
   is_email_confirmed: boolean;
   is_2fa_enabled: boolean;
   login_method: "LOGIN_GOOGLE" | "LOGIN_MARRIPLAN";
@@ -100,6 +101,7 @@ export type UserData = {
   name: string;
   email: string;
   id: number;
+  image_url?: string;
   is_2fa_enabled: boolean;
   is_email_confirmed: boolean;
   login_method: "LOGIN_GOOGLE" | "LOGIN_MARRIPLAN";

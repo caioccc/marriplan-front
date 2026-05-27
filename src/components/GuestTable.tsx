@@ -561,7 +561,7 @@ export default function GuestTable() {
   ] as const;
 
   return (
-    <Stack gap="lg" py="md">
+    <Stack gap="lg">
       <div ref={pageTopRef} style={{ scrollMarginTop: "-50px" }} />
       <PageSectionHeader
         eyebrow="Gestão do casamento"

@@ -2,6 +2,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { toSentenceCase, toUpperCamelWords } from "@/lib/text";
 import api from "@/services/api";
+import { createWeddingSite, getWeddingSite, updateWeddingSite } from "@/services/weddingSite";
+import { deleteWeddingImage, uploadWeddingImage } from "@/services/weddingImage";
 import { primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
   Button,
@@ -27,6 +29,7 @@ import "dayjs/locale/pt-br";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { Box, ScrollArea, Text, Stack } from "@mantine/core";
 import { IMaskInput } from "react-imask";
+import { ImageDropzone } from "./ImageUpload";
 dayjs.extend(relativeTime);
 dayjs.locale("pt-br");
 
@@ -40,6 +43,32 @@ dayjs.locale("pt-br");
 const LeafletMap = dynamic(() => import("./LeafletMap"), {
   ssr: false,
 });
+
+type WeddingImageLike = {
+  id?: number;
+  url?: string;
+  id_cloudinary?: string;
+  photo_public_id?: string;
+  cover_image_public_id?: string;
+  public_id?: string;
+  name?: string;
+};
+
+function getWeddingImageId(image: WeddingImageLike | string | null | undefined) {
+  if (!image || typeof image === "string") return null;
+  return image.id ?? null;
+}
+
+function getWeddingImagePublicId(image: WeddingImageLike | string | null | undefined) {
+  if (!image || typeof image === "string") return "";
+  return (
+    image.id_cloudinary ||
+    image.photo_public_id ||
+    image.cover_image_public_id ||
+    image.public_id ||
+    ""
+  );
+}
 
 type WeddingProfileOnboardingFormProps = {
   onComplete: () => void;

@@ -29,11 +29,12 @@ import {
   IconHome2,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
+  IconLockHeart,
   IconLogout,
   IconShieldLock,
   IconSparkles,
   IconUser,
-  IconUserCheck,
+  IconUserCheck
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { ReactNode, useEffect, useState } from "react";
@@ -61,12 +62,18 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
     };
 
     if (typeof window !== "undefined") {
-      window.addEventListener("marriplan:open-profile-modal", handleOpenProfileModal);
+      window.addEventListener(
+        "marriplan:open-profile-modal",
+        handleOpenProfileModal,
+      );
     }
 
     return () => {
       if (typeof window !== "undefined") {
-        window.removeEventListener("marriplan:open-profile-modal", handleOpenProfileModal);
+        window.removeEventListener(
+          "marriplan:open-profile-modal",
+          handleOpenProfileModal,
+        );
       }
     };
   }, []);
@@ -367,11 +374,26 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
             >
               <Menu.Target>
                 <Group gap="xs" style={{ cursor: "pointer" }}>
-                  <Avatar
-                    radius="xl"
-                    size="md"
-                    style={{ border: "1px solid var(--marriplan-border)" }}
-                  />
+                  {
+                    user?.image_url ? (
+                      <Avatar
+                        src={user.image_url}
+                        alt={user.name || user.username || "Usuário"}
+                        radius="xl"
+                        size="md"
+                        style={{ border: "1px solid var(--marriplan-border)" }}
+                      />
+                    ) : (
+                      <Avatar
+                        radius="xl"
+                        size="md"
+                        style={{ border: "1px solid var(--marriplan-border)" }}
+                        name={user?.name || user?.username || "Usuário"}
+                        allowedInitialsColors={["#fbb6ce", "#fcd34d", "#a78bfa", "#6ee7b7", "#f87171"]} // Cores para avatar gerado
+                        color="initials"
+                      />
+                    )
+                  }
                   <IconChevronDown size={16} />
                 </Group>
               </Menu.Target>
@@ -384,7 +406,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                   Meus dados
                 </Menu.Item>
                 <Menu.Item
-                  leftSection={<IconShieldLock size={16} />}
+                  leftSection={<IconLockHeart size={16} />}
                   onClick={() => {
                     void router.push("/account/privacy");
                   }}

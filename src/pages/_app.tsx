@@ -19,6 +19,7 @@ import { SettingsProvider } from "@/contexts/SettingsContext";
 import { MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const MyApp = (props: AppProps) => {
   return (
@@ -72,6 +73,7 @@ const MyApp = (props: AppProps) => {
             </AuthProvider>
           </ThemeProvider>
         </MantineProvider>
+        <SpeedInsights />
       </main>
     </>
   );
