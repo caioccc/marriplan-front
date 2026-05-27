@@ -56,9 +56,6 @@ export default function WeddingProfileOnboardingSimpleForm({
       nome_noiva: (value) => (!value ? "Obrigatorio" : null),
       telefone_noiva: (value) =>
         !value || value.replace(/\D/g, "").length < 10 ? "Obrigatorio" : null,
-      local: (value) => (!value ? "Obrigatorio" : null),
-      data_casamento: (value) => (!value ? "Obrigatorio" : null),
-      hora_casamento: (value) => (!value ? "Obrigatorio" : null),
     },
   });
 
@@ -112,20 +109,7 @@ export default function WeddingProfileOnboardingSimpleForm({
     }
 
     if (step === 2) {
-      let hasError = false;
-      if (!form.values.local) {
-        form.setFieldError("local", "Obrigatorio");
-        hasError = true;
-      }
-      if (!form.values.data_casamento) {
-        form.setFieldError("data_casamento", "Obrigatorio");
-        hasError = true;
-      }
-      if (!form.values.hora_casamento) {
-        form.setFieldError("hora_casamento", "Obrigatorio");
-        hasError = true;
-      }
-      return !hasError;
+      return true;
     }
 
     return true;
@@ -139,7 +123,7 @@ export default function WeddingProfileOnboardingSimpleForm({
       return !!form.values.nome_noiva && !!form.values.telefone_noiva;
     }
     if (step === 2) {
-      return !!form.values.local && !!form.values.data_casamento && !!form.values.hora_casamento;
+      return true;
     }
     return true;
   };
@@ -170,12 +154,12 @@ export default function WeddingProfileOnboardingSimpleForm({
           ? form.values.data_casamento instanceof Date
             ? form.values.data_casamento.toISOString().slice(0, 10)
             : String(form.values.data_casamento).slice(0, 10)
-          : "",
+          : null,
         hora_casamento: form.values.hora_casamento
           ? form.values.hora_casamento instanceof Date
             ? form.values.hora_casamento.toTimeString().slice(0, 5)
             : String(form.values.hora_casamento).slice(0, 5)
-          : "",
+          : null,
       };
 
       await api.patch("/api/wedding-profile/me/", payload);
@@ -245,7 +229,6 @@ export default function WeddingProfileOnboardingSimpleForm({
         <TextInput
           label="Local onde será realizado o casamento"
           {...form.getInputProps("local")}
-          required
           placeholder="Nome do local ou endereço"
         />
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
@@ -262,7 +245,6 @@ export default function WeddingProfileOnboardingSimpleForm({
               slotProps={{
                 textField: {
                   fullWidth: true,
-                  required: true,
                   placeholder: "Selecione a data",
                 },
               }}
@@ -276,7 +258,6 @@ export default function WeddingProfileOnboardingSimpleForm({
               slotProps={{
                 textField: {
                   fullWidth: true,
-                  required: true,
                   placeholder: "00:00",
                 },
               }}
@@ -340,17 +321,8 @@ export default function WeddingProfileOnboardingSimpleForm({
           overflow: "hidden",
         }}
       >
-        <Box
-          px="sm"
-          py="sm"
-          style={{
-            background: "var(--marriplan-surface)",
-            borderBottom: "1px solid var(--marriplan-border)",
-          }}
-        >
-          <Text fw={700} size="lg" c="var(--marriplan-text)">
-            {active === 0 ? "Dados do noivo" : active === 1 ? "Dados da noiva" : "Evento"}
-          </Text>
+
+        <ScrollArea style={{ flex: 1, width: "100%", minHeight: 0 }} type="auto" offsetScrollbars>
           <Group justify="center" gap={6} mt="sm">
             {Array.from({ length: 3 }).map((_, index) => (
               <Box
@@ -367,9 +339,6 @@ export default function WeddingProfileOnboardingSimpleForm({
               />
             ))}
           </Group>
-        </Box>
-
-        <ScrollArea style={{ flex: 1, width: "100%", minHeight: 0 }} type="auto" offsetScrollbars>
           <Box w="100%" py="md" style={{ width: "100%" }}>
             {renderStepContent(active)}
           </Box>
@@ -395,7 +364,7 @@ export default function WeddingProfileOnboardingSimpleForm({
       <Stepper active={active} onStepClick={setActive}>
         <Stepper.Step label="Dados do noivo">{renderStepContent(0)}</Stepper.Step>
         <Stepper.Step label="Dados da noiva">{renderStepContent(1)}</Stepper.Step>
-        <Stepper.Step label="Evento">{renderStepContent(2)}</Stepper.Step>
+        <Stepper.Step label="Evento (opcional)">{renderStepContent(2)}</Stepper.Step>
       </Stepper>
       <Group justify="space-between" mt="xl">
         <Button

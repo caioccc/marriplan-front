@@ -643,7 +643,6 @@ export default function WeddingProfileOnboardingForm({
           px="sm"
           py="sm"
           style={{
-            background: "var(--marriplan-surface)",
             borderBottom: "1px solid var(--marriplan-border)",
           }}
         >

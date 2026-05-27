@@ -18,6 +18,7 @@ import {
   IconChecklist,
   IconGift,
   IconSparkles,
+  IconUserCheck,
   IconUsers,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
@@ -29,13 +30,15 @@ type FirstStepItem = {
   key: string;
   title: string;
   description: string;
-  href: string;
+  href?: string;
+  action?: "navigate" | "openProfile";
   icon: ReactNode;
   done: boolean;
 };
 
 type FirstStepsProgress = {
   identity: boolean;
+  wedding_details: boolean;
   checklist: boolean;
   guests: boolean;
   suppliers: boolean;
@@ -44,6 +47,7 @@ type FirstStepsProgress = {
 
 const EMPTY_PROGRESS: FirstStepsProgress = {
   identity: false,
+  wedding_details: false,
   checklist: false,
   guests: false,
   suppliers: false,
@@ -157,6 +161,14 @@ export function FirstStepsFloatingMenu() {
         done: progress.identity,
       },
       {
+        key: "wedding_details",
+        title: "Visitar Meus dados",
+        description: "Preencha local e data do casamento no seu perfil.",
+        action: "openProfile",
+        icon: <IconUserCheck size={18} />,
+        done: progress.wedding_details,
+      },
+      {
         key: "checklist",
         title: "Concluir uma tarefa",
         description: "Comece a avançar no planejamento com o checklist.",
@@ -214,6 +226,13 @@ export function FirstStepsFloatingMenu() {
   const handleNavigate = async (href: string) => {
     setOpened(false);
     await router.push(href);
+  };
+
+  const handleOpenProfile = () => {
+    setOpened(false);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("marriplan:open-profile-modal"));
+    }
   };
 
   return (
@@ -308,7 +327,16 @@ export function FirstStepsFloatingMenu() {
                   key={item.key}
                   component="button"
                   type="button"
-                  onClick={() => void handleNavigate(item.href)}
+                  onClick={() => {
+                    if (item.action === "openProfile") {
+                      handleOpenProfile();
+                      return;
+                    }
+
+                    if (item.href) {
+                      void handleNavigate(item.href);
+                    }
+                  }}
                   style={{
                     width: "100%",
                     border: "1px solid var(--marriplan-border)",

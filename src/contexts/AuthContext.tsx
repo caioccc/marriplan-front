@@ -234,9 +234,7 @@ export const ProtectedRoute = ({ children }: ProtetedRouteProps) => {
       profile.nome_noivo &&
       profile.telefone_noivo &&
       profile.nome_noiva &&
-      profile.telefone_noiva &&
-      profile.data_casamento &&
-      profile.hora_casamento
+      profile.telefone_noiva
     );
   };
 

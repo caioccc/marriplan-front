@@ -54,6 +54,7 @@ const FIRST_STEPS_MUTATION_PREFIXES = [
     '/api/guests/',
     '/api/gifts/',
     '/api/wedding-suppliers/',
+    '/api/wedding-profile/',
     '/api/wedding-identity/',
     '/api/wedding-identity/inspirations/',
 ]

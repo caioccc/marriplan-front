@@ -4,6 +4,7 @@ export type FirstStepsMenuState = {
   first_steps: boolean;
   items: {
     identity: boolean;
+    wedding_details: boolean;
     checklist: boolean;
     guests: boolean;
     suppliers: boolean;

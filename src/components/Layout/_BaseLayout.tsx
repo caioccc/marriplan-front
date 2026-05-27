@@ -55,6 +55,22 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
     }
   }, [isMobile]);
 
+  useEffect(() => {
+    const handleOpenProfileModal = () => {
+      setProfileModalOpen(true);
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("marriplan:open-profile-modal", handleOpenProfileModal);
+    }
+
+    return () => {
+      if (typeof window !== "undefined") {
+        window.removeEventListener("marriplan:open-profile-modal", handleOpenProfileModal);
+      }
+    };
+  }, []);
+
   const toggleSidebar = () => {
     setOpened((current) => !current);
   };
@@ -79,8 +95,6 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
   const requiredFields = [
     { key: "nome_noivo", label: "Nome do noivo" },
     { key: "nome_noiva", label: "Nome da noiva" },
-    { key: "data_casamento", label: "Data do casamento" },
-    { key: "hora_casamento", label: "Hora do casamento" },
   ];
   let filled = 0;
   const completedFields: string[] = [];

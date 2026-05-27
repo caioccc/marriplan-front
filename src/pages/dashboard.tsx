@@ -6,12 +6,12 @@
 import BaseLayout from "@/components/Layout/_BaseLayout";
 import { MarriplanStatusBadge } from "@/components/MarriplanStatusBadge";
 import { SuppliersCarouselRow } from "@/components/SuppliersCarouselRow";
-import { useAuth } from "@/contexts/AuthContext";
 import {
   DRESS_CODE_OPTIONS,
   WEDDING_SIZES,
   WEDDING_STYLES,
 } from "@/constants/weddingIdentityData";
+import { useAuth } from "@/contexts/AuthContext";
 import { useWeddingIdentityState } from "@/hooks/useWeddingIdentityState";
 import { fetchChecklistTasks } from "@/services/checklist";
 import { giftsService } from "@/services/giftsService";
@@ -81,7 +81,6 @@ interface Gift {
 
 interface WeddingOverview {
   date: string;
-  daysRemaining: number;
   venue: string;
   confirmedGuests: number;
   totalGuests: number;
@@ -139,56 +138,46 @@ const MarriplanDashboard: React.FC = () => {
   // Visão Geral do Casamento com dados reais
   let weddingOverview: WeddingOverview = {
     date: "-",
-    daysRemaining: 0,
     venue: "-",
     confirmedGuests: 0,
     totalGuests: 0,
   };
 
   const weddingDateTime = useMemo(() => {
-    if (!user?.wedding_profile?.data_casamento) return null;
-    const time = user.wedding_profile.hora_casamento || "00:00:00";
+    if (
+      !user?.wedding_profile?.data_casamento ||
+      !user?.wedding_profile?.hora_casamento
+    )
+      return null;
+    const time = user.wedding_profile.hora_casamento;
     return new Date(`${user.wedding_profile.data_casamento}T${time}`);
   }, [
     user?.wedding_profile?.data_casamento,
     user?.wedding_profile?.hora_casamento,
   ]);
 
+  const hasWeddingDate = !!user?.wedding_profile?.data_casamento;
+  const hasWeddingVenue = !!user?.wedding_profile?.local;
+
   if (user?.wedding_profile) {
     const p = user.wedding_profile;
     // Data formatada e cálculo de dias restantes
-    const weddingDate = weddingDateTime;
-    let daysRemaining = 0;
-    if (weddingDate) {
-      // Zera hora/min/seg do casamento e hoje para evitar erro de fuso
-      const weddingDateOnly = new Date(
-        weddingDate.getFullYear(),
-        weddingDate.getMonth(),
-        weddingDate.getDate(),
-      );
-      const today = new Date();
-      const todayOnly = new Date(
-        today.getFullYear(),
-        today.getMonth(),
-        today.getDate(),
-      );
-      const diff = weddingDateOnly.getTime() - todayOnly.getTime();
-      daysRemaining = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-    }
+    const weddingDateDisplay = p.data_casamento
+      ? new Date(`${p.data_casamento}T00:00:00`)
+      : null;
     // Convidados
     const totalGuests = guests.count;
     const confirmedGuests = guests.results.filter(
       (g) => g.status_presenca === "Confirmed",
     ).length;
     weddingOverview = {
-      date: weddingDate
-        ? weddingDate.toLocaleDateString("pt-BR", {
+      date: weddingDateDisplay
+        ? weddingDateDisplay.toLocaleDateString("pt-BR", {
             day: "2-digit",
             month: "long",
             year: "numeric",
           })
         : "-",
-      daysRemaining,
       venue: p.local || "-",
       confirmedGuests,
       totalGuests,
@@ -455,93 +444,101 @@ const MarriplanDashboard: React.FC = () => {
                   <Title order={2} c={palette.ink} style={{ fontWeight: 600 }}>
                     {coupleName}
                   </Title>
-                  <Group gap="md" wrap="wrap">
-                    <Group gap="xs">
-                      <IconCalendar size={16} color={palette.roseGold} />
-                      <Text size="sm" c={palette.ink}>
-                        {weddingOverview.date}
-                      </Text>
+                  {(hasWeddingDate || hasWeddingVenue) && (
+                    <Group gap="md" wrap="wrap">
+                      {hasWeddingDate && (
+                        <Group gap="xs">
+                          <IconCalendar size={16} color={palette.roseGold} />
+                          <Text size="sm" c={palette.ink}>
+                            {weddingOverview.date}
+                          </Text>
+                        </Group>
+                      )}
+                      {hasWeddingVenue && (
+                        <Group gap="xs">
+                          <IconMapPin size={16} color={palette.warmGray} />
+                          <Text size="sm" c={palette.ink}>
+                            {weddingOverview.venue}
+                          </Text>
+                        </Group>
+                      )}
                     </Group>
-                    <Group gap="xs">
-                      <IconMapPin size={16} color={palette.warmGray} />
-                      <Text size="sm" c={palette.ink}>
-                        {weddingOverview.venue}
-                      </Text>
-                    </Group>
-                  </Group>
+                  )}
                   <Text size="sm" c={palette.warmGray}>
                     Cada detalhe conta. Veja o progresso e os proximos passos
                     mais importantes da sua jornada.
                   </Text>
                 </Stack>
               </Group>
-              <Card
-                radius="xl"
-                p="lg"
-                style={{
-                  background: palette.softWhite,
-                  border: `1px solid ${palette.line}`,
-                }}
-              >
-                <Stack gap={8} align="center">
-                  <Group gap="xs">
-                    <IconClock size={16} color={palette.roseGold} />
-                    <Text
-                      size="xs"
-                      c={palette.warmGray}
-                      fw={600}
-                      tt="uppercase"
-                      style={{ letterSpacing: 1 }}
-                    >
-                      Contador regressivo
-                    </Text>
-                  </Group>
-                  {countdown.isComplete ? (
-                    <Text size="lg" fw={700} c={palette.ink}>
-                      Chegou o grande dia! Felicidades aos noivos.
-                    </Text>
-                  ) : (
-                    <Group gap="md" wrap="wrap" justify="center">
-                      <Stack gap={2} align="center">
-                        <Text size="xl" fw={700} c={palette.ink}>
-                          {countdown.days}
-                        </Text>
-                        <Text size="xs" c={palette.warmGray}>
-                          Dias
-                        </Text>
-                      </Stack>
-                      <Stack gap={2} align="center">
-                        <Text size="xl" fw={700} c={palette.ink}>
-                          {countdown.hours}
-                        </Text>
-                        <Text size="xs" c={palette.warmGray}>
-                          Horas
-                        </Text>
-                      </Stack>
-                      <Stack gap={2} align="center">
-                        <Text size="xl" fw={700} c={palette.ink}>
-                          {countdown.minutes}
-                        </Text>
-                        <Text size="xs" c={palette.warmGray}>
-                          Minutos
-                        </Text>
-                      </Stack>
-                      <Stack gap={2} align="center">
-                        <Text size="xl" fw={700} c={palette.ink}>
-                          {countdown.seconds}
-                        </Text>
-                        <Text size="xs" c={palette.warmGray}>
-                          Segundos
-                        </Text>
-                      </Stack>
+              {weddingDateTime && (
+                <Card
+                  radius="xl"
+                  p="lg"
+                  style={{
+                    background: palette.softWhite,
+                    border: `1px solid ${palette.line}`,
+                  }}
+                >
+                  <Stack gap={8} align="center">
+                    <Group gap="xs">
+                      <IconClock size={16} color={palette.roseGold} />
+                      <Text
+                        size="xs"
+                        c={palette.warmGray}
+                        fw={600}
+                        tt="uppercase"
+                        style={{ letterSpacing: 1 }}
+                      >
+                        Contador regressivo
+                      </Text>
                     </Group>
-                  )}
-                </Stack>
-              </Card>
+                    {countdown.isComplete ? (
+                      <Text size="lg" fw={700} c={palette.ink}>
+                        Chegou o grande dia! Felicidades aos noivos.
+                      </Text>
+                    ) : (
+                      <Group gap="md" wrap="wrap" justify="center">
+                        <Stack gap={2} align="center">
+                          <Text size="xl" fw={700} c={palette.ink}>
+                            {countdown.days}
+                          </Text>
+                          <Text size="xs" c={palette.warmGray}>
+                            Dias
+                          </Text>
+                        </Stack>
+                        <Stack gap={2} align="center">
+                          <Text size="xl" fw={700} c={palette.ink}>
+                            {countdown.hours}
+                          </Text>
+                          <Text size="xs" c={palette.warmGray}>
+                            Horas
+                          </Text>
+                        </Stack>
+                        <Stack gap={2} align="center">
+                          <Text size="xl" fw={700} c={palette.ink}>
+                            {countdown.minutes}
+                          </Text>
+                          <Text size="xs" c={palette.warmGray}>
+                            Minutos
+                          </Text>
+                        </Stack>
+                        <Stack gap={2} align="center">
+                          <Text size="xl" fw={700} c={palette.ink}>
+                            {countdown.seconds}
+                          </Text>
+                          <Text size="xs" c={palette.warmGray}>
+                            Segundos
+                          </Text>
+                        </Stack>
+                      </Group>
+                    )}
+                  </Stack>
+                </Card>
+              )}
             </Stack>
           </Card>
 
-          {hasIdentityHighlights && (
+          {(hasWeddingDate || hasWeddingVenue || hasIdentityHighlights) && (
             <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg">
               {hasPalette && (
                 <Card
@@ -877,7 +874,7 @@ const MarriplanDashboard: React.FC = () => {
                 {nextTasks.map((task) => (
                   <Paper
                     key={task.id}
-                      className="marriplan-card"
+                    className="marriplan-card"
                     radius="lg"
                     p="sm"
                     style={{ border: `1px solid ${palette.line}` }}
@@ -1024,7 +1021,12 @@ const MarriplanDashboard: React.FC = () => {
                               multiline
                               maw={320}
                             >
-                              <Text fw={500} size="sm" c={palette.ink} lineClamp={1}>
+                              <Text
+                                fw={500}
+                                size="sm"
+                                c={palette.ink}
+                                lineClamp={1}
+                              >
                                 {guest.name}
                               </Text>
                             </Tooltip>
@@ -1111,7 +1113,12 @@ const MarriplanDashboard: React.FC = () => {
                             multiline
                             maw={320}
                           >
-                            <Text fw={500} size="sm" c={palette.ink} lineClamp={1}>
+                            <Text
+                              fw={500}
+                              size="sm"
+                              c={palette.ink}
+                              lineClamp={1}
+                            >
                               {gift.name}
                             </Text>
                           </Tooltip>
