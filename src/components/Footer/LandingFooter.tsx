@@ -56,6 +56,18 @@ export default function LandingFooter(): JSX.Element {
               >
                 Começar agora
               </Link>
+              <Link
+                href="/terms"
+                className="text-sm text-[#4a3f36] transition-colors duration-200 hover:text-[#2f2822]"
+              >
+                Termos de Uso
+              </Link>
+              <Link
+                href="/privacy"
+                className="text-sm text-[#4a3f36] transition-colors duration-200 hover:text-[#2f2822]"
+              >
+                Política de Privacidade
+              </Link>
             </div>
           </nav>
 

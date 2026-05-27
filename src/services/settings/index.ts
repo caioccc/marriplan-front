@@ -5,6 +5,10 @@ export const getSettings = async () => {
         const response = await api.get('/api/settings/');
         return response.data;
     } catch (error) {
+        if (!(error as any)?.response) {
+            return null;
+        }
+
         throw error;
     }
 };

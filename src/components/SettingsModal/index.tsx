@@ -12,6 +12,8 @@ import {useTranslation} from "react-i18next";
 import {disable2FA} from "@/services/2fa";
 import {useAuth} from "@/contexts/AuthContext";
 
+const defaultLanguage = 'pt-BR';
+
 
 export function SettingsModal({
                                   opened,
@@ -41,8 +43,8 @@ export function SettingsModal({
         if (opened) {
             setTimeout(() => {
                 setLoading(true);
-                setIdioma(settings.language);
-                setTwoFA(!!user.is_2fa_enabled);
+                setIdioma(settings?.language ?? defaultLanguage);
+                setTwoFA(!!user?.is_2fa_enabled);
                 setLoading(false);
             }, 500);
         }

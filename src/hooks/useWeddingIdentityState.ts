@@ -111,18 +111,16 @@ export function useWeddingIdentityState(): WeddingIdentityState {
 
     if (identityExists) {
       await updateWeddingIdentity(payload);
-      // Garantir que listeners locais (menu de primeiros passos) sejam notificados
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('marriplan:first-steps-refresh'))
+        window.dispatchEvent(new Event('marriplan:first-steps-refresh'));
       }
       return;
     }
 
     await createWeddingIdentity(payload);
     setIdentityExists(true);
-    // Notifica listeners locais para atualização imediata do menu
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('marriplan:first-steps-refresh'))
+      window.dispatchEvent(new Event('marriplan:first-steps-refresh'));
     }
   }, [buildPayload, hasIdentity, identityExists]);
 

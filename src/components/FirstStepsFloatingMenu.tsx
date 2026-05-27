@@ -1,17 +1,5 @@
 import { useAuth, unprotectedRoutes } from "@/contexts/AuthContext";
-import { fetchChecklistTasks } from "@/services/checklist";
-import { giftsService } from "@/services/giftsService";
-import { guests_list_all } from "@/services/guests";
-import {
-  listWeddingSuppliers,
-  WeddingSupplier,
-} from "@/services/suppliers";
-import {
-  getWeddingIdentity,
-  listWeddingInspirations,
-  WeddingIdentityInspirationRecord,
-} from "@/services/weddingIdentity.service";
-import { ChecklistTask } from "@/types/checklist";
+import { getFirstStepsMenuState } from "@/services/firstSteps";
 import {
   Badge,
   Box,
@@ -33,7 +21,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 const FIRST_STEPS_REFRESH_EVENT = "marriplan:first-steps-refresh";
 
@@ -54,6 +42,14 @@ type FirstStepsProgress = {
   gifts: boolean;
 };
 
+const EMPTY_PROGRESS: FirstStepsProgress = {
+  identity: false,
+  checklist: false,
+  guests: false,
+  suppliers: false,
+  gifts: false,
+};
+
 const dropdownStyles = {
   dropdown: {
     borderRadius: 20,
@@ -66,48 +62,33 @@ const dropdownStyles = {
   },
 } as const;
 
-const normalizeArray = (data: unknown): unknown[] => {
-  if (Array.isArray(data)) {
-    return data;
-  }
-
-  if (data && typeof data === "object" && "results" in data) {
-    return (data as { results?: unknown[] }).results ?? [];
-  }
-
-  return [];
-};
-
-const normalizeChecklistTasks = (data: unknown): ChecklistTask[] =>
-  normalizeArray(data) as ChecklistTask[];
-
-const normalizeInspirations = (data: unknown): WeddingIdentityInspirationRecord[] =>
-  normalizeArray(data) as WeddingIdentityInspirationRecord[];
-
 export function FirstStepsFloatingMenu() {
   const router = useRouter();
   const isMobile = useMediaQuery("(max-width: 768px)");
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user, refreshUser } = useAuth();
   const [opened, setOpened] = useState(false);
-  const [progress, setProgress] = useState<FirstStepsProgress>({
-    identity: false,
-    checklist: false,
-    guests: false,
-    suppliers: false,
-    gifts: false,
-  });
+  const [progress, setProgress] = useState<FirstStepsProgress>(EMPTY_PROGRESS);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshSeed, setRefreshSeed] = useState(0);
+  const [serverCompleted, setServerCompleted] = useState(false);
+  const refreshTimeoutRef = useRef<number | null>(null);
 
   const routesForbidden = [
     ...unprotectedRoutes,
     '/onboarding',
   ]
   const isPublicRoute = routesForbidden.includes(router.pathname);
+  const menuCompleted = serverCompleted || Boolean(user?.first_steps);
 
   useEffect(() => {
     const handleRefresh = () => {
-      setRefreshSeed((previous) => previous + 1);
+      if (refreshTimeoutRef.current) {
+        window.clearTimeout(refreshTimeoutRef.current);
+      }
+
+      refreshTimeoutRef.current = window.setTimeout(() => {
+        setRefreshSeed((previous) => previous + 1);
+      }, 180);
     };
 
     if (typeof window !== "undefined") {
@@ -118,6 +99,10 @@ export function FirstStepsFloatingMenu() {
       if (typeof window !== "undefined") {
         window.removeEventListener(FIRST_STEPS_REFRESH_EVENT, handleRefresh);
       }
+
+      if (refreshTimeoutRef.current) {
+        window.clearTimeout(refreshTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -125,9 +110,10 @@ export function FirstStepsFloatingMenu() {
     let mounted = true;
 
     const loadProgress = async () => {
-      if (isPublicRoute || loading || !isAuthenticated) {
+      if (isPublicRoute || loading || !isAuthenticated || user?.first_steps) {
         if (mounted) {
           setIsLoading(false);
+          setServerCompleted(Boolean(user?.first_steps));
         }
         return;
       }
@@ -135,52 +121,15 @@ export function FirstStepsFloatingMenu() {
       setIsLoading(true);
 
       try {
-        const [identity, checklistTasks, guests, suppliers, gifts] =
-          await Promise.all([
-            getWeddingIdentity().catch(() => null),
-            fetchChecklistTasks().catch(() => []),
-            guests_list_all().catch(() => ({ results: [], count: 0 })),
-            listWeddingSuppliers({ page: 1, page_size: 1 }).catch(() => ({ results: [], count: 0 })),
-            giftsService.listAllGifts().catch(() => ({ results: [], count: 0 })),
-          ]);
-
-        const hasIdentity = Boolean(
-          identity?.selected_style &&
-            identity?.wedding_size &&
-            identity?.dress_code &&
-            normalizeArray(identity?.palette).length > 0
-        );
-
-        const hasChecklistDone = normalizeChecklistTasks(checklistTasks).some(
-          (task) => task?.status === "done",
-        );
-
-        const hasGuests = normalizeArray(guests).length > 0;
-
-        const supplierResults =
-          typeof suppliers === "object" && suppliers !== null && "results" in suppliers
-            ? (suppliers as { results?: WeddingSupplier[]; count?: number })
-            : { results: [], count: 0 };
-
-        const hasSuppliers =
-          (supplierResults.count ?? 0) > 0 || normalizeArray(supplierResults.results).length > 0;
-
-        const giftResults =
-          typeof gifts === "object" && gifts !== null && "results" in gifts
-            ? (gifts as { results?: unknown[]; count?: number })
-            : { results: [], count: 0 };
-
-        const hasGifts =
-          (giftResults.count ?? 0) > 0 || normalizeArray(giftResults.results).length > 0;
+        const state = await getFirstStepsMenuState();
 
         if (mounted) {
-          setProgress({
-            identity: hasIdentity,
-            checklist: hasChecklistDone,
-            guests: hasGuests,
-            suppliers: hasSuppliers,
-            gifts: hasGifts,
-          });
+          setProgress(state.items);
+          setServerCompleted(state.first_steps);
+
+          if (state.first_steps && !user?.first_steps) {
+            void refreshUser();
+          }
         }
       } finally {
         if (mounted) {
@@ -194,7 +143,7 @@ export function FirstStepsFloatingMenu() {
     return () => {
       mounted = false;
     };
-  }, [isAuthenticated, isPublicRoute, loading, router.pathname, refreshSeed]);
+  }, [isAuthenticated, isPublicRoute, loading, refreshSeed, refreshUser, user?.first_steps]);
 
   const items = useMemo<FirstStepItem[]>(
     () => [
@@ -252,11 +201,13 @@ export function FirstStepsFloatingMenu() {
     }
   }, [doneCount, items.length]);
 
-  if (isPublicRoute || !isAuthenticated || loading || isLoading) {
-    return null;
-  }
+  useEffect(() => {
+    if (menuCompleted) {
+      setOpened(false);
+    }
+  }, [menuCompleted]);
 
-  if (doneCount === items.length) {
+  if (isPublicRoute || !isAuthenticated || loading || isLoading || menuCompleted) {
     return null;
   }
 

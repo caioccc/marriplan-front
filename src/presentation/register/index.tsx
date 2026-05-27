@@ -1,6 +1,6 @@
 import type {NextPage} from 'next'
 import {useState} from 'react'
-import {Button, Group, PasswordInput, Stack, TextInput} from '@mantine/core'
+import {Anchor, Button, Checkbox, Group, PasswordInput, Stack, TextInput} from '@mantine/core'
 import {hasLength, isEmail, isNotEmpty, useForm} from '@mantine/form'
 import {IconArrowBackUp, IconUserPlus} from '@tabler/icons-react'
 import {useRouter} from 'next/router'
@@ -15,6 +15,7 @@ type FormValues = {
     email: string
     password: string
     confirm_password: string
+    accepted_terms: boolean
 }
 
 const RegisterContent: NextPage = () => {
@@ -30,6 +31,7 @@ const RegisterContent: NextPage = () => {
             email: '',
             password: '',
             confirm_password: '',
+            accepted_terms: false,
         },
         validate: {
             name: (value) =>
@@ -44,6 +46,8 @@ const RegisterContent: NextPage = () => {
             confirm_password: (value, values) =>
                 isNotEmpty(t('register.confirm_password_required'))(value) ||
                 (value !== values.password && t('register.passwords_not_match')),
+            accepted_terms: (value) =>
+                value ? null : t('register.terms_required'),
         },
     })
 
@@ -52,7 +56,8 @@ const RegisterContent: NextPage = () => {
         register({
             name: values.name,
             email: values.email,
-            password: values.password
+            password: values.password,
+            accepted_terms: values.accepted_terms,
         })
             .then(() => {
                 toast({
@@ -115,6 +120,20 @@ const RegisterContent: NextPage = () => {
                         required
                         {...form.getInputProps('confirm_password')}
                         styles={authInputStyles}
+                    />
+
+                    <Checkbox
+                        label={
+                            <span>
+                                {t('register.terms_prefix')}{' '}
+                                <Anchor href="/terms" target="_blank" rel="noreferrer">
+                                    {t('register.terms_link')}
+                                </Anchor>&nbsp; 
+                                {t('register.terms_suffix')}
+                            </span>
+                        }
+                        required
+                        {...form.getInputProps('accepted_terms', {type: 'checkbox'})}
                     />
                 </Stack>
 

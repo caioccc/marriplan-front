@@ -8,6 +8,11 @@ body {
   color: #2f2822;
 }
 
+html,
+body {
+  scroll-behavior: smooth;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

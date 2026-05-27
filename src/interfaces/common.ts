@@ -43,6 +43,9 @@ export interface UserFullData {
   email: string;
   is_email_confirmed: boolean;
   is_2fa_enabled: boolean;
+  login_method: "LOGIN_GOOGLE" | "LOGIN_MARRIPLAN";
+  has_usable_password: boolean;
+  first_steps: boolean;
   settings: number;
   role: string;
   wedding_partner_role?: "noivo" | "noiva" | null;
@@ -99,6 +102,9 @@ export type UserData = {
   id: number;
   is_2fa_enabled: boolean;
   is_email_confirmed: boolean;
+  login_method: "LOGIN_GOOGLE" | "LOGIN_MARRIPLAN";
+  has_usable_password: boolean;
+  first_steps: boolean;
   wedding_partner_role?: "noivo" | "noiva" | null;
   wedding_profile?: any;
 };
@@ -127,6 +133,7 @@ export type RegisterFormData = {
   name: string;
   email: string;
   password: string;
+  accepted_terms: boolean;
 };
 
 export type OptionsPage = {

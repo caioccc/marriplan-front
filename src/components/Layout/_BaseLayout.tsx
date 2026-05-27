@@ -24,11 +24,13 @@ import {
   IconCheck,
   IconChecklist,
   IconChevronDown,
+  IconFileText,
   IconGift,
   IconHome2,
   IconLayoutSidebarLeftCollapse,
   IconLayoutSidebarLeftExpand,
   IconLogout,
+  IconShieldLock,
   IconSparkles,
   IconUser,
   IconUserCheck,
@@ -39,8 +41,6 @@ import { ReactNode, useEffect, useState } from "react";
 interface BaseLayoutProps {
   children: ReactNode;
 }
-
-const SYSTEM_VERSION = "v0.1.0";
 
 export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
   const router = useRouter();
@@ -369,6 +369,30 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                 >
                   Meus dados
                 </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconShieldLock size={16} />}
+                  onClick={() => {
+                    void router.push("/account/privacy");
+                  }}
+                >
+                  Menu de Privacidade
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconFileText size={16} />}
+                  onClick={() => {
+                    void router.push("/terms");
+                  }}
+                >
+                  Termos de Uso
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconShieldLock size={16} />}
+                  onClick={() => {
+                    void router.push("/privacy");
+                  }}
+                >
+                  Política de Privacidade
+                </Menu.Item>
                 {/* <Menu.Item leftSection={<IconUser size={16} />} onClick={() => setProfileModalOpen(true)}>
                                     Meu Perfil
                                 </Menu.Item> */}
@@ -509,6 +533,14 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                     <NavLink label="Domínio Personalizado" onClick={() => router.push('/meu-site/dominio')} disabled />
                 </NavLink> */}
 
+          {/* <NavLink
+            label={opened ? "Privacidade (LGPD)" : ""}
+            leftSection={<IconShieldLock size={18} />}
+            active={router.pathname === "/account/privacy"}
+            onClick={() => handleSidebarNavigation("/account/privacy")}
+            aria-label="Privacidade (LGPD)"
+            styles={navLinkStyles}
+          /> */}
           <NavLink
             label={opened ? "Notificações" : ""}
             leftSection={<IconBell size={18} />}
