@@ -1,4 +1,10 @@
 import BaseLayout from "@/components/Layout/_BaseLayout";
+import { FreePlanLimitBanner } from "@/components/billing/FreePlanLimitBanner";
+import {
+  FEATURE_LABELS,
+  getFeatureLimit,
+  isFeatureLimitReached,
+} from "@/constants/plans";
 import {
   getSupplier,
   listWeddingSuppliers,
@@ -39,6 +45,7 @@ import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMediaQuery } from "@mantine/hooks";
 import { handleValueChange, toSentenceCase } from "@/lib/text";
+import { useSubscription } from "@/hooks/useSubscription";
 
 function formatCurrencyInput(value: string) {
   const normalized = value.replace(/[^\d,.-]/g, "").replace(",", ".");
@@ -52,11 +59,17 @@ export default function SupplierDetailPage() {
   const [supplier, setSupplier] = useState<Supplier | null>(null);
   const [weddingSupplier, setWeddingSupplier] =
     useState<WeddingSupplier | null>(null);
+  const [weddingSupplierCount, setWeddingSupplierCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [contractPreviewOpen, setContractPreviewOpen] = useState(false);
   const [contractFile, setContractFile] = useState<File | null>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
+  const { isPremium } = useSubscription();
+  const supplierLimit = getFeatureLimit("suppliers");
+  const supplierLimitReached =
+    !weddingSupplier &&
+    isFeatureLimitReached("suppliers", weddingSupplierCount, isPremium);
   const [form, setForm] = useState({
     status: "QUOTING" as NonNullable<WeddingSupplier["status"]>,
     is_favorite: false,
@@ -74,14 +87,20 @@ export default function SupplierDetailPage() {
       setLoading(true);
       try {
         const supplierData = await getSupplier(Number(id));
-        const weddingData = await listWeddingSuppliers({
-          supplier: Number(id),
-          page_size: 1,
-        });
+        const [weddingData, weddingCountData] = await Promise.all([
+          listWeddingSuppliers({
+            supplier: Number(id),
+            page_size: 1,
+          }),
+          listWeddingSuppliers({
+            page_size: 1,
+          }),
+        ]);
         if (!mounted) return;
         setSupplier(supplierData);
         const relation = weddingData.results?.[0] || null;
         setWeddingSupplier(relation);
+        setWeddingSupplierCount(weddingCountData.count || 0);
         if (relation) {
           setForm({
             status: relation.status || "QUOTING",
@@ -117,6 +136,7 @@ export default function SupplierDetailPage() {
 
   const handleSave = async () => {
     if (!supplier) return;
+    if (!weddingSupplier && supplierLimitReached) return;
     setSaving(true);
     try {
       let relation = weddingSupplier;
@@ -163,9 +183,12 @@ export default function SupplierDetailPage() {
       router.push("/meus-fornecedores");
     } catch (error) {
       console.error(error);
+      const errorMessage =
+        (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        "Não foi possível salvar o fornecedor.";
       notifications.show({
         color: "red",
-        message: "Não foi possível salvar o fornecedor.",
+        message: errorMessage,
       });
     } finally {
       setSaving(false);
@@ -240,6 +263,15 @@ export default function SupplierDetailPage() {
   return (
     <BaseLayout>
       <Stack gap="lg" py="md">
+        {supplierLimitReached ? (
+          <FreePlanLimitBanner
+            featureLabel={FEATURE_LABELS.suppliers}
+            limit={typeof supplierLimit === "number" ? supplierLimit : 0}
+            currentUsage={weddingSupplierCount}
+            title="Você atingiu o limite do plano gratuito para fornecedores"
+            description="No plano Free você pode manter até 3 fornecedores. Para adicionar este parceiro ao casamento, faça upgrade para o Premium."
+          />
+        ) : null}
         {isMobile ? (
           <>
             <Card radius="xl" p="xl" withBorder>
@@ -269,16 +301,18 @@ export default function SupplierDetailPage() {
                   >
                     Voltar
                   </Button>
-                  <Button
-                    leftSection={<IconUpload size={18} />}
-                    styles={primaryButtonStyles}
-                    onClick={handleSave}
-                    loading={saving}
-                  >
-                    {weddingSupplier
-                      ? "Salvar alterações"
-                      : "Adicionar ao casamento"}
-                  </Button>
+                  {!supplierLimitReached || weddingSupplier ? (
+                    <Button
+                      leftSection={<IconUpload size={18} />}
+                      styles={primaryButtonStyles}
+                      onClick={handleSave}
+                      loading={saving}
+                    >
+                      {weddingSupplier
+                        ? "Salvar alterações"
+                        : "Adicionar ao casamento"}
+                    </Button>
+                  ) : null}
                 </Group>
               </Group>
             </Card>
@@ -573,16 +607,18 @@ export default function SupplierDetailPage() {
                   >
                     Voltar
                   </Button>
-                  <Button
-                    leftSection={<IconUpload size={18} />}
-                    styles={primaryButtonStyles}
-                    onClick={handleSave}
-                    loading={saving}
-                  >
-                    {weddingSupplier
-                      ? "Salvar alterações"
-                      : "Adicionar ao casamento"}
-                  </Button>
+                  {!supplierLimitReached || weddingSupplier ? (
+                    <Button
+                      leftSection={<IconUpload size={18} />}
+                      styles={primaryButtonStyles}
+                      onClick={handleSave}
+                      loading={saving}
+                    >
+                      {weddingSupplier
+                        ? "Salvar alterações"
+                        : "Adicionar ao casamento"}
+                    </Button>
+                  ) : null}
                 </Group>
               </Group>
             </Card>
@@ -616,16 +652,18 @@ export default function SupplierDetailPage() {
                   >
                     Voltar
                   </Button>
-                  <Button
-                    leftSection={<IconUpload size={18} />}
-                    styles={primaryButtonStyles}
-                    onClick={handleSave}
-                    loading={saving}
-                  >
-                    {weddingSupplier
-                      ? "Salvar alterações"
-                      : "Adicionar ao casamento"}
-                  </Button>
+                  {!supplierLimitReached || weddingSupplier ? (
+                    <Button
+                      leftSection={<IconUpload size={18} />}
+                      styles={primaryButtonStyles}
+                      onClick={handleSave}
+                      loading={saving}
+                    >
+                      {weddingSupplier
+                        ? "Salvar alterações"
+                        : "Adicionar ao casamento"}
+                    </Button>
+                  ) : null}
                 </Group>
               </Group>
             </Card>

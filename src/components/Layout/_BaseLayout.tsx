@@ -1,11 +1,16 @@
 import { NotificationsBell } from "@/components/NotificationsBell";
+import { useSubscription } from "@/hooks/useSubscription";
 import WeddingProfileDataModal from "@/components/WeddingProfileDataModal";
 import { useAuth } from "@/contexts/AuthContext";
+import { TrialModal } from "@/components/billing/TrialModal";
 import {
+  Badge,
   ActionIcon,
   AppShell,
   Avatar,
   Box,
+  Button,
+  Card,
   Group,
   Indicator,
   Menu,
@@ -34,7 +39,7 @@ import {
   IconShieldLock,
   IconSparkles,
   IconUser,
-  IconUserCheck
+  IconUserCheck,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { ReactNode, useEffect, useState } from "react";
@@ -46,9 +51,11 @@ interface BaseLayoutProps {
 export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
   const router = useRouter();
   const { logout, user } = useAuth();
+  const { isPremium, isTrialing, trialEndsAt } = useSubscription();
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [opened, setOpened] = useState(true);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [trialModalOpen, setTrialModalOpen] = useState(false);
 
   useEffect(() => {
     if (isMobile) {
@@ -77,6 +84,40 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
       }
     };
   }, []);
+
+  const isWeddingProfileComplete = (profile?: {
+    nome_noivo?: string;
+    telefone_noivo?: string;
+    nome_noiva?: string;
+    telefone_noiva?: string;
+  }) => {
+    if (!profile) return false;
+    return !!(
+      profile.nome_noivo &&
+      profile.telefone_noivo &&
+      profile.nome_noiva &&
+      profile.telefone_noiva
+    );
+  };
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!user?.id || !isTrialing || router.pathname === "/onboarding") {
+      setTrialModalOpen(false);
+      return;
+    }
+
+    if (!isWeddingProfileComplete(user?.wedding_profile)) {
+      return;
+    }
+
+    const trialSeenKey = "marriplan:trial-modal-seen";
+    const trialSeen = window.sessionStorage.getItem(trialSeenKey);
+    if (!trialSeen) {
+      window.sessionStorage.setItem(trialSeenKey, String(user.id));
+      setTrialModalOpen(true);
+    }
+  }, [isTrialing, router.pathname, user?.id, user?.wedding_profile]);
 
   const toggleSidebar = () => {
     setOpened((current) => !current);
@@ -257,6 +298,26 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
               <Text fw={700} size="xl" style={{ letterSpacing: "0.02em" }}>
                 Marriplan
               </Text>
+              {!isMobile && (
+                <Badge
+                  variant="light"
+                  style={{
+                    background: isTrialing
+                      ? "rgba(200, 176, 138, 0.18)"
+                      : isPremium
+                      ? "rgba(181, 139, 122, 0.16)"
+                      : "rgba(234, 223, 211, 0.72)",
+                    color: isTrialing
+                      ? "var(--marriplan-gold)"
+                      : isPremium
+                      ? "var(--marriplan-rose)"
+                      : "var(--marriplan-text)",
+                    border: "1px solid var(--marriplan-border)",
+                  }}
+                >
+                  {isTrialing ? "TRIAL" : isPremium ? "Premium" : "Plano Free"}
+                </Badge>
+              )}
             </Box>
           </Group>
 
@@ -374,26 +435,30 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
             >
               <Menu.Target>
                 <Group gap="xs" style={{ cursor: "pointer" }}>
-                  {
-                    user?.image_url ? (
-                      <Avatar
-                        src={user.image_url}
-                        alt={user.name || user.username || "Usuário"}
-                        radius="xl"
-                        size="md"
-                        style={{ border: "1px solid var(--marriplan-border)" }}
-                      />
-                    ) : (
-                      <Avatar
-                        radius="xl"
-                        size="md"
-                        style={{ border: "1px solid var(--marriplan-border)" }}
-                        name={user?.name || user?.username || "Usuário"}
-                        allowedInitialsColors={["#fbb6ce", "#fcd34d", "#a78bfa", "#6ee7b7", "#f87171"]} // Cores para avatar gerado
-                        color="initials"
-                      />
-                    )
-                  }
+                  {user?.image_url ? (
+                    <Avatar
+                      src={user.image_url}
+                      alt={user.name || user.username || "Usuário"}
+                      radius="xl"
+                      size="md"
+                      style={{ border: "1px solid var(--marriplan-border)" }}
+                    />
+                  ) : (
+                    <Avatar
+                      radius="xl"
+                      size="md"
+                      style={{ border: "1px solid var(--marriplan-border)" }}
+                      name={user?.name || user?.username || "Usuário"}
+                      allowedInitialsColors={[
+                        "#fbb6ce",
+                        "#fcd34d",
+                        "#a78bfa",
+                        "#6ee7b7",
+                        "#f87171",
+                      ]} // Cores para avatar gerado
+                      color="initials"
+                    />
+                  )}
                   <IconChevronDown size={16} />
                 </Group>
               </Menu.Target>
@@ -630,23 +695,131 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
             style={{
               marginTop: "auto",
               paddingTop: opened ? 12 : 8,
-              borderTop: "1px solid var(--marriplan-border)",
               width: "100%",
             }}
           >
-            <Stack gap={2} align={opened ? "flex-start" : "center"}>
-              <Text
-                size="xs"
-                fw={600}
+            <Stack gap={8} align={opened ? "stretch" : "center"}>
+              {opened && isTrialing && (
+                <Card
+                  radius="xl"
+                  p="md"
+                  withBorder
+                  style={{
+                    background:
+                      "linear-gradient(180deg, #fffaf6 0%, #f6efe7 100%)",
+                    borderColor: "rgba(200, 176, 138, 0.22)",
+                    boxShadow: "0 14px 32px rgba(70, 56, 43, 0.08)",
+                  }}
+                >
+                  <Stack gap={8}>
+                    <Text
+                      size="xs"
+                      fw={700}
+                      tt="uppercase"
+                      style={{
+                        color: "var(--marriplan-gold)",
+                        letterSpacing: 1.8,
+                      }}
+                    >
+                      Trial ativo
+                    </Text>
+                    <Text
+                      size="sm"
+                      fw={600}
+                      style={{
+                        color: "var(--marriplan-text)",
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      Você está no Trial Premium por 7 dias.
+                    </Text>
+                    <Button
+                      component="a"
+                      href="/checkout"
+                      radius="xl"
+                      size="sm"
+                      fullWidth
+                      style={{
+                        background: "var(--marriplan-rose)",
+                        color: "#fff",
+                      }}
+                    >
+                      Fazer upgrade
+                    </Button>
+                  </Stack>
+                </Card>
+              )}
+              {opened && !isPremium && !isTrialing && (
+                <Card
+                  radius="xl"
+                  p="md"
+                  withBorder
+                  style={{
+                    background:
+                      "linear-gradient(180deg, #fffaf6 0%, #f6efe7 100%)",
+                    borderColor: "rgba(181, 139, 122, 0.18)",
+                    boxShadow: "0 14px 32px rgba(70, 56, 43, 0.08)",
+                  }}
+                >
+                  <Stack gap={8}>
+                    <Text
+                      size="xs"
+                      fw={700}
+                      tt="uppercase"
+                      style={{
+                        color: "var(--marriplan-rose)",
+                        letterSpacing: 1.8,
+                      }}
+                    >
+                      ✨ Fazer upgrade
+                    </Text>
+                    <Text
+                      size="sm"
+                      fw={600}
+                      style={{
+                        color: "var(--marriplan-text)",
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      Libere convidados ilimitados, exportações e mais.
+                    </Text>
+                    <Button
+                      component="a"
+                      href="/checkout"
+                      radius="xl"
+                      size="sm"
+                      fullWidth
+                      style={{
+                        background: "var(--marriplan-rose)",
+                        color: "#fff",
+                      }}
+                    >
+                      Fazer upgrade
+                    </Button>
+                  </Stack>
+                </Card>
+              )}
+              <Box
                 style={{
-                  color: "var(--marriplan-muted)",
-                  letterSpacing: "0.12em",
-                  textTransform: "uppercase",
-                  display: opened ? "block" : "none",
+                  borderTop: "1px solid var(--marriplan-border)",
+                  paddingTop: 12,
+                  marginTop: 12,
                 }}
               >
-                {coupleName}
-              </Text>
+                <Text
+                  size="xs"
+                  fw={600}
+                  style={{
+                    color: "var(--marriplan-muted)",
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    display: opened ? "block" : "none",
+                  }}
+                >
+                  {coupleName}
+                </Text>
+              </Box>
+
               {/* <Text
                 size="xs"
                 fw={600}
@@ -692,6 +865,12 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
         opened={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
         onComplete={() => setProfileModalOpen(false)}
+      />
+      <TrialModal
+        opened={trialModalOpen}
+        onClose={() => setTrialModalOpen(false)}
+        onUpgrade={() => setTrialModalOpen(false)}
+        trialEndsAt={trialEndsAt}
       />
       {/* <SettingsModal
                 opened={settingsModalOpen}

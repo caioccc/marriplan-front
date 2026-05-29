@@ -45,6 +45,12 @@ export default function LandingFooter(): JSX.Element {
                 Como funciona
               </a>
               <Link
+                href="/plans"
+                className="text-sm text-[#4a3f36] transition-colors duration-200 hover:text-[#2f2822]"
+              >
+                Planos
+              </Link>
+              <Link
                 href="/login"
                 className="text-sm text-[#4a3f36] transition-colors duration-200 hover:text-[#2f2822]"
               >

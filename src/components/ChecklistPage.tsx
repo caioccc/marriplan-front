@@ -3,6 +3,8 @@
 //eslint-disable @typescript-eslint/no-explicit-any
 //eslint no-explicit-any: "off"
 import { MarriplanStatusBadge } from "@/components/MarriplanStatusBadge";
+import { FeatureLimitModal } from "@/components/billing/FeatureLimitModal";
+import { FreePlanLimitBanner } from "@/components/billing/FreePlanLimitBanner";
 import {
   createChecklistTask,
   deleteChecklistTask,
@@ -53,6 +55,12 @@ import { useEffect, useState } from "react";
 import ChecklistTaskModal from "./ChecklistTaskModal";
 import BaseLayout from "./Layout/_BaseLayout";
 import PageSectionHeader from "./PageSectionHeader";
+import {
+  FEATURE_LABELS,
+  getFeatureLimit,
+  isFeatureLimitReached,
+} from "@/constants/plans";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 
 export default function ChecklistPage() {
   const [tasks, setTasks] = useState<ChecklistTask[]>([]);
@@ -70,8 +78,16 @@ export default function ChecklistPage() {
   );
   const [advancedFiltersOpen, setAdvancedFiltersOpen] = useState(false);
   const [loadingTaskId, setLoadingTaskId] = useState<number | null>(null);
+  const [taskLimitModalOpen, setTaskLimitModalOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 600px)");
   const isCompactFilters = useMediaQuery("(max-width: 1024px)");
+  const checklistFeatureAccess = useFeatureAccess("checklist", tasks.length);
+  const checklistLimit = getFeatureLimit("checklist");
+  const checklistLimitReached = isFeatureLimitReached(
+    "checklist",
+    tasks.length,
+    checklistFeatureAccess.isPremium,
+  );
 
   useEffect(() => {
     setLoading(true);
@@ -228,6 +244,11 @@ export default function ChecklistPage() {
 
   // Handlers
   function handleAddTask(month: number) {
+    if (!checklistFeatureAccess.canAccess) {
+      setTaskLimitModalOpen(true);
+      return;
+    }
+
     const newTask: ChecklistTask = {
       id: 0,
       month,
@@ -239,6 +260,7 @@ export default function ChecklistPage() {
       status: "pending",
       is_template: false,
       attachments: [],
+      notes: "",
       created_at: "",
       updated_at: "",
     };
@@ -370,7 +392,7 @@ export default function ChecklistPage() {
             title="Checklist de Casamento"
             description="Acompanhe tarefas, prazos e prioridades em uma visão padronizada da aplicação."
             actions={
-              isCompactFilters ? undefined : (
+              !isCompactFilters && !checklistLimitReached ? (
                 <Button
                   leftSection={<IconFileDownload size={18} />}
                   variant="light"
@@ -379,7 +401,7 @@ export default function ChecklistPage() {
                 >
                   Exportar PDF
                 </Button>
-              )
+              ) : undefined
             }
             filters={
               <Group gap="sm" align="center" wrap="wrap">
@@ -441,6 +463,15 @@ export default function ChecklistPage() {
               </Group>
             }
           />
+          {checklistLimitReached ? (
+            <FreePlanLimitBanner
+              featureLabel={FEATURE_LABELS.checklist}
+              limit={typeof checklistLimit === "number" ? checklistLimit : 0}
+              currentUsage={tasks.length}
+              title="Você atingiu o limite do plano gratuito para checklist"
+              description="No plano Free você pode manter até 5 tarefas no checklist. Para adicionar novas tarefas, faça upgrade para o Premium."
+            />
+          ) : null}
           <Modal
             opened={advancedFiltersOpen}
             onClose={() => setAdvancedFiltersOpen(false)}
@@ -625,16 +656,18 @@ export default function ChecklistPage() {
                             </Box>
                             <Collapse in={opened} transitionDuration={200}>
                               <Group mb="sm" justify="space-between">
-                                <Button
-                                  leftSection={<IconPlus size={14} />}
-                                  size="xs"
-                                  styles={primaryButtonStyles}
-                                  onClick={() =>
-                                    handleAddTask(periodTasks[0]?.month || 0)
-                                  }
-                                >
-                                  Adicionar tarefa
-                                </Button>
+                                {!checklistLimitReached ? (
+                                  <Button
+                                    leftSection={<IconPlus size={14} />}
+                                    size="xs"
+                                    styles={primaryButtonStyles}
+                                    onClick={() =>
+                                      handleAddTask(periodTasks[0]?.month || 0)
+                                    }
+                                  >
+                                    Adicionar tarefa
+                                  </Button>
+                                ) : null}
                                 <Text size="xs" c="dimmed">
                                   {periodTasks.length} tarefa(s)
                                 </Text>
@@ -790,6 +823,13 @@ export default function ChecklistPage() {
             onClose={() => setModalOpen(false)}
             onSave={handleSaveTask}
             initial={editingTask || undefined}
+          />
+          <FeatureLimitModal
+            opened={taskLimitModalOpen}
+            onClose={() => setTaskLimitModalOpen(false)}
+            featureLabel={FEATURE_LABELS.checklist}
+            limit={getFeatureLimit("checklist")}
+            currentUsage={tasks.length}
           />
         </Stack>
       </Box>

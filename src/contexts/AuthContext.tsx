@@ -21,6 +21,7 @@ import api from "../services/api";
 
 export const unprotectedRoutes = [
   "/",
+  "/plans",
   "/terms",
   "/privacy",
   "/login",
@@ -162,6 +163,26 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const handleUserUpdated = () => {
+      const updatedUser = readStoredUser();
+      const currentUserSerialized = JSON.stringify(user ?? null);
+      const updatedUserSerialized = JSON.stringify(updatedUser ?? null);
+
+      if (updatedUser && updatedUserSerialized !== currentUserSerialized) {
+        setUser(updatedUser);
+      }
+    };
+
+    window.addEventListener("marriplan:user-updated", handleUserUpdated);
+
+    return () => window.removeEventListener("marriplan:user-updated", handleUserUpdated);
+  }, [user]);
+
   const login = async (body: LoginFormData) => {
     const config = {
       headers: {},
@@ -195,6 +216,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = () => {
     setUser(undefined);
     clearAuthStorage();
+    if (typeof window !== "undefined") {
+      window.sessionStorage.removeItem("marriplan:trial-modal-seen");
+    }
     destroyCookie(null, "redirect_route");
   };
 

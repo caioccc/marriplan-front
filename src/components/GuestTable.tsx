@@ -1,6 +1,14 @@
 import { GalleryView } from "@/components/GalleryView";
 import ImportGuestsModal from "@/components/ImportGuestsModal";
+import { FeatureLimitModal } from "@/components/billing/FeatureLimitModal";
+import { FreePlanLimitBanner } from "@/components/billing/FreePlanLimitBanner";
 import { ListView } from "@/components/ListView";
+import {
+  FEATURE_LABELS,
+  getFeatureLimit,
+  isFeatureLimitReached,
+} from "@/constants/plans";
+import { useFeatureAccess } from "@/hooks/useFeatureAccess";
 import {
   guests_create,
   guests_delete,
@@ -158,9 +166,17 @@ export default function GuestTable() {
     whatsapp_link?: string;
     token?: string;
   } | null>(null);
+  const [guestLimitModalOpen, setGuestLimitModalOpen] = useState(false);
   const isCompactLayout = useMediaQuery("(max-width: 1024px)");
   const isMobile = useMediaQuery("(max-width: 768px)");
   const isTablet = useMediaQuery("(min-width: 768px)");
+  const guestFeatureAccess = useFeatureAccess("guests", guests.length);
+  const guestLimit = getFeatureLimit("guests");
+  const guestLimitReached = isFeatureLimitReached(
+    "guests",
+    guests.length,
+    guestFeatureAccess.isPremium,
+  );
 
   const pageTopRef = useRef<HTMLDivElement>(null);
 
@@ -340,6 +356,11 @@ export default function GuestTable() {
   }, [maxCompanionsValue]);
 
   function handleAdd() {
+    if (!guestFeatureAccess.canAccess) {
+      setGuestLimitModalOpen(true);
+      return;
+    }
+
     setEditing(null);
     form.setValues({
       name: "",
@@ -568,58 +589,60 @@ export default function GuestTable() {
         title="Meus Convidados"
         description="Gerencie presença, contatos e importações em uma área padronizada da aplicação."
         actions={
-          <Group gap="sm">
-            <Button
-              leftSection={<IconPlus size={18} />}
-              onClick={handleAdd}
-              styles={primaryButtonStyles}
-            >
-              Adicionar convidado
-            </Button>
-            <Menu shadow="md" width={220} position="bottom-end">
-              <Menu.Target>
-                <Button
-                  styles={softButtonStyles}
-                  px={8}
-                  style={{ minWidth: 44 }}
-                >
-                  <IconDotsVertical size={22} />
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={<IconDownload size={18} />}
-                  onClick={() => setImportModalOpen(true)}
-                >
-                  Baixar modelo de planilha
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconUpload size={18} />}
-                  onClick={() => setImportModalOpen(true)}
-                >
-                  Importar convidados
-                </Menu.Item>
-                {!isCompactLayout && (
-                  <Menu.Item
-                    leftSection={<IconFileTypePdf size={18} />}
-                    onClick={() => handleExport("pdf")}
-                  >
-                    Exportar PDF
-                  </Menu.Item>
-                )}
-              </Menu.Dropdown>
-            </Menu>
-            {!isCompactLayout && (
+          !guestLimitReached ? (
+            <Group gap="sm">
               <Button
-                leftSection={<IconFileTypePdf size={18} />}
-                styles={softButtonStyles}
-                onClick={() => handleExport("pdf")}
-                loading={exporting === "pdf"}
+                leftSection={<IconPlus size={18} />}
+                onClick={handleAdd}
+                styles={primaryButtonStyles}
               >
-                Exportar PDF
+                Adicionar convidado
               </Button>
-            )}
-          </Group>
+              <Menu shadow="md" width={220} position="bottom-end">
+                <Menu.Target>
+                  <Button
+                    styles={softButtonStyles}
+                    px={8}
+                    style={{ minWidth: 44 }}
+                  >
+                    <IconDotsVertical size={22} />
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={<IconDownload size={18} />}
+                    onClick={() => setImportModalOpen(true)}
+                  >
+                    Baixar modelo de planilha
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconUpload size={18} />}
+                    onClick={() => setImportModalOpen(true)}
+                  >
+                    Importar convidados
+                  </Menu.Item>
+                  {!isCompactLayout && (
+                    <Menu.Item
+                      leftSection={<IconFileTypePdf size={18} />}
+                      onClick={() => handleExport("pdf")}
+                    >
+                      Exportar PDF
+                    </Menu.Item>
+                  )}
+                </Menu.Dropdown>
+              </Menu>
+              {!isCompactLayout && (
+                <Button
+                  leftSection={<IconFileTypePdf size={18} />}
+                  styles={softButtonStyles}
+                  onClick={() => handleExport("pdf")}
+                  loading={exporting === "pdf"}
+                >
+                  Exportar PDF
+                </Button>
+              )}
+            </Group>
+          ) : undefined
         }
         filters={
           isTablet ? (
@@ -739,6 +762,15 @@ export default function GuestTable() {
           )
         }
       />
+      {guestLimitReached ? (
+        <FreePlanLimitBanner
+          featureLabel={FEATURE_LABELS.guests}
+          limit={typeof guestLimit === "number" ? guestLimit : 0}
+          currentUsage={guests.length}
+          title="Você atingiu o limite do plano gratuito para convidados"
+          description="No plano Free você pode manter até 10 convidados. Para importar, exportar ou adicionar novos contatos, faça upgrade para o Premium."
+        />
+      ) : null}
       {isMobile ? (
         <Card
           radius="xl"
@@ -1775,6 +1807,13 @@ export default function GuestTable() {
           setImportModalOpen(false);
           await loadGuests();
         }}
+      />
+      <FeatureLimitModal
+        opened={guestLimitModalOpen}
+        onClose={() => setGuestLimitModalOpen(false)}
+        featureLabel={FEATURE_LABELS.guests}
+        limit={getFeatureLimit("guests")}
+        currentUsage={guests.length}
       />
       {/* Responsividade customizada para mobile */}
       <style>{`

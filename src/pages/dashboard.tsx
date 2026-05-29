@@ -5,6 +5,7 @@
 
 import BaseLayout from "@/components/Layout/_BaseLayout";
 import { MarriplanStatusBadge } from "@/components/MarriplanStatusBadge";
+import { UpgradeCta } from "@/components/billing/UpgradeCta";
 import { SuppliersCarouselRow } from "@/components/SuppliersCarouselRow";
 import {
   DRESS_CODE_OPTIONS,
@@ -12,6 +13,7 @@ import {
   WEDDING_STYLES,
 } from "@/constants/weddingIdentityData";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useWeddingIdentityState } from "@/hooks/useWeddingIdentityState";
 import { fetchChecklistTasks } from "@/services/checklist";
 import { giftsService } from "@/services/giftsService";
@@ -120,6 +122,7 @@ const MarriplanDashboard: React.FC = () => {
   const [checklistTasks, setChecklistTasks] = useState<ChecklistTask[]>([]);
   const [giftPage, setGiftPage] = useState(0);
   const { user } = useAuth();
+  const { isFree } = useSubscription();
   const {
     palette: identityPalette,
     selectedStyle,
@@ -967,6 +970,10 @@ const MarriplanDashboard: React.FC = () => {
               </Stack>
             </Card>
           </SimpleGrid>
+
+          {isFree && (
+            <UpgradeCta />
+          )}
 
           <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
             <Card

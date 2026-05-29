@@ -2,6 +2,12 @@ import {
   searchWeddingInspirations,
   WeddingIdentityInspirationPayload,
 } from "@/services/weddingIdentity.service";
+import { FreePlanLimitBanner } from "@/components/billing/FreePlanLimitBanner";
+import {
+  FEATURE_LABELS,
+  getFeatureLimit,
+  isFeatureLimitReached,
+} from "@/constants/plans";
 import {
   ActionIcon,
   Button,
@@ -24,6 +30,7 @@ import {
   IconSearch,
 } from "@tabler/icons-react";
 import React, { useEffect, useRef, useState } from "react";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface WeddingInspirationsPageProps {
   selectedStyle: string;
@@ -55,11 +62,27 @@ export const WeddingInspirationsPage: React.FC<
   // Estados para controle de paginação infinita
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const { isPremium } = useSubscription();
 
   const pageSize = 12;
   const hasMore = images.length < total;
   const initialLoading = loading && images.length === 0;
   const loadingMore = loading && images.length > 0;
+  const inspirationLimit = getFeatureLimit("inspirations");
+  const selectedUniqueCount = selectedImages.reduce((acc, item) => {
+    if (acc.seen.has(item.image_url)) {
+      return acc;
+    }
+
+    acc.seen.add(item.image_url);
+    acc.count += 1;
+    return acc;
+  }, { seen: new Set<string>(), count: 0 }).count;
+  const inspirationLimitReached = isFeatureLimitReached(
+    "inspirations",
+    selectedUniqueCount,
+    isPremium,
+  );
 
   // Carregamento assíncrono dos dados (idêntico ao padrão adotado em Fornecedores)
   useEffect(() => {
@@ -143,6 +166,14 @@ export const WeddingInspirationsPage: React.FC<
         prev.filter((img) => img.image_url !== imageUrl),
       );
     } else {
+      if (inspirationLimitReached) {
+        notifications.show({
+          color: "orange",
+          message: "Você atingiu o limite de inspirações do plano gratuito.",
+        });
+        return;
+      }
+
       const payload: WeddingIdentityInspirationPayload = {
         image_url: imageUrl,
         title: item.title || `Inspiração ${selectedStyle}`,
@@ -160,22 +191,32 @@ export const WeddingInspirationsPage: React.FC<
 
   return (
     <Stack gap="md" style={{ minHeight: "450px" }}>
-      <form onSubmit={handleSearchSubmit}>
-        <Group align="flex-end">
-          <TextInput
-            placeholder="Ex: buquê de rosas brancas, altar ao ar livre..."
-            label="Buscar mais inspirações"
-            description="Refine a busca gerada pela IA para o seu estilo"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.currentTarget.value)}
-            style={{ flex: 1 }}
-            leftSection={<IconSearch size={16} />}
-          />
-          <Button type="submit" variant="light" loading={loading && page === 1}>
-            Buscar
-          </Button>
-        </Group>
-      </form>
+      {inspirationLimitReached ? (
+        <FreePlanLimitBanner
+          featureLabel={FEATURE_LABELS.inspirations}
+          limit={typeof inspirationLimit === "number" ? inspirationLimit : 0}
+          currentUsage={selectedUniqueCount}
+          title="Você atingiu o limite do plano gratuito para inspirações"
+          description="No plano Free você pode manter até 5 inspirações. Para buscar e salvar novas referências, faça upgrade para o Premium."
+        />
+      ) : (
+        <form onSubmit={handleSearchSubmit}>
+          <Group align="flex-end">
+            <TextInput
+              placeholder="Ex: buquê de rosas brancas, altar ao ar livre..."
+              label="Buscar mais inspirações"
+              description="Refine a busca gerada pela IA para o seu estilo"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.currentTarget.value)}
+              style={{ flex: 1 }}
+              leftSection={<IconSearch size={16} />}
+            />
+            <Button type="submit" variant="light" loading={loading && page === 1}>
+              Buscar
+            </Button>
+          </Group>
+        </form>
+      )}
 
       {initialLoading ? (
         <Center py="xl" style={{ flex: 1 }}>

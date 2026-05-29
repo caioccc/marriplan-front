@@ -1,6 +1,7 @@
 import axios, { HttpStatusCode } from 'axios'
 const baseURL = process.env.NEXT_PUBLIC_BASE_URL
 const FIRST_STEPS_REFRESH_EVENT = 'marriplan:first-steps-refresh'
+const AUTH_USER_UPDATED_EVENT = 'marriplan:user-updated'
 
 const api = axios.create({ baseURL: `${baseURL}/` })
 
@@ -92,6 +93,23 @@ const dispatchFirstStepsRefresh = () => {
 
 api.interceptors.response.use(
     (response) => {
+        const responseUser = response.headers?.['x-marriplan-user'] ?? response.headers?.['X-Marriplan-User']
+
+        if (responseUser && typeof window !== 'undefined') {
+            try {
+                const parsedUser = typeof responseUser === 'string' ? JSON.parse(responseUser) : responseUser
+                const nextUserSerialized = JSON.stringify(parsedUser)
+                const currentUserSerialized = localStorage.getItem('user')
+
+                if (currentUserSerialized !== nextUserSerialized) {
+                    localStorage.setItem('user', nextUserSerialized)
+                    window.dispatchEvent(new Event(AUTH_USER_UPDATED_EVENT))
+                }
+            } catch {
+                // Ignore malformed payloads and keep the existing cached user.
+            }
+        }
+
         if (shouldRefreshFirstSteps(response.config?.method, response.config?.url)) {
             dispatchFirstStepsRefresh()
         }

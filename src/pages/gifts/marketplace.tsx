@@ -1,4 +1,10 @@
 import BaseLayout from "@/components/Layout/_BaseLayout";
+import { FreePlanLimitBanner } from "@/components/billing/FreePlanLimitBanner";
+import {
+  FEATURE_LABELS,
+  getFeatureLimit,
+  isFeatureLimitReached,
+} from "@/constants/plans";
 import PageSectionHeader from "@/components/PageSectionHeader";
 import { GiftFormModal } from "@/components/GiftFormModal";
 import { giftsService } from "@/services/giftsService";
@@ -31,6 +37,7 @@ import {
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSubscription } from "@/hooks/useSubscription";
 
 const pageSize = 12;
 
@@ -158,12 +165,14 @@ function MarketplaceProductCard({
   product,
   alreadyAdded,
   adding,
+  canAdd,
   onAdd,
 }: {
   product: MarketplaceProduct;
   alreadyAdded: boolean;
   adding: boolean;
-  onAdd: (product: MarketplaceProduct) => void;
+  canAdd: boolean;
+  onAdd?: (product: MarketplaceProduct) => void;
 }) {
   const imageUrl = product.image_url || "";
   const categoryLabel = getMarketplaceCategoryLabel(product.category);
@@ -258,17 +267,23 @@ function MarketplaceProductCard({
           >
             {priceLabel}
           </Text>
-          <Button
-            size="md"
-            styles={primaryButtonStyles}
-            leftSection={alreadyAdded ? <IconCheck size={16} /> : <IconPlus size={16} />}
-            loading={adding}
-            disabled={alreadyAdded}
-            onClick={() => onAdd(product)}
-            fullWidth
-          >
-            {alreadyAdded ? "Adicionado" : "Adicionar à lista"}
-          </Button>
+          {canAdd ? (
+            <Button
+              size="md"
+              styles={primaryButtonStyles}
+              leftSection={alreadyAdded ? <IconCheck size={16} /> : <IconPlus size={16} />}
+              loading={adding}
+              disabled={alreadyAdded}
+              onClick={() => onAdd?.(product)}
+              fullWidth
+            >
+              {alreadyAdded ? "Adicionado" : "Adicionar à lista"}
+            </Button>
+          ) : (
+            <Text size="sm" c="dimmed" ta="center">
+              Seu plano Free não permite adicionar novos presentes.
+            </Text>
+          )}
         </Stack>
       </Stack>
     </Card>
@@ -286,8 +301,16 @@ export default function ProductMarketplacePage() {
   const [existingGiftKeys, setExistingGiftKeys] = useState<Set<string>>(
     new Set(),
   );
+  const [existingGiftCount, setExistingGiftCount] = useState(0);
   const [addingProductKey, setAddingProductKey] = useState<string | null>(null);
   const pageTopRef = useRef<HTMLDivElement>(null);
+  const { isPremium } = useSubscription();
+  const giftLimit = getFeatureLimit("gifts");
+  const giftLimitReached = isFeatureLimitReached(
+    "gifts",
+    existingGiftCount,
+    isPremium,
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -304,6 +327,7 @@ export default function ProductMarketplacePage() {
         });
 
         if (mounted) setExistingGiftKeys(keys);
+        if (mounted) setExistingGiftCount(items.length);
       } catch {
         // ignore load errors and keep the marketplace usable
       }
@@ -412,10 +436,13 @@ export default function ProductMarketplacePage() {
         color: "green",
         message: "Produto adicionado à sua lista.",
       });
-    } catch {
+    } catch (error) {
+      const errorMessage =
+        (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        "Não foi possível adicionar este produto.";
       notifications.show({
         color: "red",
-        message: "Não foi possível adicionar este produto.",
+        message: errorMessage,
       });
     } finally {
       setAddingProductKey(null);
@@ -451,16 +478,28 @@ export default function ProductMarketplacePage() {
               >
                 Voltar
               </Button>
-              <Button
-                leftSection={<IconPlus size={18} />}
-                styles={primaryButtonStyles}
-                onClick={() => setManualModalOpen(true)}
-              >
-                Adicionar Novo Produto
-              </Button>
+              {!giftLimitReached ? (
+                <Button
+                  leftSection={<IconPlus size={18} />}
+                  styles={primaryButtonStyles}
+                  onClick={() => setManualModalOpen(true)}
+                >
+                  Adicionar Novo Produto
+                </Button>
+              ) : null}
             </Group>
           }
         />
+
+        {giftLimitReached ? (
+          <FreePlanLimitBanner
+            featureLabel={FEATURE_LABELS.gifts}
+            limit={typeof giftLimit === "number" ? giftLimit : 0}
+            currentUsage={existingGiftCount}
+            title="Você atingiu o limite do plano gratuito para presentes"
+            description="No plano Free você pode manter até 5 presentes. Para adicionar novos itens ao marketplace ou salvar produtos sugeridos, faça upgrade para o Premium."
+          />
+        ) : null}
 
         <Card radius="xl" p="md" withBorder>
           <Stack gap="md">
@@ -519,13 +558,15 @@ export default function ProductMarketplacePage() {
               <Text c="dimmed" ta="center" maw={460}>
                 Tente buscar por outro termo ou crie um produto manualmente.
               </Text>
-              <Button
-                leftSection={<IconPlus size={18} />}
-                styles={primaryButtonStyles}
-                onClick={() => setManualModalOpen(true)}
-              >
-                Adicionar Novo Produto
-              </Button>
+              {!giftLimitReached ? (
+                <Button
+                  leftSection={<IconPlus size={18} />}
+                  styles={primaryButtonStyles}
+                  onClick={() => setManualModalOpen(true)}
+                >
+                  Adicionar Novo Produto
+                </Button>
+              ) : null}
             </Stack>
           </Card>
         ) : (
@@ -542,6 +583,7 @@ export default function ProductMarketplacePage() {
                     product={product}
                     alreadyAdded={alreadyAdded}
                     adding={addingProductKey === productKey}
+                    canAdd={!giftLimitReached}
                     onAdd={handleAddToList}
                   />
                 );

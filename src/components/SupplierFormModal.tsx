@@ -173,13 +173,15 @@ export function SupplierFormModal({
       });
       onSaved?.(saved);
       onClose();
-    } catch {
+    } catch (error) {
+      const errorMessage =
+        (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        (mode === "edit"
+          ? "Não foi possível atualizar o fornecedor."
+          : "Não foi possível criar o fornecedor.");
       notifications.show({
         color: "red",
-        message:
-          mode === "edit"
-            ? "Não foi possível atualizar o fornecedor."
-            : "Não foi possível criar o fornecedor.",
+        message: errorMessage,
       });
     } finally {
       setSaving(false);

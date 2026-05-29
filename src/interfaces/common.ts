@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import type { BillingSubscriptionSummary } from "@/constants/plans";
+
 export interface WeddingProfile {
   id: number;
   created_at: string;
@@ -109,6 +111,8 @@ export type UserData = {
   first_steps: boolean;
   wedding_partner_role?: "noivo" | "noiva" | null;
   wedding_profile?: any;
+  billing_subscription?: BillingSubscriptionSummary;
+  has_premium_access?: boolean;
 };
 
 export type LoginResponse = {

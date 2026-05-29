@@ -72,6 +72,9 @@ const LoginContent: NextPage = () => {
                     return;
                 }
                 toast({title: t('login.login_success')});
+                if (typeof window !== 'undefined') {
+                    window.sessionStorage.removeItem('marriplan:trial-modal-seen');
+                }
                 const redirect = typeof router.query.redirect === 'string' ? router.query.redirect : '/dashboard'
                 router.push(redirect || '/dashboard');
             })

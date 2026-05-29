@@ -54,6 +54,8 @@ import {
   IconTrash,
 } from "@tabler/icons-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSubscription } from "@/hooks/useSubscription";
+import { getFeatureLimit } from "@/constants/plans";
 
 const FIRST_STEPS_REFRESH_EVENT = "marriplan:first-steps-refresh";
 
@@ -92,6 +94,7 @@ export default function OverviewPage() {
   const [deletingId, setDeletingId] = useState<number | null>(null); // Estado para controlar qual ID está sendo deletado
   const [fullscreenImage, setFullscreenImage] =
     useState<FullscreenImageState | null>(null);
+  const { isPremium } = useSubscription();
 
   const modalTopRef = useRef<HTMLDivElement>(null);
 
@@ -272,7 +275,19 @@ export default function OverviewPage() {
 
   const handleOpenIdentityModal = () => {
     setActiveStep(0);
-    setSelectedImages([]); // Reseta a seleção temporária do modal
+    setSelectedImages(
+      savedInspirations.map((item) => ({
+        image_url: item.image_url,
+        title: item.title,
+        description: item.description,
+        selected_style: item.selected_style,
+        dress_code: item.dress_code,
+        is_favorite: item.is_favorite,
+        is_liked: item.is_liked,
+        query: item.query,
+        thumbnail_url: item.thumbnail_url,
+      })),
+    );
     setIsIdentityModalOpen(true);
   };
 
@@ -287,7 +302,39 @@ export default function OverviewPage() {
       try {
         await saveWeddingIdentity();
 
-        const savePromises = selectedImages.map((url) =>
+        const savedImageUrls = new Set(
+          savedInspirations.map((item) => item.image_url),
+        );
+
+        const inspirationLimit = getFeatureLimit("inspirations");
+        const savedUniqueCount = savedImageUrls.size;
+
+        const uniqueSelectedImages = selectedImages.filter(
+          (item, index, self) =>
+            self.findIndex((candidate) => candidate.image_url === item.image_url) ===
+            index,
+        );
+
+        const newImagesToSave = uniqueSelectedImages.filter(
+          (item) => !savedImageUrls.has(item.image_url),
+        );
+
+        if (
+          !isPremium &&
+          typeof inspirationLimit === "number" &&
+          savedUniqueCount >= inspirationLimit &&
+          newImagesToSave.length > 0
+        ) {
+          notifications.show({
+            color: "orange",
+            title: "Limite do plano gratuito atingido",
+            message:
+              "Seu plano Free já está no limite de inspirações. Faça upgrade para salvar novas referências.",
+          });
+          return;
+        }
+
+        const savePromises = newImagesToSave.map((url) =>
           saveWeddingInspiration({
             image_url: url.image_url,
             selected_style: selectedStyle,
@@ -306,11 +353,15 @@ export default function OverviewPage() {
         setIsIdentityModalOpen(false);
       } catch (error) {
         console.error("Erro ao salvar imagens de inspiração:", error);
+        const errorMessage =
+          (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+          "Não foi possível concluir o cadastro da identidade do casamento.";
         notifications.show({
           color: "red",
           title: "Falha ao salvar identidade",
           message:
-            "Não foi possível concluir o cadastro da identidade do casamento.",
+            errorMessage ||
+            "Não foi possível salvar as inspirações neste momento.",
         });
       } finally {
         setIsSubmitting(false);
@@ -341,9 +392,12 @@ export default function OverviewPage() {
       });
     } catch (error) {
       console.error("Erro ao deletar inspiração:", error);
+      const errorMessage =
+        (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        "Não foi possível remover a inspiração.";
       notifications.show({
         color: "red",
-        message: "Não foi possível remover a inspiração.",
+        message: errorMessage,
       });
     } finally {
       setDeletingId(null);

@@ -1,11 +1,19 @@
+import { FreePlanLimitBanner } from "@/components/billing/FreePlanLimitBanner";
 import BaseLayout from "@/components/Layout/_BaseLayout";
 import PageSectionHeader from "@/components/PageSectionHeader";
 import { SupplierCard } from "@/components/SupplierCard";
 import { SupplierFormModal } from "@/components/SupplierFormModal";
+import {
+  FEATURE_LABELS,
+  getFeatureLimit,
+  isFeatureLimitReached,
+} from "@/constants/plans";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 import {
   listSupplierCategories,
   listSuppliers,
+  listWeddingSuppliers,
   selectSupplierForWedding,
   Supplier,
   SupplierCategory,
@@ -79,6 +87,7 @@ export default function SuppliersMarketplacePage() {
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [weddingSupplierCount, setWeddingSupplierCount] = useState(0);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [city, setCity] = useState("");
@@ -100,6 +109,14 @@ export default function SuppliersMarketplacePage() {
   const [contractFile, setContractFile] = useState<File | null>(null);
   const [weddingForm, setWeddingForm] = useState(initialWeddingSupplierForm);
   const isCompactLayout = useMediaQuery("(max-width: 1024px)");
+  const { isPremium } = useSubscription();
+
+  const supplierLimit = getFeatureLimit("suppliers");
+  const supplierLimitReached = isFeatureLimitReached(
+    "suppliers",
+    weddingSupplierCount,
+    isPremium,
+  );
 
   useEffect(() => {
     if (advancedFiltersOpen) {
@@ -119,10 +136,11 @@ export default function SuppliersMarketplacePage() {
 
   useEffect(() => {
     let mounted = true;
+
     async function load() {
       setLoading(true);
       try {
-        const [supplierData, categoryData] = await Promise.all([
+        const [supplierData, categoryData, weddingData] = await Promise.all([
           listSuppliers({
             page,
             page_size: 12,
@@ -134,16 +152,22 @@ export default function SuppliersMarketplacePage() {
             ordering: "-is_featured,name",
           }),
           listSupplierCategories(),
+          listWeddingSuppliers({ page_size: 1 }),
         ]);
+
         if (!mounted) return;
+
         setItems(supplierData.results || []);
         setTotal(supplierData.count || 0);
         setCategories(categoryData.results || categoryData || []);
+        setWeddingSupplierCount(weddingData.count || 0);
       } finally {
         if (mounted) setLoading(false);
       }
     }
+
     load();
+
     return () => {
       mounted = false;
     };
@@ -193,7 +217,7 @@ export default function SuppliersMarketplacePage() {
   };
 
   const handleAddToWedding = async () => {
-    if (!selectedSupplier) return;
+    if (!selectedSupplier || supplierLimitReached) return;
 
     setAddingSupplier(true);
     try {
@@ -223,10 +247,13 @@ export default function SuppliersMarketplacePage() {
       });
       setAddModalOpen(false);
       router.push("/meus-fornecedores");
-    } catch {
+    } catch (error) {
+      const errorMessage =
+        (error as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Não foi possível adicionar este fornecedor ao seu casamento.";
       notifications.show({
         color: "red",
-        message: "Não foi possível adicionar este fornecedor ao seu casamento.",
+        message: errorMessage,
       });
     } finally {
       setAddingSupplier(false);
@@ -250,16 +277,28 @@ export default function SuppliersMarketplacePage() {
               >
                 Voltar
               </Button>
-              <Button
-                leftSection={<IconPlus size={18} />}
-                styles={primaryButtonStyles}
-                onClick={handleOpenCreateSupplier}
-              >
-                Novo fornecedor
-              </Button>
+              {!supplierLimitReached ? (
+                <Button
+                  leftSection={<IconPlus size={18} />}
+                  styles={primaryButtonStyles}
+                  onClick={handleOpenCreateSupplier}
+                >
+                  Novo fornecedor
+                </Button>
+              ) : null}
             </Group>
           }
         />
+
+        {supplierLimitReached ? (
+          <FreePlanLimitBanner
+            featureLabel={FEATURE_LABELS.suppliers}
+            limit={typeof supplierLimit === "number" ? supplierLimit : 0}
+            currentUsage={weddingSupplierCount}
+            title="Você atingiu o limite do plano gratuito para fornecedores"
+            description="No plano Free você pode manter até 3 fornecedores. Para cadastrar novos parceiros ou adicioná-los ao casamento, faça upgrade para o Premium."
+          />
+        ) : null}
 
         <Card radius="xl" p="md" withBorder>
           <Stack gap="md">
@@ -354,12 +393,14 @@ export default function SuppliersMarketplacePage() {
                 Ajuste os filtros ou cadastre um novo fornecedor para começar a
                 montar seu catálogo.
               </Text>
-              <Button
-                leftSection={<IconPlus size={18} />}
-                onClick={handleOpenCreateSupplier}
-              >
-                Cadastrar fornecedor
-              </Button>
+              {!supplierLimitReached ? (
+                <Button
+                  leftSection={<IconPlus size={18} />}
+                  onClick={handleOpenCreateSupplier}
+                >
+                  Cadastrar fornecedor
+                </Button>
+              ) : null}
             </Stack>
           </Card>
         ) : (
@@ -371,7 +412,7 @@ export default function SuppliersMarketplacePage() {
                 onView={(item) =>
                   router.push(`/meus-fornecedores/fornecedores/${item.id}`)
                 }
-                onAdd={handleOpenAddModal}
+                onAdd={supplierLimitReached ? undefined : handleOpenAddModal}
                 onEdit={handleOpenEditSupplier}
                 canEdit={supplier.created_by_user === user?.id}
               />
@@ -689,7 +730,7 @@ export default function SuppliersMarketplacePage() {
               loading={addingSupplier}
               styles={primaryButtonStyles}
               onClick={handleAddToWedding}
-              disabled={addingSupplier || !selectedSupplier}
+              disabled={addingSupplier || !selectedSupplier || supplierLimitReached}
             >
               Adicionar ao casamento
             </Button>

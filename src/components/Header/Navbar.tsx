@@ -51,6 +51,12 @@ export default function Navbar(): JSX.Element {
           >
             Como funciona
           </a>
+          <Link
+            href="/plans"
+            className="text-sm text-[#4a3f36] transition-colors duration-200 hover:text-[#2f2822]"
+          >
+            Planos
+          </Link>
           <a
             href="#contato"
             onClick={(e) => {
@@ -126,6 +132,13 @@ export default function Navbar(): JSX.Element {
             >
               Como funciona
             </a>
+            <Link
+              href="/plans"
+              onClick={() => setOpen(false)}
+              className="text-base text-[#4a3f36]"
+            >
+              Planos
+            </Link>
             <a
               onClick={(e) => {
                 e.preventDefault();
