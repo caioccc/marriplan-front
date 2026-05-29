@@ -631,7 +631,7 @@ export default function GuestTable() {
                   )}
                 </Menu.Dropdown>
               </Menu>
-              {!isCompactLayout && (
+              {/* {!isCompactLayout && (
                 <Button
                   leftSection={<IconFileTypePdf size={18} />}
                   styles={softButtonStyles}
@@ -640,7 +640,7 @@ export default function GuestTable() {
                 >
                   Exportar PDF
                 </Button>
-              )}
+              )} */}
             </Group>
           ) : undefined
         }

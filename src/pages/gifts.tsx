@@ -6,8 +6,10 @@ import { ListView } from "@/components/ListView";
 import { MarkAsPurchasedModal } from "@/components/MarkAsPurchasedModal";
 import { MarriplanStatusBadge } from "@/components/MarriplanStatusBadge";
 import PageSectionHeader from "@/components/PageSectionHeader";
+import { PixSettingsModal } from "@/components/gifts/pix/PixSettingsModal";
 import { giftsService } from "@/services/giftsService";
 import { guests_list } from "@/services/guests";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   inputStyles,
   primaryButtonStyles,
@@ -99,6 +101,7 @@ const paginationThemeStyles = `
 
 const GiftsPage: NextPage = () => {
   const router = useRouter();
+  const { user } = useAuth();
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
@@ -108,6 +111,7 @@ const GiftsPage: NextPage = () => {
   const [editingGift, setEditingGift] = useState<Gift | undefined>();
   const [shareModal, setShareModal] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
+  const [pixSettingsModalOpen, setPixSettingsModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
   const [draftCategory, setDraftCategory] = useState("");
@@ -140,6 +144,23 @@ const GiftsPage: NextPage = () => {
     getAllCategoryOptions(),
   );
   const pageTopRef = useRef<HTMLDivElement>(null);
+  const pixSettingsAutoOpenedRef = useRef(false);
+  const coupleName = user?.wedding_profile
+    ? `${user.wedding_profile.nome_noivo || "Noivo"}${
+        user.wedding_profile.nome_noivo && user.wedding_profile.nome_noiva
+          ? " & "
+          : ""
+      }${user.wedding_profile.nome_noiva || "Noiva"}`
+    : "Noivos";
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (router.query.openPixSettings !== "1") return;
+    if (pixSettingsAutoOpenedRef.current) return;
+
+    pixSettingsAutoOpenedRef.current = true;
+    setPixSettingsModalOpen(true);
+  }, [router.isReady, router.query.openPixSettings]);
 
   useEffect(() => {
     let mounted = true;
@@ -482,13 +503,20 @@ const GiftsPage: NextPage = () => {
               {!isCompactLayout && (
                 <>
                   <Button
+                    leftSection={<IconCards size={18} />}
+                    styles={softButtonStyles}
+                    onClick={() => setPixSettingsModalOpen(true)}
+                  >
+                    Configurações PIX
+                  </Button>
+                  {/* <Button
                     leftSection={<IconFileTypePdf size={18} />}
                     styles={softButtonStyles}
                     onClick={() => handleExport("pdf")}
                     loading={exporting === "pdf"}
                   >
                     Exportar PDF
-                  </Button>
+                  </Button> */}
                   <Button
                     leftSection={<IconWorldPin size={18} />}
                     styles={softButtonStyles}
@@ -506,13 +534,13 @@ const GiftsPage: NextPage = () => {
                   >
                     Ver Vitrine
                   </Button>
-                  <Button
+                  {/* <Button
                     leftSection={<IconShare size={18} />}
                     styles={softButtonStyles}
                     onClick={handleShare}
                   >
                     Compartilhar lista
-                  </Button>
+                  </Button> */}
                 </>
               )}
               <Button
@@ -535,6 +563,12 @@ const GiftsPage: NextPage = () => {
                   </Button>
                 </Menu.Target>
                 <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={<IconCards size={18} />}
+                    onClick={() => setPixSettingsModalOpen(true)}
+                  >
+                    Configurações PIX
+                  </Menu.Item>
                   <Menu.Item
                     leftSection={<IconWorldPin size={18} />}
                     onClick={async () => {
@@ -1119,6 +1153,11 @@ const GiftsPage: NextPage = () => {
           onSuccess={() => setImportModalOpen(false)}
           downloadTemplate={handleDownloadTemplate}
           finalizeImport={handleFinalizeImport}
+        />
+        <PixSettingsModal
+          opened={pixSettingsModalOpen}
+          onClose={() => setPixSettingsModalOpen(false)}
+          coupleName={coupleName}
         />
         {importError && (
           <Text color="red" size="sm">

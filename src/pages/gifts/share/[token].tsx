@@ -1,4 +1,5 @@
 import PageSectionHeader from "@/components/PageSectionHeader";
+import { PixPublicModal } from "@/components/gifts/pix/PixPublicModal";
 import PublicGiftListLayout from "@/components/Layout/PublicGiftListLayout";
 import PublicGiftReserveModal from "@/components/PublicGiftReserveModal";
 import { giftsService } from "@/services/giftsService";
@@ -29,7 +30,8 @@ import {
 import { useMediaQuery } from "@mantine/hooks";
 import {
   IconCalendar, IconClock, IconExternalLink, IconSortAscending,
-  IconSortDescending
+  IconSortDescending,
+  IconGift,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
@@ -87,6 +89,10 @@ function getStatusBadgeStyle(status: string) {
 type WeddingProfileLite = {
   nome_noivo?: string;
   nome_noiva?: string;
+  pix_settings?: {
+    enabled?: boolean;
+    share_hash?: string;
+  };
 };
 
 export default function GiftsSharePage() {
@@ -120,6 +126,7 @@ export default function GiftsSharePage() {
     { label: string; url: string }[]
   >([]);
   const [reservationLinksOpen, setReservationLinksOpen] = useState(false);
+  const [pixModalOpen, setPixModalOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const isCompactLayout = useMediaQuery("(max-width: 1024px)");
 
@@ -291,6 +298,10 @@ export default function GiftsSharePage() {
     }${weddingProfile.nome_noiva || ""}`;
   }
 
+  const canShowPixGift = Boolean(
+    weddingProfile?.pix_settings?.enabled && weddingProfile?.pix_settings?.share_hash,
+  );
+
   return (
     <PublicGiftListLayout
       search={search}
@@ -303,6 +314,41 @@ export default function GiftsSharePage() {
           title={coupleTitle}
           description="Veja os presentes disponíveis, organize por data ou preço e reserve sem sair da página."
         />
+
+        {canShowPixGift ? (
+          <Card
+            radius="xl"
+            withBorder
+            p="lg"
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(246,238,228,0.98) 100%)',
+              borderColor: 'var(--marriplan-border)',
+              boxShadow: '0 16px 40px rgba(181, 139, 122, 0.10)',
+            }}
+          >
+            <Group justify="space-between" align="center" gap="md" wrap="wrap">
+              <Stack gap={4} style={{ flex: 1, minWidth: 240 }}>
+                <Text size="xs" tt="uppercase" fw={700} c="dimmed" style={{ letterSpacing: 1.2 }}>
+                  Presente em dinheiro
+                </Text>
+                <Title order={4}>Quer presentear com PIX?</Title>
+                <Text c="dimmed">
+                  Abra o QR Code, copie o código ou compartilhe o link público em segundos.
+                </Text>
+              </Stack>
+
+              <Button
+                leftSection={<IconGift size={18} />}
+                styles={primaryButtonStyles}
+                size="md"
+                onClick={() => setPixModalOpen(true)}
+              >
+                Presentear
+              </Button>
+            </Group>
+          </Card>
+        ) : null}
 
         <Group
           justify="space-between"
@@ -635,6 +681,14 @@ export default function GiftsSharePage() {
             )}
           </Stack>
         </Modal>
+        {canShowPixGift ? (
+          <PixPublicModal
+            opened={pixModalOpen}
+            onClose={() => setPixModalOpen(false)}
+            shareHash={weddingProfile?.pix_settings?.share_hash}
+            coupleName={coupleTitle}
+          />
+        ) : null}
         <style>{sharePaginationStyles}</style>
       </Stack>
     </PublicGiftListLayout>

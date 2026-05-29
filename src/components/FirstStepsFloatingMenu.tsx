@@ -16,6 +16,7 @@ import {
   IconBriefcase,
   IconCheck,
   IconChecklist,
+  IconCards,
   IconGift,
   IconSparkles,
   IconUserCheck,
@@ -43,6 +44,7 @@ type FirstStepsProgress = {
   guests: boolean;
   suppliers: boolean;
   gifts: boolean;
+  pix_settings: boolean;
 };
 
 const EMPTY_PROGRESS: FirstStepsProgress = {
@@ -52,6 +54,7 @@ const EMPTY_PROGRESS: FirstStepsProgress = {
   guests: false,
   suppliers: false,
   gifts: false,
+  pix_settings: false,
 };
 
 const dropdownStyles = {
@@ -199,6 +202,14 @@ export function FirstStepsFloatingMenu() {
         href: "/gifts",
         icon: <IconGift size={18} />,
         done: progress.gifts,
+      },
+      {
+        key: "pix_settings",
+        title: "Configurações PIX",
+        description: "Ative o recebimento via PIX para presentes em dinheiro.",
+        href: "/gifts?openPixSettings=1",
+        icon: <IconCards size={18} />,
+        done: progress.pix_settings,
       },
     ],
     [progress],

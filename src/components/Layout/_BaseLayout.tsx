@@ -38,6 +38,7 @@ import {
   IconLogout,
   IconShieldLock,
   IconSparkles,
+  IconCalendarTime,
   IconUser,
   IconUserCheck,
 } from "@tabler/icons-react";
@@ -690,6 +691,14 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
             active={router.pathname === "/gifts"}
             onClick={() => handleSidebarNavigation("/gifts")}
             aria-label="Lista de Presentes"
+            styles={navLinkStyles}
+          />
+          <NavLink
+            label={opened ? "Timeline" : ""}
+            leftSection={<IconCalendarTime size={18} />}
+            active={router.pathname === "/timeline"}
+            onClick={() => handleSidebarNavigation("/timeline")}
+            aria-label="Timeline"
             styles={navLinkStyles}
           />
 

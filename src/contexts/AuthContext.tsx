@@ -37,6 +37,7 @@ export const unprotectedRoutes = [
   "/2fa",
   "/site/[slug]",
   "/gifts/share/[token]",
+  "/gifts/pix/[hash]",
   "/guests/confirm/[token]",
   "/guests/thank-you",
   "/moodboard/[id]",

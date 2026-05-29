@@ -9,6 +9,7 @@ export type FirstStepsMenuState = {
     guests: boolean;
     suppliers: boolean;
     gifts: boolean;
+    pix_settings: boolean;
   };
   done_count: number;
   total_count: number;
