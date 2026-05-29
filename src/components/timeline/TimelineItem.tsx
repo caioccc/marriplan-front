@@ -21,12 +21,13 @@ export function TimelineItem({ moment, onEdit, onDelete }: TimelineItemProps) {
     <div
       style={{
         display: 'grid',
-        gridTemplateColumns: '92px 28px 1fr',
+        // SOLUÇÃO AQUI: Altera dinamicamente as colunas do grid
+        gridTemplateColumns: isDesktop ? '92px 28px 1fr' : '92px 1fr',
         gap: 0,
         alignItems: 'stretch',
       }}
     >
-      <Stack gap={2} align="flex-end" pt={8} pr={4}>
+      <Stack gap={2} align="flex-end" pt={isDesktop ? 24 : 24} pr={isDesktop ? 4 : 16} style={{ flexShrink: 0 }}>
         <Text fw={800} size="sm" c="var(--marriplan-text)">
           {formatTime(moment.time)}
         </Text>
@@ -35,7 +36,7 @@ export function TimelineItem({ moment, onEdit, onDelete }: TimelineItemProps) {
         </Text>
       </Stack>
 
-      {isDesktop ? (
+      {isDesktop && (
         <div
           style={{
             position: 'relative',
@@ -72,7 +73,7 @@ export function TimelineItem({ moment, onEdit, onDelete }: TimelineItemProps) {
             }}
           />
         </div>
-      ) : null}
+      )}
 
       <Card
         radius="xl"
@@ -82,6 +83,7 @@ export function TimelineItem({ moment, onEdit, onDelete }: TimelineItemProps) {
           background: 'linear-gradient(135deg, #fffdf9 0%, #f7f1ea 100%)',
           border: '1px solid var(--marriplan-border)',
           position: 'relative',
+          width: '100%', // Garante que o card ocupe o espaço disponível da coluna
         }}
         styles={{
           root: {
@@ -113,8 +115,10 @@ export function TimelineItem({ moment, onEdit, onDelete }: TimelineItemProps) {
               className="timeline-actions"
               gap={6}
               style={{
-                opacity: 0.72,
-                transform: 'translateY(2px)',
+                // Dica extra: em telas touch (mobile), o hover não funciona bem, 
+                // então deixamos os botões um pouco mais visíveis por padrão (0.85) ou 1.0 no mobile.
+                opacity: isDesktop ? 0.72 : 1,
+                transform: isDesktop ? 'translateY(2px)' : 'translateY(0)',
                 transition: 'all 180ms ease',
               }}
             >
