@@ -155,7 +155,7 @@ export default function Navbar(): JSX.Element {
               onClick={(e) => {
                 e.preventDefault();
                 setOpen(false);
-                handleNavigate("/login")();
+                handleNavigate("/dashboard")();
               }}
               className="text-base text-[#4a3f36]"
             >

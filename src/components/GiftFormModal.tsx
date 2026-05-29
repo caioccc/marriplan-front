@@ -196,7 +196,7 @@ export function GiftFormModal({
         required
         value={form.category || ""}
         onChange={(v) => handleChange("category", v)}
-        data={getAllCategoryOptions()}
+        data={[...getAllCategoryOptions().filter((opt) => opt.value !== "")]}
         mb="sm"
         error={errors.category}
       />
@@ -399,7 +399,7 @@ export function GiftFormModal({
           required
           value={form.category || ""}
           onChange={(v) => handleChange("category", v)}
-          data={getAllCategoryOptions()}
+          data={[...getAllCategoryOptions().filter((opt) => opt.value !== "")]}
           mb="sm"
           error={errors.category}
         />

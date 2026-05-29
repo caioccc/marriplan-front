@@ -12,7 +12,7 @@ type UpgradeCtaProps = {
 
 export function UpgradeCta({
   title = "Seu casamento merece mais organização ✨",
-  description = `${FREE_PLAN_TEXT} no Free. Com o Premium, você libera tudo sem limites.`,
+  description = `Com o Premium, você libera tudo sem limites.`,
   buttonLabel = "Assinar Premium",
   href = "/checkout",
 }: UpgradeCtaProps) {

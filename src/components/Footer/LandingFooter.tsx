@@ -51,13 +51,13 @@ export default function LandingFooter(): JSX.Element {
                 Planos
               </Link>
               <Link
-                href="/login"
+                href="/dashboard"
                 className="text-sm text-[#4a3f36] transition-colors duration-200 hover:text-[#2f2822]"
               >
                 Entrar
               </Link>
               <Link
-                href="/register"
+                href="/dashboard"
                 className="text-sm text-[#4a3f36] transition-colors duration-200 hover:text-[#2f2822]"
               >
                 Começar agora

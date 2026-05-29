@@ -56,6 +56,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
   const [opened, setOpened] = useState(true);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [trialModalOpen, setTrialModalOpen] = useState(false);
+  const headerHeight = isTrialing ? (isMobile ? 84 : 96) : 60;
 
   useEffect(() => {
     if (isMobile) {
@@ -237,7 +238,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
     <AppShell
       layout="alt"
       padding="md"
-      header={{ height: 60 }}
+      header={{ height: headerHeight }}
       navbar={{
         width: sidebarWidth,
         breakpoint: "sm",
@@ -251,16 +252,83 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
       }}
     >
       <AppShell.Header
-        p="md"
         style={{
           display: "flex",
-          alignItems: "center",
+          flexDirection: "column",
           background: "rgba(255, 251, 247, 0.9)",
           borderBottom: "1px solid var(--marriplan-border)",
           backdropFilter: "blur(10px)",
         }}
       >
-        <Group justify="space-between" align="center" w="100%" h="100%">
+        {isTrialing && (
+          <Box
+            style={{
+              width: "100%",
+              minHeight: isMobile ? 32 : 36,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: isMobile ? "4px 12px" : "6px 16px",
+              background:
+                "linear-gradient(90deg, rgba(181, 139, 122, 0.18) 0%, rgba(200, 176, 138, 0.22) 50%, rgba(242, 230, 216, 0.35) 100%)",
+              borderBottom: "1px solid rgba(181, 139, 122, 0.18)",
+            }}
+          >
+            <Group
+              gap={isMobile ? 6 : 10}
+              justify="center"
+              align="center"
+              wrap={isMobile ? "wrap" : "nowrap"}
+              style={{ maxWidth: "100%" }}
+            >
+              <ThemeIcon
+                size={isMobile ? 20 : 22}
+                radius="xl"
+                variant="light"
+                style={{
+                  backgroundColor: "rgba(181, 139, 122, 0.18)",
+                  color: "var(--marriplan-rose)",
+                  flexShrink: 0,
+                }}
+              >
+                <IconSparkles size={14} />
+              </ThemeIcon>
+              <Text
+                size="xs"
+                fw={700}
+                tt="uppercase"
+                style={{
+                  fontSize: isMobile ? 10 : undefined,
+                  letterSpacing: isMobile ? 1.2 : 1.8,
+                  color: "var(--marriplan-rose)",
+                  whiteSpace: isMobile ? "normal" : "nowrap",
+                  textAlign: "center",
+                }}
+              >
+                Trial Premium ativo
+              </Text>
+              <Text
+                size="xs"
+                fw={500}
+                style={{
+                  color: "var(--marriplan-text)",
+                  display: isMobile ? "none" : "block",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Você tem acesso liberado por {trialEndsAt ? "tempo limitado" : "7 dias"}.
+              </Text>
+            </Group>
+          </Box>
+        )}
+        <Group
+          justify="space-between"
+          align="center"
+          w="100%"
+          h={isTrialing ? (isMobile ? 48 : 60) : "100%"}
+          px={isMobile ? "sm" : "md"}
+          wrap="nowrap"
+        >
           <Group gap="sm" wrap="nowrap" align="center" h="100%">
             <Box
               component="button"
@@ -699,56 +767,6 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
             }}
           >
             <Stack gap={8} align={opened ? "stretch" : "center"}>
-              {opened && isTrialing && (
-                <Card
-                  radius="xl"
-                  p="md"
-                  withBorder
-                  style={{
-                    background:
-                      "linear-gradient(180deg, #fffaf6 0%, #f6efe7 100%)",
-                    borderColor: "rgba(200, 176, 138, 0.22)",
-                    boxShadow: "0 14px 32px rgba(70, 56, 43, 0.08)",
-                  }}
-                >
-                  <Stack gap={8}>
-                    <Text
-                      size="xs"
-                      fw={700}
-                      tt="uppercase"
-                      style={{
-                        color: "var(--marriplan-gold)",
-                        letterSpacing: 1.8,
-                      }}
-                    >
-                      Trial ativo
-                    </Text>
-                    <Text
-                      size="sm"
-                      fw={600}
-                      style={{
-                        color: "var(--marriplan-text)",
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      Você está no Trial Premium por 7 dias.
-                    </Text>
-                    <Button
-                      component="a"
-                      href="/checkout"
-                      radius="xl"
-                      size="sm"
-                      fullWidth
-                      style={{
-                        background: "var(--marriplan-rose)",
-                        color: "#fff",
-                      }}
-                    >
-                      Fazer upgrade
-                    </Button>
-                  </Stack>
-                </Card>
-              )}
               {opened && !isPremium && !isTrialing && (
                 <Card
                   radius="xl"
