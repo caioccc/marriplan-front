@@ -10,6 +10,7 @@ export type FirstStepsMenuState = {
     suppliers: boolean;
     gifts: boolean;
     pix_settings: boolean;
+    timeline: boolean;
   };
   done_count: number;
   total_count: number;

@@ -17,6 +17,7 @@ import {
   IconCheck,
   IconChecklist,
   IconCards,
+  IconCalendarTime,
   IconGift,
   IconSparkles,
   IconUserCheck,
@@ -45,6 +46,7 @@ type FirstStepsProgress = {
   suppliers: boolean;
   gifts: boolean;
   pix_settings: boolean;
+  timeline: boolean;
 };
 
 const EMPTY_PROGRESS: FirstStepsProgress = {
@@ -55,6 +57,7 @@ const EMPTY_PROGRESS: FirstStepsProgress = {
   suppliers: false,
   gifts: false,
   pix_settings: false,
+  timeline: false,
 };
 
 const dropdownStyles = {
@@ -85,7 +88,7 @@ export function FirstStepsFloatingMenu() {
     '/onboarding',
   ]
   const isPublicRoute = routesForbidden.includes(router.pathname);
-  const menuCompleted = serverCompleted || Boolean(user?.first_steps);
+  const menuCompleted = serverCompleted;
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -117,10 +120,10 @@ export function FirstStepsFloatingMenu() {
     let mounted = true;
 
     const loadProgress = async () => {
-      if (isPublicRoute || loading || !isAuthenticated || user?.first_steps) {
+      if (isPublicRoute || loading || !isAuthenticated) {
         if (mounted) {
           setIsLoading(false);
-          setServerCompleted(Boolean(user?.first_steps));
+          setServerCompleted(false);
         }
         return;
       }
@@ -210,6 +213,14 @@ export function FirstStepsFloatingMenu() {
         href: "/gifts?openPixSettings=1",
         icon: <IconCards size={18} />,
         done: progress.pix_settings,
+      },
+      {
+        key: "timeline",
+        title: "Montar cronograma do dia",
+        description: "Crie a timeline do casamento com os momentos do evento.",
+        href: "/timeline",
+        icon: <IconCalendarTime size={18} />,
+        done: progress.timeline,
       },
     ],
     [progress],
