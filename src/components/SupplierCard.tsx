@@ -34,6 +34,8 @@ interface SupplierCardProps {
   onAdd?: (supplier: Supplier) => void;
   onEdit?: (supplier: Supplier) => void;
   onRemove?: (supplier: Supplier) => void;
+  onCreatePlan?: (supplier: Supplier, weddingSupplier?: WeddingSupplier | null) => void;
+  onAddManual?: (supplier: Supplier, weddingSupplier?: WeddingSupplier | null) => void;
   canEdit?: boolean;
 }
 
@@ -206,6 +208,8 @@ export function SupplierCard({
   onAdd,
   onEdit,
   onRemove,
+  onCreatePlan,
+  onAddManual,
   canEdit = false,
 }: SupplierCardProps) {
   const imageUrl = supplier.cover_image_url || "";
@@ -541,77 +545,65 @@ export function SupplierCard({
         </Group>
         {weddingSupplier ? (
           <Group justify="space-between" gap="sm" wrap="wrap">
-            {weddingSupplier.status === "PAID" ? (
-              <Badge color="green" variant="light">
+            <Badge
+              color={
+                weddingSupplier.status_financeiro === "Quitado"
+                  ? "green"
+                  : weddingSupplier.status_financeiro === "Em atraso"
+                    ? "red"
+                    : weddingSupplier.status_financeiro === "A vencer"
+                      ? "yellow"
+                      : "gray"
+              }
+              variant="light"
+            >
+              {weddingSupplier.status_financeiro || "Sem plano"}
+            </Badge>
+            <Stack gap={2}>
+              <Text size="xs" c="dimmed">
+                Valor acordado
+              </Text>
+              <Text fw={600}>{formatCurrency(weddingSupplier.valor_combinado)}</Text>
+            </Stack>
+            <Stack gap={2}>
+              <Text size="xs" c="dimmed">
                 Pago
-              </Badge>
-            ) : weddingSupplier.status === "QUOTING" ||
-              weddingSupplier.status === "NEGOTIATING" ? (
-              <Badge color="yellow" variant="light">
-                Em negociação
-              </Badge>
-            ) : weddingSupplier.status === "HIRED" ? (
-              <Badge color="blue" variant="light">
-                Contratado
-              </Badge>
-            ) : weddingSupplier.status === "CANCELED" ? (
-              <Badge color="red" variant="light">
-                Cancelado
-              </Badge>
-            ) : null}
-            {weddingSupplier.status === "PAID" && (
+              </Text>
+              <Text fw={600}>{formatCurrency(weddingSupplier.valor_pago)}</Text>
+            </Stack>
+            <Stack gap={2}>
+              <Text size="xs" c="dimmed">
+                Saldo devedor
+              </Text>
+              <Text fw={600}>{formatCurrency(weddingSupplier.saldo_devedor)}</Text>
+            </Stack>
+            {weddingSupplier.proxima_parcela ? (
               <Stack gap={2}>
                 <Text size="xs" c="dimmed">
-                  Pago
+                  Próxima parcela
                 </Text>
-                <Text fw={600}>
-                  {formatCurrency(weddingSupplier.paid_amount)}
+                <Text fw={600}>{weddingSupplier.proxima_parcela.descricao}</Text>
+                <Text size="xs" c="dimmed">
+                  {new Date(`${weddingSupplier.proxima_parcela.data_vencimento}T00:00:00`).toLocaleDateString("pt-BR")}
                 </Text>
               </Stack>
-            )}
-            {(weddingSupplier.status === "NEGOTIATING" ||
-              weddingSupplier.status === "QUOTING") && (
-              <>
-                <Stack gap={2}>
-                  <Text size="xs" c="dimmed">
-                    Estimado
-                  </Text>
-                  <Text fw={600}>
-                    {formatCurrency(weddingSupplier.estimated_price)}
-                  </Text>
-                </Stack>
-                <Stack gap={2}>
-                  <Text size="xs" c="dimmed">
-                    Negociado
-                  </Text>
-                  <Text fw={600}>
-                    {formatCurrency(weddingSupplier.negotiated_price)}
-                  </Text>
-                </Stack>
-              </>
-            )}
-            {weddingSupplier.status === "HIRED" && (
-              <>
-                <Stack gap={2}>
-                  <Text size="xs" c="dimmed">
-                    Negociando
-                  </Text>
-                  <Text fw={600}>
-                    {formatCurrency(weddingSupplier.negotiated_price)}
-                  </Text>
-                </Stack>
-                <Stack gap={2}>
-                  <Text size="xs" c="dimmed">
-                    Pago
-                  </Text>
-                  <Text fw={600}>
-                    {formatCurrency(weddingSupplier.paid_amount)}
-                  </Text>
-                </Stack>
-              </>
-            )}
+            ) : null}
           </Group>
         ) : null}
+        {/* {weddingSupplier && (onCreatePlan || onAddManual) ? (
+          <Group grow mt="xs">
+            {onCreatePlan ? (
+              <Button radius="xl" variant="light" onClick={() => onCreatePlan(supplier, weddingSupplier)}>
+                Criar Plano
+              </Button>
+            ) : null}
+            {onAddManual ? (
+              <Button radius="xl" variant="default" onClick={() => onAddManual(supplier, weddingSupplier)}>
+                Adicionar Manualmente
+              </Button>
+            ) : null}
+          </Group>
+        ) : null} */}
         <ContactLinks supplier={supplier} />
         {/* <Group gap="xs" justify="space-between" wrap="wrap" mt="xs">
           <Group gap={6}>

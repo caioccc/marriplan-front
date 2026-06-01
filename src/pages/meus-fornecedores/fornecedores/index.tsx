@@ -71,9 +71,7 @@ const paginationThemeStyles = `
 const initialWeddingSupplierForm = {
   status: "QUOTING" as const,
   is_favorite: false,
-  estimated_price: "",
-  negotiated_price: "",
-  paid_amount: "",
+  valor_combinado: "",
   notes: "",
 };
 
@@ -225,9 +223,7 @@ export default function SuppliersMarketplacePage() {
         supplier_id: selectedSupplier.id,
         status: weddingForm.status,
         is_favorite: weddingForm.is_favorite,
-        estimated_price: formatCurrencyInput(weddingForm.estimated_price),
-        negotiated_price: formatCurrencyInput(weddingForm.negotiated_price),
-        paid_amount: formatCurrencyInput(weddingForm.paid_amount),
+        valor_combinado: formatCurrencyInput(weddingForm.valor_combinado),
         notes: weddingForm.notes,
       });
 
@@ -547,34 +543,12 @@ export default function SuppliersMarketplacePage() {
               />
 
               <TextInput
-                label="Valor estimado"
-                value={weddingForm.estimated_price}
+                label="Valor combinado"
+                value={weddingForm.valor_combinado}
                 onChange={(event) =>
                   setWeddingForm((prev) => ({
                     ...prev,
-                    estimated_price: event.currentTarget.value,
-                  }))
-                }
-                styles={inputStyles}
-              />
-              <TextInput
-                label="Valor negociado"
-                value={weddingForm.negotiated_price}
-                onChange={(event) =>
-                  setWeddingForm((prev) => ({
-                    ...prev,
-                    negotiated_price: event.currentTarget.value,
-                  }))
-                }
-                styles={inputStyles}
-              />
-              <TextInput
-                label="Valor pago"
-                value={weddingForm.paid_amount}
-                onChange={(event) =>
-                  setWeddingForm((prev) => ({
-                    ...prev,
-                    paid_amount: event.currentTarget.value,
+                    valor_combinado: event.currentTarget.value,
                   }))
                 }
                 styles={inputStyles}
@@ -629,34 +603,12 @@ export default function SuppliersMarketplacePage() {
 
               <Group grow align="flex-start" wrap="wrap">
                 <TextInput
-                  label="Valor estimado"
-                  value={weddingForm.estimated_price}
+                  label="Valor combinado"
+                  value={weddingForm.valor_combinado}
                   onChange={(event) =>
                     setWeddingForm((prev) => ({
                       ...prev,
-                      estimated_price: event.currentTarget.value,
-                    }))
-                  }
-                  styles={inputStyles}
-                />
-                <TextInput
-                  label="Valor negociado"
-                  value={weddingForm.negotiated_price}
-                  onChange={(event) =>
-                    setWeddingForm((prev) => ({
-                      ...prev,
-                      negotiated_price: event.currentTarget.value,
-                    }))
-                  }
-                  styles={inputStyles}
-                />
-                <TextInput
-                  label="Valor pago"
-                  value={weddingForm.paid_amount}
-                  onChange={(event) =>
-                    setWeddingForm((prev) => ({
-                      ...prev,
-                      paid_amount: event.currentTarget.value,
+                      valor_combinado: event.currentTarget.value,
                     }))
                   }
                   styles={inputStyles}

@@ -36,6 +36,7 @@ import {
   IconLayoutSidebarLeftExpand,
   IconLockHeart,
   IconLogout,
+  IconReceipt2,
   IconShieldLock,
   IconSparkles,
   IconCalendarTime,
@@ -683,6 +684,14 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
             active={router.pathname === "/meus-fornecedores"}
             onClick={() => handleSidebarNavigation("/meus-fornecedores")}
             aria-label="Meus Fornecedores"
+            styles={navLinkStyles}
+          />
+          <NavLink
+            label={opened ? "Painel Financeiro" : ""}
+            leftSection={<IconReceipt2 size={18} />}
+            active={router.pathname.startsWith("/financeiro")}
+            onClick={() => handleSidebarNavigation("/financeiro")}
+            aria-label="Painel Financeiro"
             styles={navLinkStyles}
           />
           <NavLink

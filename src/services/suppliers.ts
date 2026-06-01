@@ -1,4 +1,5 @@
 import api from './api';
+import type { ParcelaPagamento } from './financeiro';
 
 export type SupplierCategory = {
   id: number;
@@ -40,6 +41,13 @@ export type WeddingSupplier = {
   supplier_id?: number;
   is_hired?: boolean;
   is_favorite?: boolean;
+  valor_combinado?: string | number | null;
+  valor_pago?: string | number | null;
+  saldo_devedor?: string | number | null;
+  status_financeiro?: 'Sem plano' | 'A vencer' | 'Em atraso' | 'Quitado';
+  parcelas?: ParcelaPagamento[];
+  proxima_parcela?: ParcelaPagamento | null;
+  // Campos legados mantidos apenas para compatibilidade temporária com telas antigas.
   estimated_price?: string | number | null;
   negotiated_price?: string | number | null;
   paid_amount?: string | number | null;

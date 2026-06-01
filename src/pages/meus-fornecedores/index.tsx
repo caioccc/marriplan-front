@@ -2,6 +2,7 @@ import BaseLayout from "@/components/Layout/_BaseLayout";
 import PageSectionHeader from "@/components/PageSectionHeader";
 import { SupplierCard } from "@/components/SupplierCard";
 import { SupplierFormModal } from "@/components/SupplierFormModal";
+import { PaymentPlanModal } from "@/components/financeiro/PaymentPlanModal";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   deleteWeddingSupplier,
@@ -64,6 +65,13 @@ export default function MySuppliersPage() {
   const [removeModalOpen, setRemoveModalOpen] = useState(false);
   const [supplierToRemove, setSupplierToRemove] =
     useState<WeddingSupplier | null>(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentModalMode, setPaymentModalMode] = useState<
+    "plan" | "manual"
+  >("plan");
+  const [paymentSupplierId, setPaymentSupplierId] = useState<number | null>(
+    null,
+  );
   const pageSize = 12;
   const hasMore = items.length < total;
   const initialLoading = loading && items.length === 0;
@@ -179,6 +187,43 @@ export default function MySuppliersPage() {
         color: "red",
         message: "Não foi possível remover este fornecedor do casamento.",
       });
+    }
+  };
+
+  const handleOpenPaymentModal = (
+    mode: "plan" | "manual",
+    weddingSupplier?: WeddingSupplier | null,
+  ) => {
+    if (!weddingSupplier) return;
+    setPaymentSupplierId(weddingSupplier.id);
+    setPaymentModalMode(mode);
+    setPaymentModalOpen(true);
+  };
+
+  const reloadWeddingSuppliers = async () => {
+    setPage(1);
+    setItems([]);
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const [weddingData, categoriesData] = await Promise.all([
+        listWeddingSuppliers({
+          page: 1,
+          page_size: pageSize,
+          search,
+          status,
+          favorite: favoriteOnly ? "true" : "",
+          ordering: "-is_favorite,-updated_at",
+        }),
+        listSupplierCategories(),
+      ]);
+      setItems(weddingData.results || []);
+      setTotal(weddingData.count || 0);
+      setCategories(categoriesData.results || categoriesData || []);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -310,6 +355,12 @@ export default function MySuppliersPage() {
                   router.push(`/meus-fornecedores/fornecedores/${supplier.id}`)
                 }
                 onEdit={handleOpenEditSupplier}
+                onCreatePlan={(_, weddingSupplier) =>
+                  handleOpenPaymentModal("plan", weddingSupplier)
+                }
+                onAddManual={(_, weddingSupplier) =>
+                  handleOpenPaymentModal("manual", weddingSupplier)
+                }
                 onRemove={() => handleRemoveWeddingSupplier(item)}
                 canEdit={item.supplier_detail?.created_by_user === user?.id}
               />
@@ -347,6 +398,14 @@ export default function MySuppliersPage() {
         categories={categories}
         onClose={() => setSupplierModalOpen(false)}
         onSaved={handleSavedSupplier}
+      />
+
+      <PaymentPlanModal
+        opened={paymentModalOpen}
+        mode={paymentModalMode}
+        weddingSupplierId={paymentSupplierId}
+        onClose={() => setPaymentModalOpen(false)}
+        onSaved={() => void reloadWeddingSuppliers()}
       />
 
       <Modal

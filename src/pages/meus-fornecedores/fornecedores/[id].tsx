@@ -1,4 +1,5 @@
 import BaseLayout from "@/components/Layout/_BaseLayout";
+import { PaymentPlanModal } from "@/components/financeiro/PaymentPlanModal";
 import { FreePlanLimitBanner } from "@/components/billing/FreePlanLimitBanner";
 import {
   FEATURE_LABELS,
@@ -7,6 +8,7 @@ import {
 } from "@/constants/plans";
 import {
   getSupplier,
+  getWeddingSupplier,
   listWeddingSuppliers,
   selectSupplierForWedding,
   updateWeddingSupplier,
@@ -14,6 +16,15 @@ import {
   Supplier,
   WeddingSupplier,
 } from "@/services/suppliers";
+import {
+  ParcelaPagamento,
+  FormaPagamento,
+  ParcelaStatus,
+  registrarPagamento,
+  reverterPagamento,
+  atualizarParcelaPagamento,
+  removerParcelaPagamento,
+} from "@/services/financeiro";
 import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
   Badge,
@@ -25,8 +36,10 @@ import {
   Image,
   Loader,
   Modal,
+  ScrollArea,
   Select,
   Stack,
+  Table,
   Text,
   TextInput,
   Textarea,
@@ -64,6 +77,28 @@ export default function SupplierDetailPage() {
   const [saving, setSaving] = useState(false);
   const [contractPreviewOpen, setContractPreviewOpen] = useState(false);
   const [contractFile, setContractFile] = useState<File | null>(null);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [paymentModalMode, setPaymentModalMode] = useState<
+    "plan" | "manual"
+  >("plan");
+  const [parcelActionOpen, setParcelActionOpen] = useState(false);
+  const [parcelEditOpen, setParcelEditOpen] = useState(false);
+  const [activeParcela, setActiveParcela] = useState<ParcelaPagamento | null>(null);
+  const [parcelPaymentForm, setParcelPaymentForm] = useState({
+    data_pagamento: new Date().toISOString().slice(0, 10),
+    valor: "",
+    observacao: "",
+  });
+  const [parcelEditForm, setParcelEditForm] = useState({
+    numero_parcela: 1,
+    descricao: "",
+    valor: "",
+    data_vencimento: new Date().toISOString().slice(0, 10),
+    forma_pagamento: "pix" as FormaPagamento,
+    status: "a_vencer" as ParcelaStatus,
+    observacao: "",
+  });
+  const [parcelActionLoading, setParcelActionLoading] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { isPremium } = useSubscription();
   const supplierLimit = getFeatureLimit("suppliers");
@@ -73,9 +108,7 @@ export default function SupplierDetailPage() {
   const [form, setForm] = useState({
     status: "QUOTING" as NonNullable<WeddingSupplier["status"]>,
     is_favorite: false,
-    estimated_price: "",
-    negotiated_price: "",
-    paid_amount: "",
+    valor_combinado: "",
     notes: "",
   });
 
@@ -105,14 +138,8 @@ export default function SupplierDetailPage() {
           setForm({
             status: relation.status || "QUOTING",
             is_favorite: !!relation.is_favorite,
-            estimated_price: relation.estimated_price
-              ? String(relation.estimated_price)
-              : "",
-            negotiated_price: relation.negotiated_price
-              ? String(relation.negotiated_price)
-              : "",
-            paid_amount: relation.paid_amount
-              ? String(relation.paid_amount)
+            valor_combinado: relation.valor_combinado
+              ? String(relation.valor_combinado)
               : "",
             notes: relation.notes || "",
           });
@@ -134,18 +161,33 @@ export default function SupplierDetailPage() {
     };
   }, [id]);
 
+  const refreshWeddingSupplier = async (weddingSupplierId: number) => {
+    try {
+      const fresh = await getWeddingSupplier(weddingSupplierId);
+      setWeddingSupplier(fresh);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   const handleSave = async () => {
     if (!supplier) return;
     if (!weddingSupplier && supplierLimitReached) return;
+    if (form.status === "HIRED" && !Boolean(weddingSupplier?.parcelas?.length)) {
+      notifications.show({
+        color: "red",
+        message:
+          "Para salvar como contratado é necessário criar ou associar um plano de pagamento.",
+      });
+      return;
+    }
     setSaving(true);
     try {
       let relation = weddingSupplier;
       const weddingPayload = {
         status: form.status,
         is_favorite: form.is_favorite,
-        estimated_price: formatCurrencyInput(form.estimated_price),
-        negotiated_price: formatCurrencyInput(form.negotiated_price),
-        paid_amount: formatCurrencyInput(form.paid_amount),
+        valor_combinado: formatCurrencyInput(form.valor_combinado),
         notes: toSentenceCase(form.notes),
       };
 
@@ -180,7 +222,6 @@ export default function SupplierDetailPage() {
           ? "Fornecedor adicionado ao casamento com contrato anexado."
           : "Fornecedor adicionado ao casamento com sucesso.",
       });
-      router.push("/meus-fornecedores");
     } catch (error) {
       console.error(error);
       const errorMessage =
@@ -192,6 +233,124 @@ export default function SupplierDetailPage() {
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleOpenPaymentModal = (mode: "plan" | "manual") => {
+    if (!weddingSupplier) {
+      notifications.show({
+        color: "red",
+        message: "Adicione o fornecedor ao casamento para criar o plano.",
+      });
+      return;
+    }
+    setPaymentModalMode(mode);
+    setPaymentModalOpen(true);
+  };
+
+  const openParcelPayment = (parcela: ParcelaPagamento) => {
+    setActiveParcela(parcela);
+    setParcelPaymentForm({
+      data_pagamento: new Date().toISOString().slice(0, 10),
+      valor: String(parcela.valor),
+      observacao: parcela.observacao || "",
+    });
+    setParcelActionOpen(true);
+  };
+
+  const openParcelEdit = (parcela: ParcelaPagamento) => {
+    setActiveParcela(parcela);
+    setParcelEditForm({
+      numero_parcela: parcela.numero_parcela,
+      descricao: parcela.descricao,
+      valor: String(parcela.valor),
+      data_vencimento: parcela.data_vencimento.slice(0, 10),
+      forma_pagamento: parcela.forma_pagamento,
+      status: parcela.status,
+      observacao: parcela.observacao || "",
+    });
+    setParcelEditOpen(true);
+  };
+
+  const handleRegisterParcelPayment = async () => {
+    if (!activeParcela) return;
+    setParcelActionLoading(true);
+    try {
+      await registrarPagamento(activeParcela.id, {
+        data_pagamento: parcelPaymentForm.data_pagamento,
+        valor: parcelPaymentForm.valor,
+        observacao: parcelPaymentForm.observacao,
+        forma_pagamento: activeParcela.forma_pagamento,
+      });
+      notifications.show({ color: "green", message: "Pagamento registrado." });
+      setParcelActionOpen(false);
+      if (weddingSupplier?.id) {
+        const fresh = await getWeddingSupplier(weddingSupplier.id);
+        setWeddingSupplier(fresh);
+      }
+    } catch {
+      notifications.show({ color: "red", message: "Não foi possível registrar o pagamento." });
+    } finally {
+      setParcelActionLoading(false);
+    }
+  };
+
+  const handleRevertParcelPayment = async (parcela: ParcelaPagamento) => {
+    setParcelActionLoading(true);
+    try {
+      await reverterPagamento(parcela.id);
+      notifications.show({ color: "green", message: "Pagamento revertido." });
+      if (weddingSupplier?.id) {
+        const fresh = await getWeddingSupplier(weddingSupplier.id);
+        setWeddingSupplier(fresh);
+      }
+    } catch {
+      notifications.show({ color: "red", message: "Não foi possível reverter o pagamento." });
+    } finally {
+      setParcelActionLoading(false);
+    }
+  };
+
+  const handleUpdateParcel = async () => {
+    if (!activeParcela) return;
+    setParcelActionLoading(true);
+    try {
+      await atualizarParcelaPagamento(activeParcela.id, {
+        numero_parcela: parcelEditForm.numero_parcela,
+        descricao: parcelEditForm.descricao,
+        valor: parcelEditForm.valor,
+        data_vencimento: parcelEditForm.data_vencimento,
+        forma_pagamento: parcelEditForm.forma_pagamento,
+        status: parcelEditForm.status,
+        observacao: parcelEditForm.observacao,
+      });
+      notifications.show({ color: "green", message: "Parcela atualizada." });
+      setParcelEditOpen(false);
+      if (weddingSupplier?.id) {
+        const fresh = await getWeddingSupplier(weddingSupplier.id);
+        setWeddingSupplier(fresh);
+      }
+    } catch {
+      notifications.show({ color: "red", message: "Não foi possível atualizar a parcela." });
+    } finally {
+      setParcelActionLoading(false);
+    }
+  };
+
+  const handleDeleteParcel = async (parcela: ParcelaPagamento) => {
+    if (!window.confirm("Remover esta parcela? Esta ação não pode ser desfeita.")) return;
+    setParcelActionLoading(true);
+    try {
+      await removerParcelaPagamento(parcela.id);
+      notifications.show({ color: "green", message: "Parcela removida." });
+      if (weddingSupplier?.id) {
+        const fresh = await getWeddingSupplier(weddingSupplier.id);
+        setWeddingSupplier(fresh);
+      }
+    } catch {
+      notifications.show({ color: "red", message: "Não foi possível remover a parcela." });
+    } finally {
+      setParcelActionLoading(false);
     }
   };
 
@@ -212,6 +371,10 @@ export default function SupplierDetailPage() {
     () => /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(contractUrl),
     [contractUrl],
   );
+
+  const isHired = form.status === "HIRED";
+  const hasPaymentPlan = Boolean(weddingSupplier?.parcelas?.length);
+  const saveDisabled = isHired && !hasPaymentPlan;
 
   const handleDownloadContract = () => {
     if (!contractUrl) return;
@@ -307,6 +470,7 @@ export default function SupplierDetailPage() {
                       styles={primaryButtonStyles}
                       onClick={handleSave}
                       loading={saving}
+                      disabled={saveDisabled}
                     >
                       {weddingSupplier
                         ? "Salvar alterações"
@@ -480,8 +644,6 @@ export default function SupplierDetailPage() {
                     { value: "QUOTING", label: "Cotando" },
                     { value: "NEGOTIATING", label: "Negociando" },
                     { value: "HIRED", label: "Contratado" },
-                    { value: "PAID", label: "Pago" },
-                    { value: "CANCELED", label: "Cancelado" },
                   ]}
                   value={form.status}
                   onChange={(value) =>
@@ -505,40 +667,41 @@ export default function SupplierDetailPage() {
                 />
 
                 <TextInput
-                  label="Valor estimado"
-                  value={form.estimated_price}
+                  label="Valor combinado"
+                  value={form.valor_combinado}
                   onChange={(event) =>
                     setForm((prev) => ({
                       ...prev,
-                      estimated_price: event.currentTarget.value,
+                      valor_combinado: event.currentTarget.value,
                     }))
                   }
                   styles={inputStyles}
                 />
 
-                <TextInput
-                  label="Valor negociado"
-                  value={form.negotiated_price}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      negotiated_price: event.currentTarget.value,
-                    }))
-                  }
-                  styles={inputStyles}
-                />
+                {isHired && weddingSupplier && !hasPaymentPlan ? (
+                  <Group grow align="flex-start" wrap="wrap">
+                    <Button
+                      variant="default"
+                      styles={softButtonStyles}
+                      onClick={() => handleOpenPaymentModal("plan")}
+                    >
+                      Criar plano de pagamento
+                    </Button>
+                    <Button
+                      variant="light"
+                      styles={primaryButtonStyles}
+                      onClick={() => handleOpenPaymentModal("manual")}
+                    >
+                      Adicionar manualmente
+                    </Button>
+                  </Group>
+                ) : null}
 
-                <TextInput
-                  label="Valor pago"
-                  value={form.paid_amount}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      paid_amount: event.currentTarget.value,
-                    }))
-                  }
-                  styles={inputStyles}
-                />
+                {isHired && !hasPaymentPlan ? (
+                  <Text size="sm" c="red" mt="xs">
+                    Para salvar como contratado é necessário criar ou associar um plano de pagamento.
+                  </Text>
+                ) : null}
 
                 <Textarea
                   label="Observações"
@@ -552,6 +715,105 @@ export default function SupplierDetailPage() {
                   }
                   styles={inputStyles}
                 />
+
+                {hasPaymentPlan ? (
+                  <Card radius="lg" withBorder p="md" mt="md">
+                    <Stack gap="sm">
+                      <Group justify="space-between" align="center">
+                        <Text fw={700}>Plano de pagamento associado</Text>
+                        <Badge
+                          color={
+                            weddingSupplier?.status_financeiro === "Quitado"
+                              ? "green"
+                              : weddingSupplier?.status_financeiro === "Em atraso"
+                              ? "red"
+                              : "yellow"
+                          }
+                          variant="light"
+                        >
+                          {weddingSupplier?.status_financeiro || "Sem plano"}
+                        </Badge>
+                      </Group>
+                      <Text size="sm" c="dimmed">
+                        Este plano está vinculado ao fornecedor e mostra as parcelas previstas.
+                      </Text>
+                      <ScrollArea type="auto" style={{ maxHeight: 260 }}>
+                        <Table withTableBorder withColumnBorders highlightOnHover striped>
+                          <Table.Thead>
+                            <Table.Tr>
+                              <Table.Th>Parcela</Table.Th>
+                              <Table.Th>Descrição</Table.Th>
+                              <Table.Th>Vencimento</Table.Th>
+                              <Table.Th>Valor</Table.Th>
+                              <Table.Th>Forma</Table.Th>
+                              <Table.Th>Status</Table.Th>
+                              <Table.Th>Ações</Table.Th>
+                            </Table.Tr>
+                          </Table.Thead>
+                          <Table.Tbody>
+                            {weddingSupplier?.parcelas
+                              ?.slice()
+                              .sort((a, b) => a.numero_parcela - b.numero_parcela)
+                              .map((parcela) => (
+                                <tr key={parcela.id}>
+                                  <td>{parcela.numero_parcela}</td>
+                                  <td>{parcela.descricao}</td>
+                                  <td>
+                                    {new Date(
+                                      `${parcela.data_vencimento}T00:00:00`,
+                                    ).toLocaleDateString("pt-BR")}
+                                  </td>
+                                  <td>{formatCurrency(parcela.valor)}</td>
+                                  <td>{parcela.forma_pagamento}</td>
+                                  <td>{parcela.status.replace("_", " ")}</td>
+                                  <td>
+                                    <Group gap="xs">
+                                      {parcela.status !== "pago" ? (
+                                        <Button
+                                          size="xs"
+                                          variant="outline"
+                                          onClick={() => openParcelPayment(parcela)}
+                                        >
+                                          Pagar
+                                        </Button>
+                                      ) : (
+                                        <Button
+                                          size="xs"
+                                          variant="outline"
+                                          onClick={() => handleRevertParcelPayment(parcela)}
+                                          loading={parcelActionLoading}
+                                        >
+                                          Reverter
+                                        </Button>
+                                      )}
+                                      {parcela.status !== "pago" ? (
+                                        <Button
+                                          size="xs"
+                                          variant="default"
+                                          onClick={() => openParcelEdit(parcela)}
+                                        >
+                                          Editar
+                                        </Button>
+                                      ) : null}
+                                      <Button
+                                        size="xs"
+                                        color="red"
+                                        variant="subtle"
+                                        onClick={() => handleDeleteParcel(parcela)}
+                                        loading={parcelActionLoading}
+                                      >
+                                        Excluir
+                                      </Button>
+                                    </Group>
+                                  </td>
+                                </tr>
+                              ))}
+                          </Table.Tbody>
+                        </Table>
+                      </ScrollArea>
+                    </Stack>
+                  </Card>
+                ) : null}
 
                 <Card
                   radius="lg"
@@ -613,6 +875,7 @@ export default function SupplierDetailPage() {
                       styles={primaryButtonStyles}
                       onClick={handleSave}
                       loading={saving}
+                      disabled={saveDisabled}
                     >
                       {weddingSupplier
                         ? "Salvar alterações"
@@ -658,6 +921,7 @@ export default function SupplierDetailPage() {
                       styles={primaryButtonStyles}
                       onClick={handleSave}
                       loading={saving}
+                      disabled={saveDisabled}
                     >
                       {weddingSupplier
                         ? "Salvar alterações"
@@ -778,18 +1042,10 @@ export default function SupplierDetailPage() {
                     <Group justify="space-between" gap="sm" wrap="wrap" mr="lg">
                       <Stack gap={2}>
                         <Text size="xs" c="dimmed">
-                          Estimado
+                          Valor combinado
                         </Text>
                         <Text fw={600}>
-                          {formatCurrency(weddingSupplier.estimated_price)}
-                        </Text>
-                      </Stack>
-                      <Stack gap={2}>
-                        <Text size="xs" c="dimmed">
-                          Negociado
-                        </Text>
-                        <Text fw={600}>
-                          {formatCurrency(weddingSupplier.negotiated_price)}
+                          {formatCurrency(weddingSupplier.valor_combinado)}
                         </Text>
                       </Stack>
                       <Stack gap={2}>
@@ -797,7 +1053,23 @@ export default function SupplierDetailPage() {
                           Pago
                         </Text>
                         <Text fw={600}>
-                          {formatCurrency(weddingSupplier.paid_amount)}
+                          {formatCurrency(weddingSupplier.valor_pago)}
+                        </Text>
+                      </Stack>
+                      <Stack gap={2}>
+                        <Text size="xs" c="dimmed">
+                          Saldo devedor
+                        </Text>
+                        <Text fw={600}>
+                          {formatCurrency(weddingSupplier.saldo_devedor)}
+                        </Text>
+                      </Stack>
+                      <Stack gap={2}>
+                        <Text size="xs" c="dimmed">
+                          Status financeiro
+                        </Text>
+                        <Text fw={600}>
+                          {weddingSupplier.status_financeiro || "Sem plano"}
                         </Text>
                       </Stack>
                     </Group>
@@ -850,39 +1122,42 @@ export default function SupplierDetailPage() {
 
                 <Group grow align="flex-start" wrap="wrap">
                   <TextInput
-                    label="Valor estimado"
-                    value={form.estimated_price}
+                    label="Valor combinado"
+                    value={form.valor_combinado}
                     onChange={(event) => {
                       const val = handleValueChange(event.currentTarget.value);
-                      setForm((prev) => ({ ...prev, estimated_price: val }));
-                    }}
-                    placeholder="0.00"
-                    rightSection={<span style={{ paddingRight: 8 }}>R$</span>}
-                    styles={inputStyles}
-                  />
-                  <TextInput
-                    label="Valor negociado"
-                    value={form.negotiated_price}
-                    onChange={(event) => {
-                      const val = handleValueChange(event.currentTarget.value);
-                      setForm((prev) => ({ ...prev, negotiated_price: val }));
-                    }}
-                    placeholder="0.00"
-                    rightSection={<span style={{ paddingRight: 8 }}>R$</span>}
-                    styles={inputStyles}
-                  />
-                  <TextInput
-                    label="Valor pago"
-                    value={form.paid_amount}
-                    onChange={(event) => {
-                      const val = handleValueChange(event.currentTarget.value);
-                      setForm((prev) => ({ ...prev, paid_amount: val }));
+                      setForm((prev) => ({ ...prev, valor_combinado: val }));
                     }}
                     placeholder="0.00"
                     rightSection={<span style={{ paddingRight: 8 }}>R$</span>}
                     styles={inputStyles}
                   />
                 </Group>
+
+                {isHired && weddingSupplier && !hasPaymentPlan ? (
+                  <Group gap="sm" wrap="wrap">
+                    <Button
+                      variant="default"
+                      styles={softButtonStyles}
+                      onClick={() => handleOpenPaymentModal("plan")}
+                    >
+                      Criar plano de pagamento
+                    </Button>
+                    <Button
+                      variant="light"
+                      styles={primaryButtonStyles}
+                      onClick={() => handleOpenPaymentModal("manual")}
+                    >
+                      Adicionar manualmente
+                    </Button>
+                  </Group>
+                ) : null}
+
+                {isHired && !hasPaymentPlan ? (
+                  <Text size="sm" c="red" mt="xs">
+                    Para salvar como contratado é necessário criar ou associar um plano de pagamento.
+                  </Text>
+                ) : null}
 
                 <Textarea
                   label="Observações"
@@ -896,6 +1171,105 @@ export default function SupplierDetailPage() {
                   }
                   styles={inputStyles}
                 />
+
+                {hasPaymentPlan ? (
+                  <Card radius="lg" withBorder p="md" mt="md">
+                    <Stack gap="sm">
+                      <Group justify="space-between" align="center">
+                        <Text fw={700}>Plano de pagamento associado</Text>
+                        <Badge
+                          color={
+                            weddingSupplier?.status_financeiro === "Quitado"
+                              ? "green"
+                              : weddingSupplier?.status_financeiro === "Em atraso"
+                              ? "red"
+                              : "yellow"
+                          }
+                          variant="light"
+                        >
+                          {weddingSupplier?.status_financeiro || "Sem plano"}
+                        </Badge>
+                      </Group>
+                      <Text size="sm" c="dimmed">
+                        Este plano está vinculado ao fornecedor e mostra as parcelas previstas.
+                      </Text>
+                      <ScrollArea type="auto" style={{ maxHeight: 260 }}>
+                        <Table withTableBorder withColumnBorders highlightOnHover striped>
+                          <Table.Thead>
+                            <Table.Tr>
+                              <Table.Th>Parcela</Table.Th>
+                              <Table.Th>Descrição</Table.Th>
+                              <Table.Th>Vencimento</Table.Th>
+                              <Table.Th>Valor</Table.Th>
+                              <Table.Th>Forma</Table.Th>
+                              <Table.Th>Status</Table.Th>
+                              <Table.Th>Ações</Table.Th>
+                            </Table.Tr>
+                          </Table.Thead>
+                          <Table.Tbody>
+                            {weddingSupplier?.parcelas
+                              ?.slice()
+                              .sort((a, b) => a.numero_parcela - b.numero_parcela)
+                              .map((parcela) => (
+                                <tr key={parcela.id}>
+                                  <td>{parcela.numero_parcela}</td>
+                                  <td>{parcela.descricao}</td>
+                                  <td>
+                                    {new Date(
+                                      `${parcela.data_vencimento}T00:00:00`,
+                                    ).toLocaleDateString("pt-BR")}
+                                  </td>
+                                  <td>{formatCurrency(parcela.valor)}</td>
+                                  <td>{parcela.forma_pagamento}</td>
+                                  <td>{parcela.status.replace("_", " ")}</td>
+                                  <td>
+                                    <Group gap="xs">
+                                      {parcela.status !== "pago" ? (
+                                        <Button
+                                          size="xs"
+                                          variant="outline"
+                                          onClick={() => openParcelPayment(parcela)}
+                                        >
+                                          Pagar
+                                        </Button>
+                                      ) : (
+                                        <Button
+                                          size="xs"
+                                          variant="outline"
+                                          onClick={() => handleRevertParcelPayment(parcela)}
+                                          loading={parcelActionLoading}
+                                        >
+                                          Reverter
+                                        </Button>
+                                      )}
+                                      {parcela.status !== "pago" ? (
+                                        <Button
+                                          size="xs"
+                                          variant="default"
+                                          onClick={() => openParcelEdit(parcela)}
+                                        >
+                                          Editar
+                                        </Button>
+                                      ) : null}
+                                      <Button
+                                        size="xs"
+                                        color="red"
+                                        variant="subtle"
+                                        onClick={() => handleDeleteParcel(parcela)}
+                                        loading={parcelActionLoading}
+                                      >
+                                        Excluir
+                                      </Button>
+                                    </Group>
+                                  </td>
+                                </tr>
+                              ))}
+                          </Table.Tbody>
+                        </Table>
+                      </ScrollArea>
+                    </Stack>
+                  </Card>
+                ) : null}
 
                 <Card
                   radius="lg"
@@ -993,6 +1367,190 @@ export default function SupplierDetailPage() {
             </Stack>
           ) : null}
         </Modal>
+
+        <Modal
+          opened={parcelActionOpen}
+          onClose={() => setParcelActionOpen(false)}
+          title="Registrar pagamento"
+          centered
+          size="md"
+        >
+          <Stack gap="md">
+            <TextInput
+              label="Data do pagamento"
+              type="date"
+              value={parcelPaymentForm.data_pagamento}
+              onChange={(event) =>
+                setParcelPaymentForm((prev) => ({
+                  ...prev,
+                  data_pagamento: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+            <TextInput
+              label="Valor"
+              value={parcelPaymentForm.valor}
+              onChange={(event) =>
+                setParcelPaymentForm((prev) => ({
+                  ...prev,
+                  valor: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+            <Textarea
+              label="Observação"
+              minRows={3}
+              value={parcelPaymentForm.observacao}
+              onChange={(event) =>
+                setParcelPaymentForm((prev) => ({
+                  ...prev,
+                  observacao: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+            <Group justify="flex-end" mt="md">
+              <Button
+                variant="default"
+                styles={softButtonStyles}
+                onClick={() => setParcelActionOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                styles={primaryButtonStyles}
+                onClick={handleRegisterParcelPayment}
+                loading={parcelActionLoading}
+              >
+                Registrar pagamento
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
+
+        <Modal
+          opened={parcelEditOpen}
+          onClose={() => setParcelEditOpen(false)}
+          title="Editar parcela"
+          centered
+          size="md"
+        >
+          <Stack gap="md">
+            <TextInput
+              label="Descrição"
+              value={parcelEditForm.descricao}
+              onChange={(event) =>
+                setParcelEditForm((prev) => ({
+                  ...prev,
+                  descricao: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+            <TextInput
+              label="Valor"
+              value={parcelEditForm.valor}
+              onChange={(event) =>
+                setParcelEditForm((prev) => ({
+                  ...prev,
+                  valor: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+            <TextInput
+              label="Vencimento"
+              type="date"
+              value={parcelEditForm.data_vencimento}
+              onChange={(event) =>
+                setParcelEditForm((prev) => ({
+                  ...prev,
+                  data_vencimento: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+            <Select
+              label="Forma de pagamento"
+              data={[
+                { value: "pix", label: "Pix" },
+                { value: "boleto", label: "Boleto" },
+                { value: "cartao_credito", label: "Cartão de crédito" },
+                { value: "cartao_debito", label: "Cartão de débito" },
+                { value: "transferencia", label: "Transferência" },
+                { value: "dinheiro", label: "Dinheiro" },
+                { value: "cheque", label: "Cheque" },
+                { value: "outro", label: "Outro" },
+              ]}
+              value={parcelEditForm.forma_pagamento}
+              onChange={(value) =>
+                setParcelEditForm((prev) => ({
+                  ...prev,
+                  forma_pagamento: (value || "pix") as FormaPagamento,
+                }))
+              }
+              styles={inputStyles}
+            />
+            <Select
+              label="Status"
+              data={[
+                { value: "a_vencer", label: "A vencer" },
+                { value: "em_atraso", label: "Em atraso" },
+                { value: "pago", label: "Pago" },
+              ]}
+              value={parcelEditForm.status}
+              onChange={(value) =>
+                setParcelEditForm((prev) => ({
+                  ...prev,
+                  status: (value || "a_vencer") as ParcelaStatus,
+                }))
+              }
+              styles={inputStyles}
+            />
+            <Textarea
+              label="Observação"
+              minRows={3}
+              value={parcelEditForm.observacao}
+              onChange={(event) =>
+                setParcelEditForm((prev) => ({
+                  ...prev,
+                  observacao: event.currentTarget.value,
+                }))
+              }
+              styles={inputStyles}
+            />
+            <Group justify="flex-end" mt="md">
+              <Button
+                variant="default"
+                styles={softButtonStyles}
+                onClick={() => setParcelEditOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                styles={primaryButtonStyles}
+                onClick={handleUpdateParcel}
+                loading={parcelActionLoading}
+              >
+                Salvar alterações
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
+
+        <PaymentPlanModal
+          opened={paymentModalOpen}
+          mode={paymentModalMode}
+          weddingSupplierId={weddingSupplier?.id}
+          onClose={() => setPaymentModalOpen(false)}
+          onSaved={() => {
+            if (weddingSupplier?.id) {
+              void refreshWeddingSupplier(weddingSupplier.id);
+            }
+          }}
+        />
       </Stack>
     </BaseLayout>
   );
