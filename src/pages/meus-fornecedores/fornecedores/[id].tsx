@@ -467,6 +467,9 @@ export default function SupplierDetailPage() {
   const hasPaymentPlan = Boolean(weddingSupplier?.parcelas?.length);
   const saveDisabled = isHired && !hasPaymentPlan;
 
+
+  
+
   const handleDownloadContract = () => {
     if (!contractUrl) return;
 

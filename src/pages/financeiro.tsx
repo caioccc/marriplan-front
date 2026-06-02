@@ -32,7 +32,8 @@ import {
   Table,
   Text,
   TextInput,
-  Title
+  Title,
+  Tooltip,
 } from "@mantine/core";
 import { DatePickerInput, DatesProvider } from "@mantine/dates";
 import { useMediaQuery } from "@mantine/hooks";
@@ -44,13 +45,14 @@ import {
   IconEdit,
   IconPlus,
   IconRefresh,
-  IconTrash
+  IconTrash,
 } from "@tabler/icons-react";
+import { DollarSignIcon } from "lucide-react";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 type StatusFilter = "" | ParcelaStatus;
-type WindowFilter = "7" | "15" | "30" | "60" | "90";
+type WindowFilter = "7" | "15" | "30" | "60" | "90" | "99999";
 
 type PlanEditorRow = {
   numero_parcela: number;
@@ -80,6 +82,7 @@ const WINDOW_OPTIONS: Array<{ value: WindowFilter; label: string }> = [
   { value: "30", label: "30 dias" },
   { value: "60", label: "60 dias" },
   { value: "90", label: "90 dias" },
+  { value: "99999", label: "Todo o período" },
 ];
 
 const STATUS_OPTIONS: Array<{ value: StatusFilter; label: string }> = [
@@ -664,96 +667,175 @@ export default function FinanceiroPage() {
                 if (isMobile) {
                   return (
                     <Card key={record.id} radius="md" withBorder p="md">
-                      <Stack spacing={6} style={{ minWidth: 0 }}>
-                        <Text fw={700} lineClamp={1}>
-                          {record.fornecedor_nome || "Fornecedor"}
-                        </Text>
-                        <Text size="sm" c="dimmed" lineClamp={2}>
-                          {record.descricao}
-                        </Text>
+                      {/* alignItems: 'stretch' força a coluna da direita a ter 100% da altura da coluna da esquerda */}
+                      <Group
+                        justify="space-between"
+                        align="stretch"
+                        wrap="nowrap"
+                        style={{ alignItems: "stretch" }}
+                      >
+                        {/* flex: 1 garante que o texto não empurre o menu meatball para fora da tela */}
+                        <Stack gap={6} style={{ minWidth: 0, flex: 1 }}>
+                          <Text fw={700} lineClamp={1} size="sm">
+                            {record.fornecedor_nome || "Fornecedor"}
+                          </Text>
+                          <Text size="sm" c="dimmed" lineClamp={2}>
+                            {record.descricao}
+                          </Text>
 
-                        <Stack spacing={4}>
-                          <Group spacing={8} align="center">
-                            <Text size="xs" c="dimmed">
-                              Venc:
-                            </Text>
-                            <Text
-                              size="sm"
-                              c={
-                                parcelaStatus === "em_atraso"
-                                  ? "red"
-                                  : dueColor(record)
-                              }
-                              fw={600}
-                            >
-                              {new Date(
-                                `${record.data_vencimento}T00:00:00`,
-                              ).toLocaleDateString("pt-BR")}
-                            </Text>
-                          </Group>
+                          <Stack gap={4}>
+                            <Group gap={8} align="center">
+                              <Text size="xs" c="dimmed">
+                                Venc:
+                              </Text>
+                              <Text
+                                size="sm"
+                                c={
+                                  parcelaStatus === "em_atraso"
+                                    ? "red"
+                                    : dueColor(record)
+                                }
+                                fw={600}
+                              >
+                                {new Date(
+                                  `${record.data_vencimento}T00:00:00`,
+                                ).toLocaleDateString("pt-BR")}
+                              </Text>
+                            </Group>
 
-                          <Group spacing={8} align="center">
-                            <Text size="xs" c="dimmed">
-                              Valor:
-                            </Text>
-                            <Text size="sm" fw={600}>
-                              {formatCurrency(record.valor)}
-                            </Text>
-                          </Group>
+                            <Group gap={8} align="center">
+                              <Text size="xs" c="dimmed">
+                                Valor:
+                              </Text>
+                              <Text size="sm" fw={600}>
+                                {formatCurrency(record.valor)}
+                              </Text>
+                            </Group>
 
-                          <Group spacing={8} align="center">
-                            <Text size="xs">
-                              {FORMA_OPTIONS.find(
-                                (item) => item.value === record.forma_pagamento,
-                              )?.label || record.forma_pagamento}
-                            </Text>
-                          </Group>
-                        </Stack>
+                            <Group gap={8} align="center">
+                              <Text size="xs">
+                                {FORMA_OPTIONS.find(
+                                  (item) =>
+                                    item.value === record.forma_pagamento,
+                                )?.label || record.forma_pagamento}
+                              </Text>
+                            </Group>
+                          </Stack>
 
-                        <Group position="right" spacing={8}>
-                          {parcelaStatus === "pago" ? (
-                            <Button
-                              variant="light"
-                              color="orange"
-                              size="xs"
-                              onClick={() => {
-                                setParcelaToRevert(record);
-                                setConfirmRevertOpen(true);
-                              }}
-                            >
-                              Reverter
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="light"
-                              color="green"
-                              size="xs"
-                              onClick={() => openPaymentModal(record)}
-                            >
-                              Pagar
-                            </Button>
+                          {!isMobile && (
+                            <Group justify="right" gap={8} mt="xs">
+                              {parcelaStatus === "pago" ? (
+                                <Button
+                                  variant="light"
+                                  color="orange"
+                                  size="xs"
+                                  onClick={() => {
+                                    setParcelaToRevert(record);
+                                    setConfirmRevertOpen(true);
+                                  }}
+                                >
+                                  Reverter
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="light"
+                                  color="green"
+                                  size="xs"
+                                  onClick={() => openPaymentModal(record)}
+                                >
+                                  Pagar
+                                </Button>
+                              )}
+
+                              <ActionIcon
+                                variant="light"
+                                aria-label="Abrir gerenciador"
+                                onClick={() =>
+                                  record.fornecedor
+                                    ? openManager(record.fornecedor)
+                                    : undefined
+                                }
+                                disabled={!record.fornecedor}
+                              >
+                                <IconArrowRight size={16} />
+                              </ActionIcon>
+                            </Group>
                           )}
 
-                          <ActionIcon
-                            variant="light"
-                            aria-label="Abrir gerenciador"
-                            onClick={() =>
-                              record.fornecedor
-                                ? openManager(record.fornecedor)
-                                : undefined
-                            }
-                            disabled={!record.fornecedor}
-                          >
-                            <IconArrowRight size={16} />
-                          </ActionIcon>
-                        </Group>
+                          {record.observacao ? (
+                            <Text size="sm" c="dimmed" mt="xs">
+                              {record.observacao}
+                            </Text>
+                          ) : null}
+                        </Stack>
 
-                        {record.observacao ? (
-                          <Text size="sm" c="dimmed" mt="xs">
-                            {record.observacao}
-                          </Text>
-                        ) : null}
-                      </Stack>
+                        {/* Coluna da direita: perfeitamente esticada e alinhada à direita */}
+                        <Stack
+                          justify="space-between"
+                          gap={8}
+                          align="flex-end"
+                          style={{ shrink: 0 }}
+                        >
+                          <Menu
+                            shadow="md"
+                            width={220}
+                            position="bottom-end"
+                            withinPortal
+                          >
+                            <Menu.Target>
+                              <Button
+                                variant="white"
+                                color="dark"
+                                radius="xl"
+                                size="xs"
+                                px={10}
+                                style={{
+                                  boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
+                                  backdropFilter: "blur(10px)",
+                                }}
+                              >
+                                <IconDotsVertical size={14} />
+                              </Button>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              {parcelaStatus === "pago" ? (
+                                <Menu.Item
+                                  leftSection={<IconEdit size={14} />}
+                                  onClick={() => {
+                                    setParcelaToRevert(record);
+                                    setConfirmRevertOpen(true);
+                                  }}
+                                >
+                                  Reverter
+                                </Menu.Item>
+                              ) : (
+                                <Menu.Item
+                                  leftSection={<DollarSignIcon size={14} />}
+                                  onClick={() => openPaymentModal(record)}
+                                >
+                                  Pagar
+                                </Menu.Item>
+                              )}
+                              <Menu.Item
+                                leftSection={<IconArrowRight size={14} />}
+                                onClick={() =>
+                                  record.fornecedor
+                                    ? openManager(record.fornecedor)
+                                    : undefined
+                                }
+                                disabled={!record.fornecedor}
+                              >
+                                Visualizar Plano
+                              </Menu.Item>
+                            </Menu.Dropdown>
+                          </Menu>
+
+                          {/* mt="auto" agora funciona perfeitamente jogando o status para o rodapé */}
+                          <Badge color={statusColor(parcelaStatus)} mt="auto">
+                            {statusLabel(parcelaStatus)}
+                          </Badge>
+                        </Stack>
+                      </Group>
                     </Card>
                   );
                 }
@@ -811,6 +893,7 @@ export default function FinanceiroPage() {
                             variant="light"
                             color="orange"
                             size="xs"
+                            leftSection={<IconRefresh size={12} />}
                             onClick={() => {
                               setParcelaToRevert(record);
                               setConfirmRevertOpen(true);
@@ -823,24 +906,30 @@ export default function FinanceiroPage() {
                             variant="light"
                             color="green"
                             size="xs"
+                            leftSection={<DollarSignIcon size={12} />}
                             onClick={() => openPaymentModal(record)}
                           >
                             Pagar
                           </Button>
                         )}
 
-                        <ActionIcon
-                          variant="light"
-                          aria-label="Abrir gerenciador"
-                          onClick={() =>
-                            record.fornecedor
-                              ? openManager(record.fornecedor)
-                              : undefined
-                          }
-                          disabled={!record.fornecedor}
+                        <Tooltip
+                          label="Abrir gerenciador do fornecedor"
+                          withArrow
                         >
-                          <IconArrowRight size={16} />
-                        </ActionIcon>
+                          <ActionIcon
+                            variant="light"
+                            aria-label="Abrir gerenciador"
+                            onClick={() =>
+                              record.fornecedor
+                                ? openManager(record.fornecedor)
+                                : undefined
+                            }
+                            disabled={!record.fornecedor}
+                          >
+                            <IconArrowRight size={16} />
+                          </ActionIcon>
+                        </Tooltip>
                       </Group>
                     </Group>
                     {record.observacao ? (
@@ -859,7 +948,7 @@ export default function FinanceiroPage() {
       <Modal
         opened={managerOpen}
         onClose={() => setManagerOpen(false)}
-        title="Visualizar/Gerenciar Plano Existente"
+        title="Visualizar Plano"
         centered
         size="xl"
       >
@@ -868,8 +957,16 @@ export default function FinanceiroPage() {
             <Text c="dimmed">Carregando plano...</Text>
           ) : managerSupplier ? (
             <>
-              <Group grow>
-                <Card radius="lg" withBorder>
+              <Group
+                grow={!isMobile}
+                wrap={isMobile ? "wrap" : "nowrap"}
+                gap="sm"
+              >
+                <Card
+                  radius="lg"
+                  withBorder
+                  style={{ flex: isMobile ? "1 1 40%" : "1 1 40%" }}
+                >
                   <Text size="xs" tt="uppercase" fw={700} c="dimmed">
                     Valor combinado
                   </Text>
@@ -877,7 +974,11 @@ export default function FinanceiroPage() {
                     {formatCurrency(managerSupplier.valor_combinado)}
                   </Title>
                 </Card>
-                <Card radius="lg" withBorder>
+                <Card
+                  radius="lg"
+                  withBorder
+                  style={{ flex: isMobile ? "1 1 40%" : "1 1 40%" }}
+                >
                   <Text size="xs" tt="uppercase" fw={700} c="dimmed">
                     Valor pago
                   </Text>
@@ -885,7 +986,11 @@ export default function FinanceiroPage() {
                     {formatCurrency(managerSupplier.valor_pago)}
                   </Title>
                 </Card>
-                <Card radius="lg" withBorder>
+                <Card
+                  radius="lg"
+                  withBorder
+                  style={{ flex: isMobile ? "1 1 100%" : "1 1 100%" }}
+                >
                   <Text size="xs" tt="uppercase" fw={700} c="dimmed">
                     Saldo devedor
                   </Text>
@@ -925,13 +1030,6 @@ export default function FinanceiroPage() {
                     >
                       Criar plano
                     </Button>
-                    {/* <Button
-                      styles={primaryButtonStyles}
-                      onClick={() => setManualOpen(true)}
-                      leftSection={<IconPlus size={16} />}
-                    >
-                      Adicionar manualmente
-                    </Button> */}
                   </Group>
                 ) : null}
               </Group>
@@ -948,120 +1046,152 @@ export default function FinanceiroPage() {
                 </Card>
               ) : null}
 
-              <ScrollArea type="auto" style={{ maxHeight: 420 }}>
+              <ScrollArea
+                type="auto"
+                style={{ maxHeight: 420 }}
+                styles={{ viewport: { paddingBottom: 12 } }}
+              >
                 <Stack gap="sm">
-                  {managerParcelas.map((parcela) => {
-                    const parcelaStatus =
-                      parcela.status_calculado || parcela.status || "a_vencer";
-                    return (
-                      <Card key={parcela.id} radius="md" withBorder>
-                        <Group noWrap align="center" position="apart">
-                          <Stack spacing={2} style={{ minWidth: 0, flex: 1 }}>
-                            <Text fw={700} lineClamp={1}>
-                              {parcela.descricao}
-                            </Text>
-                            <Group spacing={8} align="center">
-                              <Text size="xs" c="dimmed">
-                                Venc:
+                  {managerParcelas
+                    .slice()
+                    .sort((a, b) => a.numero_parcela - b.numero_parcela)
+                    .map((parcela) => {
+                      const parcelaStatus =
+                        parcela.status_calculado ||
+                        parcela.status ||
+                        "a_vencer";
+                      return (
+                        <Card key={parcela.id} radius="md" withBorder>
+                          <Group noWrap align="center" justify="space-between">
+                            <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
+                              <Text fw={700} lineClamp={1}>
+                                {parcela.descricao}
                               </Text>
-                              <Text
-                                size="sm"
-                                c={
-                                  parcelaStatus === "em_atraso"
-                                    ? "red"
-                                    : dueColor(parcela)
-                                }
-                                fw={600}
-                              >
-                                {new Date(
-                                  `${parcela.data_vencimento}T00:00:00`,
-                                ).toLocaleDateString("pt-BR")}
-                              </Text>
-                              <Text size="xs" c="dimmed">
-                                •
-                              </Text>
-                              <Text size="sm" fw={600}>
-                                {formatCurrency(parcela.valor)}
-                              </Text>
-                              <Text size="xs" c="dimmed">
-                                •
-                              </Text>
-                              <Text size="xs">
-                                {FORMA_OPTIONS.find(
-                                  (item) =>
-                                    item.value === parcela.forma_pagamento,
-                                )?.label || parcela.forma_pagamento}
-                              </Text>
-                            </Group>
-                          </Stack>
+                              <Group gap={8} align="center" wrap="wrap">
+                                <Text size="xs" c="dimmed">
+                                  Venc:
+                                </Text>
+                                <Text
+                                  size="sm"
+                                  c={
+                                    parcelaStatus === "em_atraso"
+                                      ? "red"
+                                      : dueColor(parcela)
+                                  }
+                                  fw={600}
+                                >
+                                  {new Date(
+                                    `${parcela.data_vencimento}T00:00:00`,
+                                  ).toLocaleDateString("pt-BR")}
+                                </Text>
+                                {!isMobile && (
+                                  <>
+                                    <Text size="xs" c="dimmed">
+                                      •
+                                    </Text>
+                                    <Text size="sm" fw={600}>
+                                      {formatCurrency(parcela.valor)}
+                                    </Text>
+                                    <Text size="xs" c="dimmed">
+                                      •
+                                    </Text>
+                                    <Text size="xs">
+                                      {FORMA_OPTIONS.find(
+                                        (item) =>
+                                          item.value ===
+                                          parcela.forma_pagamento,
+                                      )?.label || parcela.forma_pagamento}
+                                    </Text>
+                                  </>
+                                )}
+                              </Group>
+                              {isMobile && (
+                                <Group gap={8} align="center">
+                                  <Text size="sm" fw={600}>
+                                    {formatCurrency(parcela.valor)}
+                                  </Text>
+                                  <Text size="xs" c="dimmed">
+                                    •
+                                  </Text>
+                                  <Text size="xs">
+                                    {FORMA_OPTIONS.find(
+                                      (item) =>
+                                        item.value === parcela.forma_pagamento,
+                                    )?.label || parcela.forma_pagamento}
+                                  </Text>
+                                </Group>
+                              )}
+                            </Stack>
 
-                          <Group spacing={8} noWrap>
-                            <Badge color={statusColor(parcelaStatus)}>
-                              {statusLabel(parcelaStatus)}
-                            </Badge>
-                            {parcelaStatus === "pago" ? (
-                              <Button
-                                variant="light"
-                                color="orange"
-                                size="xs"
-                                onClick={() => {
-                                  setParcelaToRevert(parcela);
-                                  setConfirmRevertOpen(true);
-                                }}
-                              >
-                                Reverter
-                              </Button>
-                            ) : (
-                              <Button
-                                variant="light"
-                                color="green"
-                                size="xs"
-                                onClick={() => openPaymentModal(parcela)}
-                              >
-                                Pagar
-                              </Button>
-                            )}
-
-                            <Menu withinPortal position="bottom-end">
-                              <Menu.Target>
-                                <ActionIcon
+                            <Group gap={8} noWrap>
+                              {!isMobile && (
+                                <Badge color={statusColor(parcelaStatus)}>
+                                  {statusLabel(parcelaStatus)}
+                                </Badge>
+                              )}
+                              {parcelaStatus === "pago" ? (
+                                <Button
                                   variant="light"
-                                  aria-label="Mais opções"
-                                >
-                                  <IconDotsVertical size={18} />
-                                </ActionIcon>
-                              </Menu.Target>
-                              <Menu.Dropdown>
-                                <Menu.Item
-                                  leftSection={<IconEdit size={14} />}
-                                  onClick={() => openEditModal(parcela)}
-                                  disabled={parcelaStatus === "pago"}
-                                >
-                                  Editar
-                                </Menu.Item>
-                                <Menu.Item
-                                  leftSection={<IconTrash size={14} />}
-                                  color="red"
+                                  color="orange"
+                                  size="xs"
                                   onClick={() => {
-                                    setParcelaToDelete(parcela);
-                                    setConfirmDeleteOpen(true);
+                                    setParcelaToRevert(parcela);
+                                    setConfirmRevertOpen(true);
                                   }}
-                                  disabled={parcelaStatus === "pago"}
                                 >
-                                  Excluir
-                                </Menu.Item>
-                              </Menu.Dropdown>
-                            </Menu>
+                                  Reverter
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="light"
+                                  color="green"
+                                  size="xs"
+                                  onClick={() => openPaymentModal(parcela)}
+                                >
+                                  Pagar
+                                </Button>
+                              )}
+
+                              <Menu withinPortal position="bottom-end">
+                                <Menu.Target>
+                                  <ActionIcon
+                                    variant="light"
+                                    aria-label="Mais opções"
+                                  >
+                                    <IconDotsVertical size={18} />
+                                  </ActionIcon>
+                                </Menu.Target>
+                                <Menu.Dropdown>
+                                  <Menu.Item
+                                    leftSection={<IconEdit size={14} />}
+                                    onClick={() => openEditModal(parcela)}
+                                    disabled={parcelaStatus === "pago"}
+                                  >
+                                    Editar
+                                  </Menu.Item>
+                                  <Menu.Item
+                                    leftSection={<IconTrash size={14} />}
+                                    color="red"
+                                    onClick={() => {
+                                      setParcelaToDelete(parcela);
+                                      setConfirmDeleteOpen(true);
+                                    }}
+                                    disabled={parcelaStatus === "pago"}
+                                  >
+                                    Excluir
+                                  </Menu.Item>
+                                </Menu.Dropdown>
+                              </Menu>
+                            </Group>
                           </Group>
-                        </Group>
-                        {parcela.observacao ? (
-                          <Text size="sm" c="dimmed" mt="xs">
-                            {parcela.observacao}
-                          </Text>
-                        ) : null}
-                      </Card>
-                    );
-                  })}
+                          {parcela.observacao ? (
+                            <Text size="sm" c="dimmed" mt="xs">
+                              {parcela.observacao}
+                            </Text>
+                          ) : null}
+                        </Card>
+                      );
+                    })}
                 </Stack>
               </ScrollArea>
             </>

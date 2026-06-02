@@ -318,7 +318,8 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                   whiteSpace: "nowrap",
                 }}
               >
-                Você tem acesso liberado por {trialEndsAt ? "tempo limitado" : "7 dias"}.
+                Você tem acesso liberado por{" "}
+                {trialEndsAt ? "tempo limitado" : "7 dias"}.
               </Text>
             </Group>
           </Box>
@@ -784,56 +785,21 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
               width: "100%",
             }}
           >
-            <Stack gap={8} align={opened ? "stretch" : "center"}>
+            <Stack align={opened ? "stretch" : "center"}>
               {opened && !isPremium && !isTrialing && (
-                <Card
+                <Button
+                  component="a"
+                  href="/checkout"
                   radius="xl"
-                  p="md"
-                  withBorder
+                  size="xs"
+                  fullWidth
                   style={{
-                    background:
-                      "linear-gradient(180deg, #fffaf6 0%, #f6efe7 100%)",
-                    borderColor: "rgba(181, 139, 122, 0.18)",
-                    boxShadow: "0 14px 32px rgba(70, 56, 43, 0.08)",
+                    background: "var(--marriplan-rose)",
+                    color: "#fff",
                   }}
                 >
-                  <Stack gap={8}>
-                    <Text
-                      size="xs"
-                      fw={700}
-                      tt="uppercase"
-                      style={{
-                        color: "var(--marriplan-rose)",
-                        letterSpacing: 1.8,
-                      }}
-                    >
-                      ✨ Fazer upgrade
-                    </Text>
-                    <Text
-                      size="sm"
-                      fw={600}
-                      style={{
-                        color: "var(--marriplan-text)",
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      Libere convidados ilimitados, exportações e mais.
-                    </Text>
-                    <Button
-                      component="a"
-                      href="/checkout"
-                      radius="xl"
-                      size="sm"
-                      fullWidth
-                      style={{
-                        background: "var(--marriplan-rose)",
-                        color: "#fff",
-                      }}
-                    >
-                      Fazer upgrade
-                    </Button>
-                  </Stack>
-                </Card>
+                  Fazer upgrade
+                </Button>
               )}
               <Box
                 style={{

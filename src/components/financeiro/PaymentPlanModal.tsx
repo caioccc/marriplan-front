@@ -1,3 +1,4 @@
+import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
   criarParcelaPagamento,
   FormaPagamento,
@@ -5,7 +6,6 @@ import {
   salvarPlanoPagamento,
 } from "@/services/financeiro";
 import { getWeddingSupplier, WeddingSupplier } from "@/services/suppliers";
-import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
   Badge,
   Button,
@@ -16,17 +16,23 @@ import {
   ScrollArea,
   Select,
   Stack,
-  Table,
+  Stepper,
   Text,
   TextInput,
   Title,
 } from "@mantine/core";
-import { DatePickerInput, DatesProvider } from "@mantine/dates";
-import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
-import { IconCheck, IconPlus, IconTrash } from "@tabler/icons-react";
+import {
+  IconCheck,
+  IconPlus,
+  IconTrash,
+  IconArrowLeft,
+  IconArrowRight,
+} from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { MobileFullscreenModal } from "../MobileFullscreenModal";
+import { useMediaQuery } from "@mantine/hooks";
+import { DatePickerInput, DatesProvider } from "@mantine/dates";
 
 type PaymentPlanModalProps = {
   opened: boolean;
@@ -56,9 +62,9 @@ const WINDOW_OPTIONS = [
 const FORMA_OPTIONS: Array<{ value: FormaPagamento; label: string }> = [
   { value: "pix", label: "PIX" },
   { value: "boleto", label: "Boleto" },
-  { value: "cartao_credito", label: "Cartao de Credito" },
-  { value: "cartao_debito", label: "Cartao de Debito" },
-  { value: "transferencia", label: "Transferencia" },
+  { value: "cartao_credito", label: "Cartão de Crédito" },
+  { value: "cartao_debito", label: "Cartão de Débito" },
+  { value: "transferencia", label: "Transferência" },
   { value: "dinheiro", label: "Dinheiro" },
   { value: "cheque", label: "Cheque" },
   { value: "outro", label: "Outro" },
@@ -142,6 +148,7 @@ export function PaymentPlanModal({
   onClose,
   onSaved,
 }: PaymentPlanModalProps) {
+  const [activeStep, setActiveStep] = useState(0);
   const [loadingSupplier, setLoadingSupplier] = useState(false);
   const [weddingSupplier, setWeddingSupplier] =
     useState<WeddingSupplier | null>(null);
@@ -149,6 +156,7 @@ export function PaymentPlanModal({
   const [planSaving, setPlanSaving] = useState(false);
   const [planPreview, setPlanPreview] = useState<PlanEditorRow[]>([]);
   const [planPreviewValid, setPlanPreviewValid] = useState(false);
+
   const [planForm, setPlanForm] = useState({
     entrada_percentual: "20",
     quantidade_parcelas: "4",
@@ -156,6 +164,7 @@ export function PaymentPlanModal({
     data_primeira_parcela: todayInputValue(),
     forma_pagamento: "pix" as FormaPagamento,
   });
+
   const [manualForm, setManualForm] = useState<PlanEditorRow>({
     numero_parcela: 1,
     descricao: "Parcela manual",
@@ -178,7 +187,7 @@ export function PaymentPlanModal({
     } catch {
       notifications.show({
         color: "red",
-        message: "Nao foi possivel carregar o plano do fornecedor.",
+        message: "Não foi possível carregar o plano do fornecedor.",
       });
     } finally {
       setLoadingSupplier(false);
@@ -194,6 +203,7 @@ export function PaymentPlanModal({
     if (!opened) {
       setPlanPreview([]);
       setPlanPreviewValid(false);
+      setActiveStep(0);
     }
   }, [opened]);
 
@@ -201,6 +211,7 @@ export function PaymentPlanModal({
     () => planPreview.reduce((sum, row) => sum + toNumber(row.valor), 0),
     [planPreview],
   );
+
   const displayedValorCombinado = valorCombinadoOverride?.trim()
     ? valorCombinadoOverride
     : weddingSupplier?.valor_combinado;
@@ -209,10 +220,21 @@ export function PaymentPlanModal({
   const displayedSaldo = valorCombinadoOverride?.trim()
     ? planTarget - valorPago
     : toNumber(weddingSupplier?.saldo_devedor);
+
   const planMatches =
     planPreview.length > 0 &&
     Math.abs(planTotal - planTarget) < 0.01 &&
     planPreviewValid;
+
+  useEffect(() => {
+    const previewTotal = planPreview.reduce(
+      (sum, row) => sum + toNumber(row.valor),
+      0,
+    );
+    setPlanPreviewValid(
+      planPreview.length > 0 && Math.abs(previewTotal - planTarget) < 0.01,
+    );
+  }, [planPreview, planTarget]);
 
   const handleGeneratePreview = async () => {
     const valorCombinado = toNumber(displayedValorCombinado);
@@ -224,11 +246,10 @@ export function PaymentPlanModal({
     if (Number.isNaN(valorCombinado) || valorCombinado <= 0) {
       notifications.show({
         color: "red",
-        message: "Valor combinado invalido.",
+        message: "Valor combinado inválido.",
       });
       return;
     }
-
     if (
       Number.isNaN(entradaPercentual) ||
       entradaPercentual < 0 ||
@@ -236,32 +257,28 @@ export function PaymentPlanModal({
     ) {
       notifications.show({
         color: "red",
-        message:
-          "Percentual de entrada deve ser um numero positivo entre 0 e 100.",
+        message: "Percentual de entrada inválido (0 a 100).",
       });
       return;
     }
-
     if (Number.isNaN(quantidadeParcelas) || quantidadeParcelas <= 0) {
       notifications.show({
         color: "red",
-        message: "Quantidade de parcelas deve ser um numero positivo.",
+        message: "Quantidade de parcelas inválida.",
       });
       return;
     }
-
     if (Number.isNaN(intervaloDias) || intervaloDias <= 0) {
       notifications.show({
         color: "red",
-        message: "Intervalo de pagamento invalido.",
+        message: "Intervalo de pagamento inválido.",
       });
       return;
     }
-
     if (!dataPrimeiraParcela) {
       notifications.show({
         color: "red",
-        message: "Data da primeira parcela obrigatoria.",
+        message: "Data da primeira parcela obrigatória.",
       });
       return;
     }
@@ -301,21 +318,14 @@ export function PaymentPlanModal({
         });
       });
 
-      const previewTotal = preview.reduce(
-        (sum, row) => sum + toNumber(row.valor),
-        0,
-      );
       setPlanPreview(preview);
-      setPlanPreviewValid(
-        preview.length > 0 && Math.abs(previewTotal - planTarget) < 0.01,
-      );
+      setActiveStep(1); // Avança automaticamente para os Cards de Prévia
     } catch {
       notifications.show({
         color: "red",
-        message: "Nao foi possivel gerar a previa do plano.",
+        message: "Não foi possível gerar a prévia do plano.",
       });
       setPlanPreview([]);
-      setPlanPreviewValid(false);
     } finally {
       setPreviewLoading(false);
     }
@@ -346,7 +356,7 @@ export function PaymentPlanModal({
     } catch {
       notifications.show({
         color: "red",
-        message: "Nao foi possivel salvar o plano.",
+        message: "Não foi possível salvar o plano.",
       });
     } finally {
       setPlanSaving(false);
@@ -377,31 +387,462 @@ export function PaymentPlanModal({
     } catch {
       notifications.show({
         color: "red",
-        message: "Nao foi possivel adicionar a parcela.",
+        message: "Não foi possível adicionar a parcela.",
       });
     }
   };
 
-  const renderMobileFooter = () => {
-    return (
+  const isMobile = useMediaQuery("(max-width: 768px)");
+
+  // --- RENDERS DA ETAPA DE CONTEXTO DO PLANO (STEP 0 E STEP 1) ---
+  const renderStep0Form = (isMobileView: boolean) => (
+    <Stack gap="md">
+      <Group grow={!isMobileView}>
+        <TextInput
+          label="Entrada (%)"
+          type="number"
+          min={0}
+          max={100}
+          value={planForm.entrada_percentual}
+          onChange={(event) =>
+            setPlanForm((c) => ({
+              ...c,
+              entrada_percentual: event.currentTarget.value,
+            }))
+          }
+          styles={inputStyles}
+        />
+        <TextInput
+          label="Nº de parcelas"
+          type="number"
+          min={1}
+          value={planForm.quantidade_parcelas}
+          onChange={(event) =>
+            setPlanForm((c) => ({
+              ...c,
+              quantidade_parcelas: event.currentTarget.value,
+            }))
+          }
+          styles={inputStyles}
+        />
+        <Select
+          label="Intervalo"
+          data={WINDOW_OPTIONS}
+          value={planForm.intervalo_dias}
+          onChange={(value) =>
+            setPlanForm((c) => ({ ...c, intervalo_dias: value || "30" }))
+          }
+          styles={inputStyles}
+        />
+      </Group>
+      <Group grow={!isMobileView}>
+        <DatesProvider settings={{ locale: "pt-br" }}>
+          <DatePickerInput
+            label="1ª parcela"
+            valueFormat="DD/MM/YYYY"
+            value={planForm.data_primeira_parcela}
+            onChange={(value) =>
+              setPlanForm((c) => ({
+                ...c,
+                data_primeira_parcela: value ? value : c.data_primeira_parcela,
+              }))
+            }
+          />
+        </DatesProvider>
+        <Select
+          label="Forma padrão"
+          data={FORMA_OPTIONS}
+          value={planForm.forma_pagamento}
+          onChange={(value) =>
+            setPlanForm((c) => ({
+              ...c,
+              forma_pagamento: (value as FormaPagamento) || "pix",
+            }))
+          }
+          styles={inputStyles}
+        />
+      </Group>
+      {!isMobileView && (
+        <Group justify="flex-end" mt="md">
+          <Button variant="default" styles={softButtonStyles} onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            styles={primaryButtonStyles}
+            onClick={() => void handleGeneratePreview()}
+            loading={previewLoading}
+            rightSection={<IconArrowRight size={16} />}
+          >
+            Gerar prévia das parcelas
+          </Button>
+        </Group>
+      )}
+    </Stack>
+  );
+
+  const renderStep1Preview = (isMobileView: boolean) => (
+    <Stack gap="sm">
+      <ScrollArea
+        type="auto"
+        styles={{ viewport: { paddingBottom: 12 } }}
+      >
+        <Stack gap="sm">
+          {planPreview.map((row, index) => (
+            <Card
+              key={`${row.numero_parcela}-${index}`}
+              radius="md"
+              withBorder
+              p="sm"
+            >
+              <Stack gap="xs">
+                <Group justify="space-between" align="center">
+                  <Text size="sm" fw={700}>
+                    Item #{index + 1} -{" "}
+                    {row.numero_parcela === 0 ? "Entrada" : "Parcela"}
+                  </Text>
+                  <Button
+                    variant="light"
+                    color="red"
+                    size="xs"
+                    leftSection={<IconTrash size={14} />}
+                    onClick={() =>
+                      setPlanPreview((current) =>
+                        current.filter((_, itemIndex) => itemIndex !== index),
+                      )
+                    }
+                  >
+                    Excluir
+                  </Button>
+                </Group>
+
+                {isMobileView ? (
+                  // Mobile stack vertical do card
+                  <Stack gap="xs">
+                    <TextInput
+                      label="Descrição"
+                      value={row.descricao}
+                      onChange={(e) =>
+                        setPlanPreview((curr) =>
+                          curr.map((item, i) =>
+                            i === index
+                              ? { ...item, descricao: e.currentTarget.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      styles={inputStyles}
+                    />
+                    <Group grow gap="xs">
+                      <DatesProvider settings={{ locale: "pt-br" }}>
+                        <DatePickerInput
+                          valueFormat="DD/MM/YYYY"
+                          label="Vencimento"
+                          value={row.data_vencimento}
+                          onChange={(e) =>
+                            setPlanPreview((curr) =>
+                              curr.map((item, i) =>
+                                i === index
+                                  ? ({
+                                      ...item,
+                                      data_vencimento: e,
+                                    } as PlanEditorRow)
+                                  : item,
+                              ),
+                            )
+                          }
+                          styles={inputStyles}
+                        />
+                      </DatesProvider>
+                      <TextInput
+                        label="Valor"
+                        value={row.valor}
+                        onChange={(e) =>
+                          setPlanPreview((curr) =>
+                            curr.map((item, i) =>
+                              i === index
+                                ? { ...item, valor: e.currentTarget.value }
+                                : item,
+                            ),
+                          )
+                        }
+                        styles={inputStyles}
+                      />
+                    </Group>
+                    <Select
+                      label="Forma"
+                      data={FORMA_OPTIONS}
+                      value={row.forma_pagamento}
+                      onChange={(val) =>
+                        setPlanPreview((curr) =>
+                          curr.map((item, i) =>
+                            i === index
+                              ? {
+                                  ...item,
+                                  forma_pagamento:
+                                    (val as FormaPagamento) || "pix",
+                                }
+                              : item,
+                          ),
+                        )
+                      }
+                      styles={inputStyles}
+                    />
+                  </Stack>
+                ) : (
+                  // Desktop linha horizontal simplificada por card
+                  <Group gap="sm" grow>
+                    <TextInput
+                      label="Descrição"
+                      value={row.descricao}
+                      onChange={(e) =>
+                        setPlanPreview((curr) =>
+                          curr.map((item, i) =>
+                            i === index
+                              ? { ...item, descricao: e.currentTarget.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      styles={inputStyles}
+                    />
+                    <DatesProvider settings={{ locale: "pt-br" }}>
+                      <DatePickerInput
+                        label="Vencimento"
+                        valueFormat="DD/MM/YYYY"
+                        value={row.data_vencimento}
+                        onChange={(val) =>
+                          val &&
+                          setPlanPreview((curr) =>
+                            curr.map((item, i) =>
+                              i === index
+                                ? {
+                                    ...item,
+                                    data_vencimento: val,
+                                  }
+                                : item,
+                            ),
+                          )
+                        }
+                        styles={inputStyles}
+                      />
+                    </DatesProvider>
+                    <TextInput
+                      label="Valor"
+                      value={row.valor}
+                      onChange={(e) =>
+                        setPlanPreview((curr) =>
+                          curr.map((item, i) =>
+                            i === index
+                              ? { ...item, valor: e.currentTarget.value }
+                              : item,
+                          ),
+                        )
+                      }
+                      placeholder="0.00"
+                      rightSection={<span style={{ paddingRight: 8 }}>R$</span>}
+                      styles={inputStyles}
+                    />
+                    <Select
+                      label="Forma"
+                      data={FORMA_OPTIONS}
+                      value={row.forma_pagamento}
+                      onChange={(val) =>
+                        setPlanPreview((curr) =>
+                          curr.map((item, i) =>
+                            i === index
+                              ? {
+                                  ...item,
+                                  forma_pagamento:
+                                    (val as FormaPagamento) || "pix",
+                                }
+                              : item,
+                          ),
+                        )
+                      }
+                      styles={inputStyles}
+                    />
+                  </Group>
+                )}
+              </Stack>
+            </Card>
+          ))}
+        </Stack>
+      </ScrollArea>
+
+      <Divider />
+      <Group justify="space-between" align="center">
+        <Text fw={600}>Total do Plano: {formatCurrency(planTotal)}</Text>
+        <Badge color={planMatches ? "green" : "red"}>
+          {planMatches ? "Bate com o valor acordado" : "Soma divergente"}
+        </Badge>
+      </Group>
+
+      {!isMobileView && (
+        <Group justify="space-between" mt="md">
+          <Button
+            variant="default"
+            leftSection={<IconArrowLeft size={16} />}
+            onClick={() => setActiveStep(0)}
+          >
+            Voltar
+          </Button>
+          <Button
+            styles={primaryButtonStyles}
+            disabled={!planMatches}
+            loading={planSaving}
+            onClick={() => void handleSavePlan()}
+          >
+            Salvar plano
+          </Button>
+        </Group>
+      )}
+    </Stack>
+  );
+
+  const renderManualForm = () => (
+    <Stack gap="md">
+      <TextInput
+        label="Número da parcela"
+        value={String(manualForm.numero_parcela)}
+        onChange={(event) =>
+          setManualForm((current) => ({
+            ...current,
+            numero_parcela: Number(event.currentTarget.value),
+          }))
+        }
+        styles={inputStyles}
+      />
+      <TextInput
+        label="Descrição"
+        value={manualForm.descricao}
+        onChange={(event) =>
+          setManualForm((current) => ({
+            ...current,
+            descricao: event.currentTarget.value,
+          }))
+        }
+        styles={inputStyles}
+      />
+      <Group grow>
+        <TextInput
+          label="Valor"
+          value={manualForm.valor}
+          onChange={(event) =>
+            setManualForm((current) => ({
+              ...current,
+              valor: event.currentTarget.value,
+            }))
+          }
+          styles={inputStyles}
+        />
+        <TextInput />
+        <DatesProvider settings={{ locale: "pt-br" }}>
+          <DatePickerInput
+            valueFormat="DD/MM/YYYY"
+            onChange={(value) =>
+              setPlanForm((c) => ({
+                ...c,
+                data_primeira_parcela: value ? value : c.data_primeira_parcela,
+              }))
+            }
+            label="Vencimento"
+            value={manualForm.data_vencimento}
+            styles={inputStyles}
+          />
+        </DatesProvider>
+      </Group>
+      <Group grow>
+        <Select
+          label="Forma"
+          data={FORMA_OPTIONS}
+          value={manualForm.forma_pagamento}
+          onChange={(value) =>
+            setManualForm((current) => ({
+              ...current,
+              forma_pagamento: (value as FormaPagamento) || "pix",
+            }))
+          }
+          styles={inputStyles}
+        />
+        <Select
+          label="Status"
+          data={STATUS_OPTIONS}
+          value={manualForm.status || "a_vencer"}
+          onChange={(value) =>
+            setManualForm((current) => ({
+              ...current,
+              status: (value as ParcelaStatus) || "a_vencer",
+            }))
+          }
+          styles={inputStyles}
+        />
+      </Group>
+      <TextInput
+        label="Observação"
+        value={manualForm.observacao || ""}
+        onChange={(event) =>
+          setManualForm((current) => ({
+            ...current,
+            observacao: event.currentTarget.value,
+          }))
+        }
+        styles={inputStyles}
+      />
       <Group justify="flex-end">
         <Button variant="default" styles={softButtonStyles} onClick={onClose}>
           Cancelar
         </Button>
         <Button
           styles={primaryButtonStyles}
-          disabled={!planMatches}
-          loading={planSaving}
-          onClick={() => void handleSavePlan()}
+          leftSection={<IconPlus size={16} />}
+          onClick={() => void handleCreateManual()}
         >
-          Salvar plano
+          Adicionar linha
         </Button>
       </Group>
-    );
-  };
+    </Stack>
+  );
 
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const renderHeaderCards = (isMobileView: boolean) => (
+    <Group
+      grow={!isMobileView}
+      wrap={isMobileView ? "wrap" : "nowrap"}
+      gap="sm"
+    >
+      <Card
+        radius="lg"
+        withBorder
+        style={{ flex: isMobileView ? "1 1 40%" : "1 1 40%" }}
+      >
+        <Text size="xs" tt="uppercase" fw={700} c="dimmed">
+          Valor combinado
+        </Text>
+        <Title order={4}>{formatCurrency(displayedValorCombinado)}</Title>
+      </Card>
+      <Card
+        radius="lg"
+        withBorder
+        style={{ flex: isMobileView ? "1 1 40%" : "1 1 40%" }}
+      >
+        <Text size="xs" tt="uppercase" fw={700} c="dimmed">
+          Valor pago
+        </Text>
+        <Title order={4}>{formatCurrency(weddingSupplier?.valor_pago)}</Title>
+      </Card>
+      <Card
+        radius="lg"
+        withBorder
+        style={{ flex: isMobileView ? "1 1 100%" : "1 1 100%" }}
+      >
+        <Text size="xs" tt="uppercase" fw={700} c="dimmed">
+          Saldo devedor
+        </Text>
+        <Title order={4}>{formatCurrency(displayedSaldo)}</Title>
+      </Card>
+    </Group>
+  );
 
+  // --- VIEW DESKTOP ---
   if (!isMobile) {
     return (
       <Modal
@@ -417,382 +858,49 @@ export function PaymentPlanModal({
       >
         <Stack gap="md">
           {loadingSupplier ? (
-            <Text c="dimmed">Carregando informacoes...</Text>
+            <Text c="dimmed">Carregando informações...</Text>
           ) : weddingSupplier ? (
             <>
-              <Group grow>
-                <Card radius="lg" withBorder>
-                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                    Valor combinado
-                  </Text>
-                  <Title order={4}>
-                    {formatCurrency(displayedValorCombinado)}
-                  </Title>
-                </Card>
-                <Card radius="lg" withBorder>
-                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                    Valor pago
-                  </Text>
-                  <Title order={4}>
-                    {formatCurrency(weddingSupplier.valor_pago)}
-                  </Title>
-                </Card>
-                <Card radius="lg" withBorder>
-                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                    Saldo devedor
-                  </Text>
-                  <Title order={4}>{formatCurrency(displayedSaldo)}</Title>
-                </Card>
-              </Group>
+              {renderHeaderCards(false)}
 
               {mode === "plan" ? (
-                <Stack gap="md">
-                  <Group grow>
-                    <TextInput
-                      label="Entrada (%)"
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={1}
-                      value={planForm.entrada_percentual}
-                      onChange={(event) =>
-                        setPlanForm((current) => ({
-                          ...current,
-                          entrada_percentual: event.currentTarget.value,
-                        }))
-                      }
-                      styles={inputStyles}
-                    />
-                    <TextInput
-                      label="N de parcelas"
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={planForm.quantidade_parcelas}
-                      onChange={(event) =>
-                        setPlanForm((current) => ({
-                          ...current,
-                          quantidade_parcelas: event.currentTarget.value,
-                        }))
-                      }
-                      styles={inputStyles}
-                    />
-                    <Select
-                      label="Intervalo"
-                      data={WINDOW_OPTIONS}
-                      value={planForm.intervalo_dias}
-                      onChange={(value) =>
-                        setPlanForm((current) => ({
-                          ...current,
-                          intervalo_dias: value || "30",
-                        }))
-                      }
-                      styles={inputStyles}
-                    />
-                  </Group>
-                  <Group grow>
-                    <DatesProvider settings={{ locale: "pt-br" }}>
-                      <DatePickerInput
-                        label="1a parcela"
-                        valueFormat="DD/MM/YYYY"
-                        value={parseDateInput(planForm.data_primeira_parcela)}
-                        onChange={(value) => {
-                          console.log("Data selecionada:", value);
-                          setPlanForm((current) => ({
-                            ...current,
-                            data_primeira_parcela: value
-                              ? value
-                              : current.data_primeira_parcela,
-                          }));
-                        }}
-                      />
-                    </DatesProvider>
-                    <Select
-                      label="Forma padrao"
-                      data={FORMA_OPTIONS}
-                      value={planForm.forma_pagamento}
-                      onChange={(value) =>
-                        setPlanForm((current) => ({
-                          ...current,
-                          forma_pagamento: (value as FormaPagamento) || "pix",
-                        }))
-                      }
-                      styles={inputStyles}
-                    />
-                  </Group>
-
-                  <Button
-                    onClick={() => void handleGeneratePreview()}
-                    loading={previewLoading}
-                    leftSection={<IconCheck size={16} />}
+                <Stepper
+                  active={activeStep}
+                  onStepClick={setActiveStep}
+                  allowNextStepsSelect={false}
+                  size="sm"
+                >
+                  <Stepper.Step
+                    label="Configuração"
+                    description="Dados base do plano"
                   >
-                    Gerar previa das parcelas
-                  </Button>
-
-                  {planPreview.length ? (
-                    <Stack gap="sm">
-                      <ScrollArea>
-                        <Table
-                          withTableBorder
-                          withColumnBorders
-                          highlightOnHover
-                        >
-                          <Table.Thead>
-                            <Table.Tr>
-                              <Table.Th>Descricao</Table.Th>
-                              <Table.Th>Vencimento</Table.Th>
-                              <Table.Th>Valor</Table.Th>
-                              <Table.Th>Forma</Table.Th>
-                              <Table.Th>Acoes</Table.Th>
-                            </Table.Tr>
-                          </Table.Thead>
-                          <Table.Tbody>
-                            {planPreview.map((row, index) => (
-                              <Table.Tr key={`${row.numero_parcela}-${index}`}>
-                                <Table.Td>
-                                  <TextInput
-                                    value={row.descricao}
-                                    onChange={(event) =>
-                                      setPlanPreview((current) =>
-                                        current.map((item, itemIndex) =>
-                                          itemIndex === index
-                                            ? {
-                                                ...item,
-                                                descricao:
-                                                  event.currentTarget.value,
-                                              }
-                                            : item,
-                                        ),
-                                      )
-                                    }
-                                    styles={inputStyles}
-                                  />
-                                </Table.Td>
-                                <Table.Td>
-                                  <DatesProvider settings={{ locale: "pt-br" }}>
-                                    <DatePickerInput
-                                      value={row.data_vencimento}
-                                      valueFormat="DD/MM/YYYY"
-                                      onChange={(event) => {
-                                        setPlanPreview((current) =>
-                                          current.map((item, itemIndex) =>
-                                            itemIndex === index
-                                              ? {
-                                                  ...item,
-                                                  data_vencimento: event,
-                                                }
-                                              : item,
-                                          ),
-                                        );
-                                      }}
-                                      styles={inputStyles}
-                                    />
-                                  </DatesProvider>
-                                </Table.Td>
-                                <Table.Td>
-                                  <TextInput
-                                    value={row.valor}
-                                    onChange={(event) =>
-                                      setPlanPreview((current) =>
-                                        current.map((item, itemIndex) =>
-                                          itemIndex === index
-                                            ? {
-                                                ...item,
-                                                valor:
-                                                  event.currentTarget.value,
-                                              }
-                                            : item,
-                                        ),
-                                      )
-                                    }
-                                    styles={inputStyles}
-                                  />
-                                </Table.Td>
-                                <Table.Td>
-                                  <Select
-                                    data={FORMA_OPTIONS}
-                                    value={row.forma_pagamento}
-                                    onChange={(value) =>
-                                      setPlanPreview((current) =>
-                                        current.map((item, itemIndex) =>
-                                          itemIndex === index
-                                            ? {
-                                                ...item,
-                                                forma_pagamento:
-                                                  (value as FormaPagamento) ||
-                                                  "pix",
-                                              }
-                                            : item,
-                                        ),
-                                      )
-                                    }
-                                    styles={inputStyles}
-                                  />
-                                </Table.Td>
-                                <Table.Td>
-                                  <Button
-                                    variant="light"
-                                    color="red"
-                                    size="xs"
-                                    leftSection={<IconTrash size={14} />}
-                                    onClick={() =>
-                                      setPlanPreview((current) =>
-                                        current.filter(
-                                          (_, itemIndex) => itemIndex !== index,
-                                        ),
-                                      )
-                                    }
-                                  >
-                                    Excluir
-                                  </Button>
-                                </Table.Td>
-                              </Table.Tr>
-                            ))}
-                          </Table.Tbody>
-                        </Table>
-                      </ScrollArea>
-                      <Divider />
-                      <Group justify="space-between" align="center">
-                        <Text fw={600}>Total: {formatCurrency(planTotal)}</Text>
-                        <Badge color={planMatches ? "green" : "red"}>
-                          {planMatches
-                            ? "Bate com o valor acordado"
-                            : "Soma divergente"}
-                        </Badge>
-                      </Group>
-                      <Group justify="flex-end">
-                        <Button
-                          variant="default"
-                          styles={softButtonStyles}
-                          onClick={onClose}
-                        >
-                          Cancelar
-                        </Button>
-                        <Button
-                          styles={primaryButtonStyles}
-                          disabled={!planMatches}
-                          loading={planSaving}
-                          onClick={() => void handleSavePlan()}
-                        >
-                          Salvar plano
-                        </Button>
-                      </Group>
+                    <Stack gap="md" mt="md">
+                      {renderStep0Form(false)}
                     </Stack>
-                  ) : null}
-                </Stack>
+                  </Stepper.Step>
+
+                  <Stepper.Step
+                    label="Prévia das Parcelas"
+                    description="Edite e valide os itens"
+                  >
+                    <Stack gap="md" mt="md">
+                      {renderStep1Preview(false)}
+                    </Stack>
+                  </Stepper.Step>
+                </Stepper>
               ) : (
-                <Stack gap="md">
-                  <TextInput
-                    label="Numero da parcela"
-                    value={String(manualForm.numero_parcela)}
-                    onChange={(event) =>
-                      setManualForm((current) => ({
-                        ...current,
-                        numero_parcela: Number(event.currentTarget.value),
-                      }))
-                    }
-                    styles={inputStyles}
-                  />
-                  <TextInput
-                    label="Descricao"
-                    value={manualForm.descricao}
-                    onChange={(event) =>
-                      setManualForm((current) => ({
-                        ...current,
-                        descricao: event.currentTarget.value,
-                      }))
-                    }
-                    styles={inputStyles}
-                  />
-                  <Group grow>
-                    <TextInput
-                      label="Valor"
-                      value={manualForm.valor}
-                      onChange={(event) =>
-                        setManualForm((current) => ({
-                          ...current,
-                          valor: event.currentTarget.value,
-                        }))
-                      }
-                      styles={inputStyles}
-                    />
-                    <TextInput
-                      label="Vencimento"
-                      type="date"
-                      value={manualForm.data_vencimento}
-                      onChange={(event) =>
-                        setManualForm((current) => ({
-                          ...current,
-                          data_vencimento: event.currentTarget.value,
-                        }))
-                      }
-                      styles={inputStyles}
-                    />
-                  </Group>
-                  <Group grow>
-                    <Select
-                      label="Forma"
-                      data={FORMA_OPTIONS}
-                      value={manualForm.forma_pagamento}
-                      onChange={(value) =>
-                        setManualForm((current) => ({
-                          ...current,
-                          forma_pagamento: (value as FormaPagamento) || "pix",
-                        }))
-                      }
-                      styles={inputStyles}
-                    />
-                    <Select
-                      label="Status"
-                      data={STATUS_OPTIONS}
-                      value={manualForm.status || "a_vencer"}
-                      onChange={(value) =>
-                        setManualForm((current) => ({
-                          ...current,
-                          status: (value as ParcelaStatus) || "a_vencer",
-                        }))
-                      }
-                      styles={inputStyles}
-                    />
-                  </Group>
-                  <TextInput
-                    label="Observacao"
-                    value={manualForm.observacao || ""}
-                    onChange={(event) =>
-                      setManualForm((current) => ({
-                        ...current,
-                        observacao: event.currentTarget.value,
-                      }))
-                    }
-                    styles={inputStyles}
-                  />
-                  <Group justify="flex-end">
-                    <Button
-                      variant="default"
-                      styles={softButtonStyles}
-                      onClick={onClose}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      styles={primaryButtonStyles}
-                      leftSection={<IconPlus size={16} />}
-                      onClick={() => void handleCreateManual()}
-                    >
-                      Adicionar linha
-                    </Button>
-                  </Group>
-                </Stack>
+                renderManualForm()
               )}
             </>
           ) : (
-            <Text c="dimmed">Fornecedor nao encontrado.</Text>
+            <Text c="dimmed">Fornecedor não encontrado.</Text>
           )}
         </Stack>
       </Modal>
     );
   }
 
+  // --- VIEW MOBILE ---
   return (
     <MobileFullscreenModal
       opened={opened}
@@ -802,377 +910,78 @@ export function PaymentPlanModal({
           ? "Criar Plano de Pagamento"
           : "Adicionar Parcela Manual"
       }
+      footer={
+        activeStep === 0 && mode === "plan" ? (
+          <Group justify="flex-end" mt="md">
+            <Button
+              variant="default"
+              styles={softButtonStyles}
+              onClick={onClose}
+            >
+              Cancelar
+            </Button>
+            <Button
+              styles={primaryButtonStyles}
+              onClick={() => void handleGeneratePreview()}
+              loading={previewLoading}
+              rightSection={<IconArrowRight size={16} />}
+            >
+              Gerar prévia das parcelas
+            </Button>
+          </Group>
+        ) : activeStep === 1 && mode === "plan" ? (
+          <Group justify="space-between" mt="md">
+            <Button
+              variant="default"
+              leftSection={<IconArrowLeft size={16} />}
+              onClick={() => setActiveStep(0)}
+            >
+              Voltar
+            </Button>
+            <Button
+              styles={primaryButtonStyles}
+              disabled={!planMatches}
+              loading={planSaving}
+              onClick={() => void handleSavePlan()}
+            >
+              Salvar plano
+            </Button>
+          </Group>
+        ) : null
+      }
     >
       <Stack gap="md">
         {loadingSupplier ? (
-          <Text c="dimmed">Carregando informacoes...</Text>
+          <Text c="dimmed">Carregando informações...</Text>
         ) : weddingSupplier ? (
           <>
-            <Stack gap="md">
-              <Card radius="lg" withBorder>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Valor combinado
-                </Text>
-                <Title order={4}>
-                  {formatCurrency(displayedValorCombinado)}
-                </Title>
-              </Card>
-              <Card radius="lg" withBorder>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Valor pago
-                </Text>
-                <Title order={4}>
-                  {formatCurrency(weddingSupplier.valor_pago)}
-                </Title>
-              </Card>
-              <Card radius="lg" withBorder>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Saldo devedor
-                </Text>
-                <Title order={4}>{formatCurrency(displayedSaldo)}</Title>
-              </Card>
-            </Stack>
+            {renderHeaderCards(true)}
 
             {mode === "plan" ? (
-              <Stack gap="md">
-                <Group grow>
-                  <TextInput
-                    label="Entrada (%)"
-                    type="number"
-                    min={0}
-                    max={100}
-                    step={1}
-                    value={planForm.entrada_percentual}
-                    onChange={(event) =>
-                      setPlanForm((current) => ({
-                        ...current,
-                        entrada_percentual: event.currentTarget.value,
-                      }))
-                    }
-                    styles={inputStyles}
-                  />
-                  <TextInput
-                    label="N de parcelas"
-                    type="number"
-                    min={1}
-                    step={1}
-                    value={planForm.quantidade_parcelas}
-                    onChange={(event) =>
-                      setPlanForm((current) => ({
-                        ...current,
-                        quantidade_parcelas: event.currentTarget.value,
-                      }))
-                    }
-                    styles={inputStyles}
-                  />
-                </Group>
-                <Group grow>
-                  <Select
-                    label="Intervalo"
-                    data={WINDOW_OPTIONS}
-                    value={planForm.intervalo_dias}
-                    onChange={(value) =>
-                      setPlanForm((current) => ({
-                        ...current,
-                        intervalo_dias: value || "30",
-                      }))
-                    }
-                    styles={inputStyles}
-                  />
-                  <Select
-                    label="Forma padrao"
-                    data={FORMA_OPTIONS}
-                    value={planForm.forma_pagamento}
-                    onChange={(value) =>
-                      setPlanForm((current) => ({
-                        ...current,
-                        forma_pagamento: (value as FormaPagamento) || "pix",
-                      }))
-                    }
-                    styles={inputStyles}
-                  />
-                </Group>
-
-                <Group grow mb="xl">
-                  <DatesProvider settings={{ locale: "pt-br" }}>
-                    <DatePickerInput
-                      valueFormat="DD/MM/YYYY"
-                      label="1a parcela"
-                      value={planForm.data_primeira_parcela}
-                      onChange={(value) =>
-                        setPlanForm((current) => ({
-                          ...current,
-                          data_primeira_parcela: value
-                            ? value
-                            : current.data_primeira_parcela,
-                        }))
-                      }
-                      styles={inputStyles}
-                    />
-                  </DatesProvider>
-                </Group>
-
-                <Button
-                  onClick={() => void handleGeneratePreview()}
-                  loading={previewLoading}
-                  leftSection={<IconCheck size={16} />}
-                  mb="xl"
-                >
-                  Gerar previa das parcelas
-                </Button>
-
-                {planPreview.length ? (
-                  <Stack gap="sm">
-                    <ScrollArea>
-                      <Table withTableBorder withColumnBorders highlightOnHover>
-                        <Table.Thead>
-                          <Table.Tr>
-                            <Table.Th>Descricao</Table.Th>
-                            <Table.Th>Vencimento</Table.Th>
-                            <Table.Th>Valor</Table.Th>
-                            <Table.Th>Forma</Table.Th>
-                            <Table.Th>Acoes</Table.Th>
-                          </Table.Tr>
-                        </Table.Thead>
-                        <Table.Tbody>
-                          {planPreview.map((row, index) => (
-                            <Table.Tr key={`${row.numero_parcela}-${index}`}>
-                              <Table.Td>
-                                <TextInput
-                                  value={row.descricao}
-                                  onChange={(event) =>
-                                    setPlanPreview((current) =>
-                                      current.map((item, itemIndex) =>
-                                        itemIndex === index
-                                          ? {
-                                              ...item,
-                                              descricao:
-                                                event.currentTarget.value,
-                                            }
-                                          : item,
-                                      ),
-                                    )
-                                  }
-                                  styles={inputStyles}
-                                />
-                              </Table.Td>
-                              <Table.Td>
-                                <TextInput
-                                  type="date"
-                                  value={row.data_vencimento}
-                                  onChange={(event) =>
-                                    setPlanPreview((current) =>
-                                      current.map((item, itemIndex) =>
-                                        itemIndex === index
-                                          ? {
-                                              ...item,
-                                              data_vencimento:
-                                                event.currentTarget.value,
-                                            }
-                                          : item,
-                                      ),
-                                    )
-                                  }
-                                  styles={inputStyles}
-                                />
-                              </Table.Td>
-                              <Table.Td>
-                                <TextInput
-                                  value={row.valor}
-                                  onChange={(event) =>
-                                    setPlanPreview((current) =>
-                                      current.map((item, itemIndex) =>
-                                        itemIndex === index
-                                          ? {
-                                              ...item,
-                                              valor: event.currentTarget.value,
-                                            }
-                                          : item,
-                                      ),
-                                    )
-                                  }
-                                  styles={inputStyles}
-                                />
-                              </Table.Td>
-                              <Table.Td>
-                                <Select
-                                  data={FORMA_OPTIONS}
-                                  value={row.forma_pagamento}
-                                  onChange={(value) =>
-                                    setPlanPreview((current) =>
-                                      current.map((item, itemIndex) =>
-                                        itemIndex === index
-                                          ? {
-                                              ...item,
-                                              forma_pagamento:
-                                                (value as FormaPagamento) ||
-                                                "pix",
-                                            }
-                                          : item,
-                                      ),
-                                    )
-                                  }
-                                  styles={inputStyles}
-                                />
-                              </Table.Td>
-                              <Table.Td>
-                                <Button
-                                  variant="light"
-                                  color="red"
-                                  size="xs"
-                                  leftSection={<IconTrash size={14} />}
-                                  onClick={() =>
-                                    setPlanPreview((current) =>
-                                      current.filter(
-                                        (_, itemIndex) => itemIndex !== index,
-                                      ),
-                                    )
-                                  }
-                                >
-                                  Excluir
-                                </Button>
-                              </Table.Td>
-                            </Table.Tr>
-                          ))}
-                        </Table.Tbody>
-                      </Table>
-                    </ScrollArea>
-                    <Divider />
-                    <Group justify="space-between" align="center">
-                      <Text fw={600}>Total: {formatCurrency(planTotal)}</Text>
-                      <Badge color={planMatches ? "green" : "red"}>
-                        {planMatches
-                          ? "Bate com o valor acordado"
-                          : "Soma divergente"}
-                      </Badge>
-                    </Group>
-                    <Group justify="flex-end" mt="md">
-                      <Button
-                        variant="default"
-                        styles={softButtonStyles}
-                        onClick={onClose}
-                      >
-                        Cancelar
-                      </Button>
-                      <Button
-                        styles={primaryButtonStyles}
-                        disabled={!planMatches}
-                        loading={planSaving}
-                        onClick={() => void handleSavePlan()}
-                      >
-                        Salvar plano
-                      </Button>
-                    </Group>
+              <Stepper
+                active={activeStep}
+                onStepClick={setActiveStep}
+                allowNextStepsSelect={false}
+                size="xs"
+              >
+                <Stepper.Step label="Dados" description="Configurar">
+                  <Stack gap="md" mt="md">
+                    {renderStep0Form(true)}
                   </Stack>
-                ) : null}
-              </Stack>
+                </Stepper.Step>
+
+                <Stepper.Step label="Prévia" description="Validar e Salvar">
+                  <Stack gap="md" mt="md">
+                    {renderStep1Preview(true)}
+                  </Stack>
+                </Stepper.Step>
+              </Stepper>
             ) : (
-              <Stack gap="md">
-                <TextInput
-                  label="Numero da parcela"
-                  value={String(manualForm.numero_parcela)}
-                  onChange={(event) =>
-                    setManualForm((current) => ({
-                      ...current,
-                      numero_parcela: Number(event.currentTarget.value),
-                    }))
-                  }
-                  styles={inputStyles}
-                />
-                <TextInput
-                  label="Descricao"
-                  value={manualForm.descricao}
-                  onChange={(event) =>
-                    setManualForm((current) => ({
-                      ...current,
-                      descricao: event.currentTarget.value,
-                    }))
-                  }
-                  styles={inputStyles}
-                />
-                <Group grow>
-                  <TextInput
-                    label="Valor"
-                    value={manualForm.valor}
-                    onChange={(event) =>
-                      setManualForm((current) => ({
-                        ...current,
-                        valor: event.currentTarget.value,
-                      }))
-                    }
-                    styles={inputStyles}
-                  />
-                  <TextInput
-                    label="Vencimento"
-                    type="date"
-                    value={manualForm.data_vencimento}
-                    onChange={(event) =>
-                      setManualForm((current) => ({
-                        ...current,
-                        data_vencimento: event.currentTarget.value,
-                      }))
-                    }
-                    styles={inputStyles}
-                  />
-                </Group>
-                <Group grow>
-                  <Select
-                    label="Forma"
-                    data={FORMA_OPTIONS}
-                    value={manualForm.forma_pagamento}
-                    onChange={(value) =>
-                      setManualForm((current) => ({
-                        ...current,
-                        forma_pagamento: (value as FormaPagamento) || "pix",
-                      }))
-                    }
-                    styles={inputStyles}
-                  />
-                  <Select
-                    label="Status"
-                    data={STATUS_OPTIONS}
-                    value={manualForm.status || "a_vencer"}
-                    onChange={(value) =>
-                      setManualForm((current) => ({
-                        ...current,
-                        status: (value as ParcelaStatus) || "a_vencer",
-                      }))
-                    }
-                    styles={inputStyles}
-                  />
-                </Group>
-                <TextInput
-                  label="Observacao"
-                  value={manualForm.observacao || ""}
-                  onChange={(event) =>
-                    setManualForm((current) => ({
-                      ...current,
-                      observacao: event.currentTarget.value,
-                    }))
-                  }
-                  styles={inputStyles}
-                />
-                <Group justify="flex-end">
-                  <Button
-                    variant="default"
-                    styles={softButtonStyles}
-                    onClick={onClose}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    styles={primaryButtonStyles}
-                    leftSection={<IconPlus size={16} />}
-                    onClick={() => void handleCreateManual()}
-                  >
-                    Adicionar linha
-                  </Button>
-                </Group>
-              </Stack>
+              renderManualForm()
             )}
           </>
         ) : (
-          <Text c="dimmed">Fornecedor nao encontrado.</Text>
+          <Text c="dimmed">Fornecedor não encontrado.</Text>
         )}
       </Stack>
     </MobileFullscreenModal>
