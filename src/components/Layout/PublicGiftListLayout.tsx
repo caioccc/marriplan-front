@@ -4,12 +4,13 @@ import {
   Burger,
   Divider,
   Group,
+  Text,
   TextInput,
-  Title
+  Title,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { IconFilter, IconSearch } from "@tabler/icons-react";
-import { inputStyles } from "@/styles";
+import { inputStyles, PALETTE } from "@/styles";
 import { ReactNode, useState } from "react";
 
 interface PublicGiftListLayoutProps {
@@ -71,15 +72,28 @@ export default function PublicGiftListLayout({
             />
           </Group>
         ) : (
-          <Group justify="center" align="center" w="100%">
-            <TextInput
-              placeholder="Buscar por nome ou categoria..."
-              leftSection={<IconSearch size={18} />}
-              value={search}
-              onChange={(e) => onSearch(e.currentTarget.value)}
-              w={320}
-              styles={inputStyles}
-            />
+          <Group w="100%">
+            <Box align="left">
+              <Text
+                fw={800}
+                size="lg"
+                c={PALETTE.ink}
+                onClick={() => window.location.assign("/")}
+                style={{ letterSpacing: -0.5, cursor: "pointer" }}
+              >
+                Marriplan<span style={{ color: PALETTE.roseGold }}>.</span>
+              </Text>
+            </Box>
+            <Box align="center" style={{ flex: 1 }}>
+              <TextInput
+                placeholder="Buscar por nome ou categoria..."
+                leftSection={<IconSearch size={18} />}
+                value={search}
+                onChange={(e) => onSearch(e.currentTarget.value)}
+                w={320}
+                styles={inputStyles}
+              />
+            </Box>
           </Group>
         )}
       </AppShell.Header>
@@ -92,9 +106,19 @@ export default function PublicGiftListLayout({
           borderRight: "1px solid var(--marriplan-border)",
         }}
       >
-        <Title order={4} mb="md">
-          Filtros
-        </Title>
+        {isMobile && (
+          <Text
+            fw={800}
+            size="lg"
+            c={PALETTE.ink}
+            mb="md"
+            onClick={() => window.location.assign("/")}
+            style={{ letterSpacing: -0.5, cursor: "pointer" }}
+          >
+            Marriplan<span style={{ color: PALETTE.roseGold }}>.</span>
+          </Text>
+        )}
+
         <Divider
           mb="sm"
           labelPosition="center"

@@ -14,6 +14,17 @@ export const primaryButtonStyles = {
   },
 } as const;
 
+export const PALETTE = {
+  champagne: "#F7F1E8",
+  roseGold: "#E6B8A2",
+  beige: "#EFE6DA",
+  warmGray: "#6F6660",
+  ink: "#2D2622",
+  line: "#EEE3D8",
+  softWhite: "#FFFCF8",
+  marriplanRose: "var(--marriplan-rose)",
+};
+
 export const primaryButtonStylesWithDisabled = {
   root: {
     ...primaryButtonStyles.root,

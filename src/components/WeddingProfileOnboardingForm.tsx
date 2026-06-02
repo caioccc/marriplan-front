@@ -1,49 +1,31 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { toSentenceCase, toUpperCamelWords } from "@/lib/text";
+import { toUpperCamelWords } from "@/lib/text";
 import api from "@/services/api";
-import {
-  createWeddingSite,
-  getWeddingSite,
-  updateWeddingSite,
-} from "@/services/weddingSite";
-import {
-  deleteWeddingImage,
-  uploadWeddingImage,
-} from "@/services/weddingImage";
-import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
+import { primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
   ActionIcon,
   Button,
   Group,
   Loader,
   Stepper,
-  TextInput,
-  Textarea,
+  TextInput
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import axios from "axios";
-import { ptBR } from "date-fns/locale/pt-BR";
-import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "@mantine/hooks";
+import { useState } from "react";
 
-import dayjs from "dayjs";
-import "dayjs/locale/pt-br";
-import relativeTime from "dayjs/plugin/relativeTime";
-import { Box, ScrollArea, Text, Stack } from "@mantine/core";
-import { IMaskInput } from "react-imask";
-import { ImageDropzone } from "./ImageUpload";
+import { Box, ScrollArea, Stack, Text } from "@mantine/core";
 import {
   DatePickerInput,
   DatesProvider,
-  TimeInput,
-  TimePicker,
+  TimePicker
 } from "@mantine/dates";
-import { IconCalendarClock, IconClockBitcoin } from "@tabler/icons-react";
+import { IconCalendarClock } from "@tabler/icons-react";
+import dayjs from "dayjs";
+import "dayjs/locale/pt-br";
+import relativeTime from "dayjs/plugin/relativeTime";
+import { IMaskInput } from "react-imask";
 dayjs.extend(relativeTime);
 dayjs.locale("pt-br");
 
@@ -54,39 +36,12 @@ dayjs.locale("pt-br");
 //   require("leaflet/dist/leaflet.css");
 // }
 
-const LeafletMap = dynamic(() => import("./LeafletMap"), {
-  ssr: false,
-});
+// const LeafletMap = dynamic(() => import("./LeafletMap"), {
+//   ssr: false,
+// });
 
-type WeddingImageLike = {
-  id?: number;
-  url?: string;
-  id_cloudinary?: string;
-  photo_public_id?: string;
-  cover_image_public_id?: string;
-  public_id?: string;
-  name?: string;
-};
 
-function getWeddingImageId(
-  image: WeddingImageLike | string | null | undefined,
-) {
-  if (!image || typeof image === "string") return null;
-  return image.id ?? null;
-}
 
-function getWeddingImagePublicId(
-  image: WeddingImageLike | string | null | undefined,
-) {
-  if (!image || typeof image === "string") return "";
-  return (
-    image.id_cloudinary ||
-    image.photo_public_id ||
-    image.cover_image_public_id ||
-    image.public_id ||
-    ""
-  );
-}
 
 type WeddingProfileOnboardingFormProps = {
   onComplete: () => void;
@@ -100,10 +55,6 @@ export default function WeddingProfileOnboardingForm({
   const { toast } = useToast();
   const [active, setActive] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [cepLoading, setCepLoading] = useState(false);
-  const [cepError, setCepError] = useState<string | null>(null);
-  const [mapPosition, setMapPosition] = useState<[number, number] | null>(null);
-  const L = null;
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const parseTimeToDate = (value?: string | null) => {
@@ -123,17 +74,6 @@ export default function WeddingProfileOnboardingForm({
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
   };
 
-  const isValidOptionalUrl = (value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return true;
-    try {
-      const url = new URL(trimmed);
-      return url.protocol === "http:" || url.protocol === "https:";
-    } catch {
-      return false;
-    }
-  };
-
   const buildNormalizedPayload = (
     values: Record<string, unknown>,
   ): Record<string, unknown> & {
@@ -144,23 +84,12 @@ export default function WeddingProfileOnboardingForm({
     nome_noivo: toUpperCamelWords(String(values.nome_noivo ?? "")),
     nome_noiva: toUpperCamelWords(String(values.nome_noiva ?? "")),
     local: toUpperCamelWords(String(values.local ?? "")),
-    // bairro: toUpperCamelWords(String(values.bairro ?? "")),
-    // cidade: toUpperCamelWords(String(values.cidade ?? "")),
-    // estado: toUpperCamelWords(String(values.estado ?? "")),
-    // descricao_noivo: toSentenceCase(String(values.descricao_noivo ?? "")),
-    // descricao_noiva: toSentenceCase(String(values.descricao_noiva ?? "")),
-    // frase_casal: toSentenceCase(String(values.frase_casal ?? "")),
-    // historia: toSentenceCase(String(values.historia ?? "")),
     email_noivo: String(values.email_noivo ?? "")
       .trim()
       .toLowerCase(),
     email_noiva: String(values.email_noiva ?? "")
       .trim()
       .toLowerCase(),
-    // facebook_noivo: String(values.facebook_noivo ?? "").trim(),
-    // instagram_noivo: String(values.instagram_noivo ?? "").trim(),
-    // facebook_noiva: String(values.facebook_noiva ?? "").trim(),
-    // instagram_noiva: String(values.instagram_noiva ?? "").trim(),
     data_casamento: values.data_casamento,
     hora_casamento: values.hora_casamento,
   });
@@ -170,30 +99,12 @@ export default function WeddingProfileOnboardingForm({
       nome_noivo: initial.nome_noivo ?? "",
       telefone_noivo: initial.telefone_noivo ?? "",
       email_noivo: initial.email_noivo ?? "",
-      // descricao_noivo: initial.descricao_noivo ?? "",
-      // facebook_noivo: initial.facebook_noivo ?? "",
-      // instagram_noivo: initial.instagram_noivo ?? "",
       nome_noiva: initial.nome_noiva ?? "",
       telefone_noiva: initial.telefone_noiva ?? "",
       email_noiva: initial.email_noiva ?? "",
-      // descricao_noiva: initial.descricao_noiva ?? "",
-      // facebook_noiva: initial.facebook_noiva ?? "",
-      // instagram_noiva: initial.instagram_noiva ?? "",
       data_casamento: initial.data_casamento ?? "",
       hora_casamento: parseTimeToDate(initial.hora_casamento),
       local: initial.local ?? "",
-      // endereco: initial.endereco ?? "",
-      // numero: initial.numero ?? "",
-      // bairro: initial.bairro ?? "",
-      // cidade: initial.cidade ?? "",
-      // estado: initial.estado ?? "",
-      // latitude: initial.latitude ?? null,
-      // longitude: initial.longitude ?? null,
-      // cep: initial.cep ?? "",
-      // cor_principal: initial.cor_principal ?? "",
-      // frase_casal: initial.frase_casal ?? "",
-      // historia: initial.historia ?? "",
-      // galeria: Array.isArray(initial.galeria) ? initial.galeria : [],
     },
     validate: {
       nome_noivo: (v) => (!v ? "Obrigatorio" : null),
@@ -204,7 +115,6 @@ export default function WeddingProfileOnboardingForm({
         !v || v.replace(/\D/g, "").length < 10 ? "Obrigatorio" : null,
       data_casamento: (v) => (!v ? "Obrigatorio" : null),
       hora_casamento: (v) => (!v ? "Obrigatorio" : null),
-      // Todos os outros campos sao opcionais
     },
   });
 
@@ -332,8 +242,6 @@ export default function WeddingProfileOnboardingForm({
       form.clearFieldError("nome_noivo");
       form.clearFieldError("telefone_noivo");
       form.clearFieldError("email_noivo");
-      // form.clearFieldError("facebook_noivo");
-      // form.clearFieldError("instagram_noivo");
 
       let hasError = false;
       if (!form.values.nome_noivo) {
@@ -351,14 +259,6 @@ export default function WeddingProfileOnboardingForm({
         form.setFieldError("email_noivo", "Email invalido");
         hasError = true;
       }
-      // if (!isValidOptionalUrl(form.values.facebook_noivo)) {
-      //   form.setFieldError("facebook_noivo", "URL invalida");
-      //   hasError = true;
-      // }
-      // if (!isValidOptionalUrl(form.values.instagram_noivo)) {
-      //   form.setFieldError("instagram_noivo", "URL invalida");
-      //   hasError = true;
-      // }
       return !hasError;
     }
 
@@ -366,8 +266,6 @@ export default function WeddingProfileOnboardingForm({
       form.clearFieldError("nome_noiva");
       form.clearFieldError("telefone_noiva");
       form.clearFieldError("email_noiva");
-      // form.clearFieldError("facebook_noiva");
-      // form.clearFieldError("instagram_noiva");
 
       let hasError = false;
       if (!form.values.nome_noiva) {
@@ -385,14 +283,6 @@ export default function WeddingProfileOnboardingForm({
         form.setFieldError("email_noiva", "Email invalido");
         hasError = true;
       }
-      // if (!isValidOptionalUrl(form.values.facebook_noiva)) {
-      //   form.setFieldError("facebook_noiva", "URL invalida");
-      //   hasError = true;
-      // }
-      // if (!isValidOptionalUrl(form.values.instagram_noiva)) {
-      //   form.setFieldError("instagram_noiva", "URL invalida");
-      //   hasError = true;
-      // }
       return !hasError;
     }
 
@@ -417,18 +307,6 @@ export default function WeddingProfileOnboardingForm({
 
   const mobileStepTitles = ["Dados do noivo", "Dados da noiva", "Evento"];
 
-  const ref = useRef<HTMLInputElement>(null);
-
-  const pickerControl = (
-    <ActionIcon
-      variant="subtle"
-      color="gray"
-      onClick={() => ref.current?.showPicker()}
-    >
-      <IconClockBitcoin size={16} />
-    </ActionIcon>
-  );
-
   const renderMobileStepContent = () => {
     if (active === 0) {
       return (
@@ -452,26 +330,6 @@ export default function WeddingProfileOnboardingForm({
             mb="md"
             type="email"
           />
-          {/* <Textarea
-            label="Descricao do noivo"
-            {...form.getInputProps("descricao_noivo")}
-            minRows={4}
-            autosize
-            mb="md"
-            placeholder="Idade, estilo musical, religiao, time do coracao, hobbies, profissao, formacao, temperamento etc."
-          />
-          <TextInput
-            label="Facebook do noivo"
-            {...form.getInputProps("facebook_noivo")}
-            mb="md"
-            placeholder="Link do Facebook"
-          />
-          <TextInput
-            label="Instagram do noivo"
-            {...form.getInputProps("instagram_noivo")}
-            mb="md"
-            placeholder="Link do Instagram"
-          /> */}
         </>
       );
     }
@@ -498,134 +356,61 @@ export default function WeddingProfileOnboardingForm({
             mb="md"
             type="email"
           />
-          {/* <Textarea
-            label="Descricao da noiva"
-            {...form.getInputProps("descricao_noiva")}
-            minRows={4}
-            autosize
-            mb="md"
-            placeholder="Idade, estilo musical, religiao, time do coracao, hobbies, profissao, formacao, temperamento etc."
-          />
-          <TextInput
-            label="Facebook da noiva"
-            {...form.getInputProps("facebook_noiva")}
-            mb="md"
-            placeholder="Link do Facebook"
-          />
-          <TextInput
-            label="Instagram da noiva"
-            {...form.getInputProps("instagram_noiva")}
-            mb="md"
-            placeholder="Link do Instagram"
-          /> */}
-        </>
-      );
-    }
-
-    if (active === 2) {
-      return (
-        <>
-          <TextInput
-            label="Local onde sera realizado"
-            {...form.getInputProps("local")}
-            mt="md"
-          />
-          {/* {mapPosition && (
-            <LeafletMap
-              mapPosition={mapPosition}
-              setMapPosition={setMapPosition}
-              reverseGeocode={reverseGeocode}
-              form={form}
-              L={L}
-            />
-          )}
-          <TextInput
-            label="CEP"
-            {...form.getInputProps("cep")}
-            maxLength={9}
-            error={cepError ?? form.errors.cep}
-            placeholder="Digite o CEP e saia do campo para buscar endereco"
-            rightSection={cepLoading ? <Loader size="xs" /> : null}
-            mt="md"
-            onBlur={handleCepBlur}
-          />
-          <TextInput
-            label="Endereco"
-            {...form.getInputProps("endereco")}
-            mt="md"
-          />
-          <Stack gap="sm" mt="md">
-            <TextInput label="Numero" {...form.getInputProps("numero")} />
-            <TextInput label="Bairro" {...form.getInputProps("bairro")} />
-            <TextInput label="Cidade" {...form.getInputProps("cidade")} />
-            <TextInput label="Estado" {...form.getInputProps("estado")} />
-          </Stack>
-          <TextInput
-            label="Cor principal do Casamento"
-            {...form.getInputProps("cor_principal")}
-            mt="md"
-          />
-          <TextInput
-            label="Frase do Casal"
-            {...form.getInputProps("frase_casal")}
-            mt="md"
-            placeholder="Alguma frase que representa a sua uniao."
-          /> */}
-          <DatesProvider settings={{ locale: "pt-br" }}>
-            <DatePickerInput
-              valueFormat="DD/MM/YYYY"
-              label="Data do casamento"
-              value={
-                form.values.data_casamento
-                  ? new Date(form.values.data_casamento)
-                  : null
-              }
-              onChange={(date) => form.setFieldValue("data_casamento", date)}
-            />
-            <TimePicker
-              label="Hora do casamento"
-              withDropdown
-              rightSection={
-                <ActionIcon
-                  onClick={() => setDropdownOpened((prev) => !prev)}
-                  variant="default"
-                >
-                  <IconCalendarClock size={18} />
-                </ActionIcon>
-              }
-              value={
-                form.values.hora_casamento
-                  ? String(
-                      new Date(form.values.hora_casamento)
-                        .toTimeString()
-                        .slice(0, 5),
-                    )
-                  : ""
-              }
-              onChange={(value) => {
-                form.setFieldValue("hora_casamento", value);
-                if (value === "") {
-                  setDropdownOpened(false);
-                }
-              }}
-              popoverProps={{
-                opened: dropdownOpened,
-                onChange: (_opened) => !_opened && setDropdownOpened(false),
-              }}
-            />
-
-          </DatesProvider>
         </>
       );
     }
 
     return (
-      <Textarea
-        label="Conte um pouco sobre a historia do casal"
-        minRows={2}
-        autosize
-        {...form.getInputProps("historia")}
-      />
+      <>
+        <TextInput
+          label="Local onde sera realizado"
+          {...form.getInputProps("local")}
+          mt="md"
+        />
+        <DatesProvider settings={{ locale: "pt-br" }}>
+          <DatePickerInput
+            valueFormat="DD/MM/YYYY"
+            label="Data do casamento"
+            value={
+              form.values.data_casamento
+                ? new Date(form.values.data_casamento)
+                : null
+            }
+            onChange={(date) => form.setFieldValue("data_casamento", date)}
+          />
+          <TimePicker
+            label="Hora do casamento"
+            withDropdown
+            rightSection={
+              <ActionIcon
+                onClick={() => setDropdownOpened((prev) => !prev)}
+                variant="default"
+              >
+                <IconCalendarClock size={18} />
+              </ActionIcon>
+            }
+            value={
+              form.values.hora_casamento
+                ? String(
+                    new Date(form.values.hora_casamento)
+                      .toTimeString()
+                      .slice(0, 5),
+                  )
+                : ""
+            }
+            onChange={(value) => {
+              form.setFieldValue("hora_casamento", value);
+              if (value === "") {
+                setDropdownOpened(false);
+              }
+            }}
+            popoverProps={{
+              opened: dropdownOpened,
+              onChange: (_opened) => !_opened && setDropdownOpened(false),
+            }}
+          />
+        </DatesProvider>
+      </>
     );
   };
 
@@ -641,13 +426,13 @@ export default function WeddingProfileOnboardingForm({
       >
         Voltar
       </Button>
-      {active < 3 ? (
+      {active < 2 ? (
         <Button
           type="button"
           styles={primaryButtonStyles}
           onClick={() => {
             if (!validateStep(active)) return;
-            setActive((current) => Math.min(current + 1, 3));
+            setActive((current) => Math.min(current + 1, 2));
           }}
           disabled={!isStepValid(active)}
           fullWidth
@@ -762,26 +547,6 @@ export default function WeddingProfileOnboardingForm({
             mb="md"
             type="email"
           />
-          {/* <Textarea
-            label="Descricao do noivo"
-            {...form.getInputProps("descricao_noivo")}
-            minRows={4}
-            autosize
-            mb="md"
-            placeholder="Idade, estilo musical, religiao, time do coracao, hobbies, profissao, formacao, temperamento etc."
-          />
-          <TextInput
-            label="Facebook do noivo"
-            {...form.getInputProps("facebook_noivo")}
-            mb="md"
-            placeholder="Link do Facebook"
-          />
-          <TextInput
-            label="Instagram do noivo"
-            {...form.getInputProps("instagram_noivo")}
-            mb="md"
-            placeholder="Link do Instagram"
-          /> */}
         </Stepper.Step>
         <Stepper.Step label="Dados da noiva">
           <TextInput
@@ -805,26 +570,6 @@ export default function WeddingProfileOnboardingForm({
             mb="md"
             type="email"
           />
-          {/* <Textarea
-            label="Descricao da noiva"
-            {...form.getInputProps("descricao_noiva")}
-            minRows={4}
-            autosize
-            mb="md"
-            placeholder="Idade, estilo musical, religiao, time do coracao, hobbies, profissao, formacao, temperamento etc."
-          />
-          <TextInput
-            label="Facebook da noiva"
-            {...form.getInputProps("facebook_noiva")}
-            mb="md"
-            placeholder="Link do Facebook"
-          />
-          <TextInput
-            label="Instagram da noiva"
-            {...form.getInputProps("instagram_noiva")}
-            mb="md"
-            placeholder="Link do Instagram"
-          /> */}
         </Stepper.Step>
         <Stepper.Step label="Evento">
           <TextInput
@@ -920,26 +665,6 @@ export default function WeddingProfileOnboardingForm({
               />
             </DatesProvider>
           </Group>
-
-          {/* <TimeInput
-              label="Hora do casamento"
-              ref={ref}
-              rightSection={pickerControl}
-              value={
-                form.values.hora_casamento
-                  ? new Date(form.values.hora_casamento)
-                  : null
-              }
-              onChange={(value) => form.setFieldValue("hora_casamento", value)}
-            /> */}
-        </Stepper.Step>
-        <Stepper.Step label="Historia">
-          <Textarea
-            label="Conte um pouco sobre a historia do casal"
-            minRows={2}
-            autosize
-            {...form.getInputProps("historia")}
-          />
         </Stepper.Step>
       </Stepper>
       <Group justify="space-between" mt="xl">
@@ -952,13 +677,13 @@ export default function WeddingProfileOnboardingForm({
         >
           Voltar
         </Button>
-        {active < 3 ? (
+        {active < 2 ? (
           <Button
             type="button"
             styles={primaryButtonStyles}
             onClick={() => {
               if (!validateStep(active)) return;
-              setActive((a) => Math.min(a + 1, 3));
+              setActive((a) => Math.min(a + 1, 2));
             }}
             disabled={!isStepValid(active)}
           >

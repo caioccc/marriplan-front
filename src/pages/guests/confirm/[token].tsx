@@ -1,16 +1,16 @@
 import { guests_confirm_token, guests_confirm_verify } from "@/services/guests";
-import { primaryButtonStyles, softButtonStyles } from "@/styles";
+import { PALETTE, primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
-    Button,
-    Card,
-    Center,
-    Container,
-    Group,
-    Loader,
-    Modal,
-    Stack,
-    Text,
-    Title
+  Button,
+  Card,
+  Center,
+  Container,
+  Group,
+  Loader,
+  Modal,
+  Stack,
+  Text,
+  Title,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { IconCheck, IconX } from "@tabler/icons-react";
@@ -126,92 +126,117 @@ export default function ConfirmByTokenPage() {
 
   if (error || !guestInfo) {
     return (
-      <Container size="sm" py={60}>
-        <Card shadow="sm" padding="lg" radius="md" withBorder>
-          <Stack align="center" gap="md">
-            <IconX size={48} color="var(--marriplan-rose)" />
-            <Title order={2} ta="center">
-              Oops!
-            </Title>
-            <Text ta="center" c="dimmed">
-              {error || "Link inválido."}
-            </Text>
-            <Button
+      <Container size="lg" py="xl" h="100dvh">
+        <Stack gap="xl">
+          <Group justify="space-between" align="center" gap={4} mb={"xl"}>
+            <Text
+              fw={800}
+              size="lg"
+              c={PALETTE.ink}
               onClick={() => router.push("/")}
-              styles={primaryButtonStyles}
+              style={{ letterSpacing: -0.5, cursor: "pointer" }}
             >
-              Voltar ao Início
-            </Button>
-          </Stack>
-        </Card>
+              Marriplan<span style={{ color: PALETTE.roseGold }}>.</span>
+            </Text>
+          </Group>
+          <Card shadow="sm" padding="lg" radius="md" withBorder>
+            <Stack align="center" gap="md">
+              <IconX size={48} color="var(--marriplan-rose)" />
+              <Title order={2} ta="center">
+                Oops!
+              </Title>
+              <Text ta="center" c="dimmed">
+                {error || "Link inválido."}
+              </Text>
+              <Button
+                onClick={() => router.push("/")}
+                styles={primaryButtonStyles}
+              >
+                Voltar ao Início
+              </Button>
+            </Stack>
+          </Card>
+        </Stack>
       </Container>
     );
   }
 
   return (
-    <Container size="sm" py={60}>
-      <Card shadow="sm" padding="lg" radius="md" withBorder>
-        <Stack gap="lg">
-          <div style={{ textAlign: "center" }}>
-            <Title order={1} mb="xs">
-              Confirme Sua Presença
-            </Title>
-            <Text c="dimmed">Estamos felizes em tê-lo conosco! 💕</Text>
-          </div>
-
-          <Card
-            shadow="xs"
-            padding="md"
-            radius="md"
-            style={{ backgroundColor: "var(--marriplan-surface)" }}
+    <Container size="sm" py={60} h="100dvh">
+      <Stack gap="xl">
+        <Group justify="center" align="center" spacing={6}>
+          <Text
+            fw={800}
+            size="lg"
+            c={PALETTE.ink}
+            onClick={() => router.push("/")}
+            style={{ letterSpacing: -0.5, cursor: "pointer" }}
           >
-            <Stack gap="sm">
-              <Group justify="space-between">
-                <Text fw={500}>Nome</Text>
-                <Text>{guestInfo.guest_name}</Text>
+            Marriplan<span style={{ color: PALETTE.roseGold }}>.</span>
+          </Text>
+        </Group>
+        <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Stack gap="lg">
+            <div style={{ textAlign: "center" }}>
+              <Title order={1} mb="xs">
+                Confirme Sua Presença
+              </Title>
+              <Text c="dimmed">Estamos felizes em tê-lo conosco! 💕</Text>
+            </div>
+
+            <Card
+              shadow="xs"
+              padding="md"
+              radius="md"
+              style={{ backgroundColor: "var(--marriplan-surface)" }}
+            >
+              <Stack gap="sm">
+                <Group justify="space-between">
+                  <Text fw={500}>Nome</Text>
+                  <Text>{guestInfo.guest_name}</Text>
+                </Group>
+              </Stack>
+            </Card>
+
+            <Stack gap="md">
+              <Text ta="center" c="dimmed" size="sm">
+                Por favor, confirme sua presença no nosso casamento:
+              </Text>
+
+              <Group grow>
+                <Button
+                  color="green"
+                  size="lg"
+                  leftSection={<IconCheck size={20} />}
+                  onClick={() => {
+                    setSelectedStatus("Confirmed");
+                    setShowConfirmModal(true);
+                  }}
+                  loading={submitting && selectedStatus === "Confirmed"}
+                >
+                  Confirmo minha Presença
+                </Button>
+                <Button
+                  color="red"
+                  size="lg"
+                  leftSection={<IconX size={20} />}
+                  onClick={() => {
+                    setSelectedStatus("Refused");
+                    setShowConfirmModal(true);
+                  }}
+                  loading={submitting && selectedStatus === "Refused"}
+                >
+                  Não Posso Ir
+                </Button>
               </Group>
             </Stack>
-          </Card>
 
-          <Stack gap="md">
-            <Text ta="center" c="dimmed" size="sm">
-              Por favor, confirme sua presença no nosso casamento:
+            <Text ta="center" size="xs" c="dimmed">
+              Obrigado por confirmar sua presença com a gente! 🎉
             </Text>
-
-            <Group grow>
-              <Button
-                color="green"
-                size="lg"
-                leftSection={<IconCheck size={20} />}
-                onClick={() => {
-                  setSelectedStatus("Confirmed");
-                  setShowConfirmModal(true);
-                }}
-                loading={submitting && selectedStatus === "Confirmed"}
-              >
-                Confirmo minha Presença
-              </Button>
-              <Button
-                color="red"
-                size="lg"
-                leftSection={<IconX size={20} />}
-                onClick={() => {
-                  setSelectedStatus("Refused");
-                  setShowConfirmModal(true);
-                }}
-                loading={submitting && selectedStatus === "Refused"}
-              >
-                Não Posso Ir
-              </Button>
-            </Group>
           </Stack>
-
-          <Text ta="center" size="xs" c="dimmed">
-            Obrigado por confirmar sua presença com a gente! 🎉
-          </Text>
-        </Stack>
-      </Card>
-
+        </Card>
+      </Stack>
       <Modal
         opened={showConfirmModal}
         onClose={() => setShowConfirmModal(false)}

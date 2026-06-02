@@ -6,6 +6,7 @@ import {
   WEDDING_STYLES,
 } from "@/constants/weddingIdentityData";
 import api from "@/services/api"; // Seu axios configurado
+import { PALETTE } from "@/styles";
 import {
   PaletteColor,
   WeddingIdentityInspirationApiItem,
@@ -107,9 +108,20 @@ export default function PublicMoodboardPage() {
     <Container size="lg" py="xl">
       <Stack gap="xl">
         <Stack gap={4}>
-          <Text size="xs" tt="uppercase" fw={700} c="dimmed" lts={1}>
-            ✦ Inspiração Geral
-          </Text>
+          <Group justify="space-between" align="center" gap={4} mb={"xl"}>
+            <Text
+              fw={800}
+              size="lg"
+              c={PALETTE.ink}
+              onClick={() => router.push("/")}
+              style={{ letterSpacing: -0.5, cursor: "pointer" }}
+            >
+              Marriplan<span style={{ color: PALETTE.roseGold }}>.</span>
+            </Text>
+            <Text size="xs" tt="uppercase" fw={700} c="dimmed" lts={1}>
+              ✦ Inspiração Geral
+            </Text>
+          </Group>
           <Text size="2xl" fw={800}>
             Identidade Visual do Casamento
           </Text>

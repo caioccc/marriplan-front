@@ -1,3 +1,5 @@
+import { PALETTE } from "@/styles";
+import { Text } from "@mantine/core";
 import { IconMenu2, IconX } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -20,9 +22,14 @@ export default function Navbar(): JSX.Element {
         <div className="flex items-center gap-4">
           <Link href="/" className="inline-flex items-center gap-3">
             {/* <Image src="/favicon-32x32.png" alt="Marriplan" width={36} height={36} priority /> */}
-            <span className="text-lg font-semibold text-[#2f2822]">
-              Marriplan
-            </span>
+            <Text
+              fw={800}
+              size="lg"
+              c={PALETTE.ink}
+              style={{ letterSpacing: -0.5, cursor: "pointer" }}
+            >
+              Marriplan<span style={{ color: PALETTE.roseGold }}>.</span>
+            </Text>
           </Link>
         </div>
 

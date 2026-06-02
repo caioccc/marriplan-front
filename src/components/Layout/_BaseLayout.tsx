@@ -45,6 +45,7 @@ import {
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { ReactNode, useEffect, useState } from "react";
+import { PALETTE } from "@/styles";
 
 interface BaseLayoutProps {
   children: ReactNode;
@@ -366,8 +367,13 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
                   )}
                 </ThemeIcon>
               </Tooltip>
-              <Text fw={700} size="xl" style={{ letterSpacing: "0.02em" }}>
-                Marriplan
+              <Text
+                fw={800}
+                size="lg"
+                c={PALETTE.ink}
+                style={{ letterSpacing: -0.5, cursor: "pointer" }}
+              >
+                Marriplan<span style={{ color: PALETTE.roseGold }}>.</span>
               </Text>
               {!isMobile && (
                 <Badge
@@ -600,8 +606,14 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
       >
         {isMobile && opened && (
           <Group justify="space-between" mb="sm">
-            <Text fw={700} size="xl" style={{ letterSpacing: "0.02em" }}>
-              Marriplan
+            <Text
+              fw={800}
+              size="lg"
+              c={PALETTE.ink}
+              onClick={() => router.push("/dashboard")}
+              style={{ letterSpacing: -0.5, cursor: "pointer" }}
+            >
+              Marriplan<span style={{ color: PALETTE.roseGold }}>.</span>
             </Text>
             <Tooltip label="Fechar sidebar" withArrow position="left">
               <ActionIcon
@@ -682,7 +694,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
           <NavLink
             label={opened ? "Meus Fornecedores" : ""}
             leftSection={<IconBriefcase size={18} />}
-            active={router.pathname === "/meus-fornecedores"}
+            active={router.pathname.startsWith("/meus-fornecedores")}
             onClick={() => handleSidebarNavigation("/meus-fornecedores")}
             aria-label="Meus Fornecedores"
             styles={navLinkStyles}
@@ -698,7 +710,7 @@ export default function BaseLayout({ children }: Readonly<BaseLayoutProps>) {
           <NavLink
             label={opened ? "Lista de Presentes" : ""}
             leftSection={<IconGift size={18} />} // Ícone de presente
-            active={router.pathname === "/gifts"}
+            active={router.pathname.startsWith("/gifts")}
             onClick={() => handleSidebarNavigation("/gifts")}
             aria-label="Lista de Presentes"
             styles={navLinkStyles}
