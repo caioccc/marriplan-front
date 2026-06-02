@@ -17,8 +17,6 @@ import {
   selectSupplierForWedding,
   Supplier,
   SupplierCategory,
-  updateWeddingSupplier,
-  uploadSupplierContract,
 } from "@/services/suppliers";
 import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
@@ -50,10 +48,6 @@ import {
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
-
-function formatCurrencyInput(value: string) {
-  return value.replace(/[^\d,.-]/g, "").replace(",", ".");
-}
 
 const paginationThemeStyles = `
   .supplier-pagination .mantine-Pagination-control {
@@ -99,6 +93,7 @@ export default function SuppliersMarketplacePage() {
     "create",
   );
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [confirmAddOpen, setConfirmAddOpen] = useState(false);
   const [addingSupplier, setAddingSupplier] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(
@@ -211,7 +206,7 @@ export default function SuppliersMarketplacePage() {
     setSelectedSupplier(supplier);
     setWeddingForm(initialWeddingSupplierForm);
     setContractFile(null);
-    setAddModalOpen(true);
+    setConfirmAddOpen(true);
   };
 
   const handleAddToWedding = async () => {
@@ -219,34 +214,25 @@ export default function SuppliersMarketplacePage() {
 
     setAddingSupplier(true);
     try {
-      let relation = await selectSupplierForWedding({
+      await selectSupplierForWedding({
         supplier_id: selectedSupplier.id,
-        status: weddingForm.status,
-        is_favorite: weddingForm.is_favorite,
-        valor_combinado: formatCurrencyInput(weddingForm.valor_combinado),
-        notes: weddingForm.notes,
+        status: "NEGOTIATING",
+        is_favorite: false,
+        valor_combinado: "0",
+        notes: "",
       });
-
-      if (contractFile) {
-        const uploaded = await uploadSupplierContract(contractFile);
-        relation = await updateWeddingSupplier(relation.id, {
-          contract_file_url: uploaded.url,
-          contract_file_public_id: uploaded.public_id,
-        });
-      }
 
       notifications.show({
         color: "green",
-        message: relation.contract_file_url
-          ? "Fornecedor adicionado ao casamento com contrato anexado."
-          : "Fornecedor adicionado ao casamento com sucesso.",
+        message: "Fornecedor adicionado ao casamento com sucesso.",
       });
-      setAddModalOpen(false);
+      setConfirmAddOpen(false);
       router.push("/meus-fornecedores");
     } catch (error) {
       const errorMessage =
         (error as { response?: { data?: { detail?: string } } })?.response?.data
-          ?.detail || "Não foi possível adicionar este fornecedor ao seu casamento.";
+          ?.detail ||
+        "Não foi possível adicionar este fornecedor ao seu casamento.";
       notifications.show({
         color: "red",
         message: errorMessage,
@@ -500,6 +486,51 @@ export default function SuppliersMarketplacePage() {
       </Modal>
 
       <Modal
+        opened={confirmAddOpen}
+        onClose={() => setConfirmAddOpen(false)}
+        title={
+          selectedSupplier
+            ? `Adicionar ${selectedSupplier.name} ao casamento?`
+            : "Adicionar fornecedor"
+        }
+        centered
+        size="sm"
+      >
+        <Stack gap="md">
+          <Text>
+            Esta ação vai adicionar o fornecedor ao casamento com status
+            <strong> Negociando</strong>.
+          </Text>
+          <Text size="sm" c="dimmed">
+            Você poderá ajustar os detalhes do fornecedor no casamento depois.
+          </Text>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 8,
+            }}
+          >
+            <Button
+              variant="default"
+              styles={softButtonStyles}
+              onClick={() => setConfirmAddOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              styles={primaryButtonStyles}
+              onClick={handleAddToWedding}
+              loading={addingSupplier}
+              disabled={addingSupplier || supplierLimitReached}
+            >
+              Confirmar adição
+            </Button>
+          </div>
+        </Stack>
+      </Modal>
+
+      <Modal
         opened={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         title={
@@ -682,7 +713,9 @@ export default function SuppliersMarketplacePage() {
               loading={addingSupplier}
               styles={primaryButtonStyles}
               onClick={handleAddToWedding}
-              disabled={addingSupplier || !selectedSupplier || supplierLimitReached}
+              disabled={
+                addingSupplier || !selectedSupplier || supplierLimitReached
+              }
             >
               Adicionar ao casamento
             </Button>

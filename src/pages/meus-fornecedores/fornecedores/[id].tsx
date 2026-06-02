@@ -1,32 +1,35 @@
 import BaseLayout from "@/components/Layout/_BaseLayout";
-import { PaymentPlanModal } from "@/components/financeiro/PaymentPlanModal";
 import { FreePlanLimitBanner } from "@/components/billing/FreePlanLimitBanner";
+import { PaymentPlanModal } from "@/components/financeiro/PaymentPlanModal";
 import {
   FEATURE_LABELS,
   getFeatureLimit,
   isFeatureLimitReached,
 } from "@/constants/plans";
+import { useSubscription } from "@/hooks/useSubscription";
+import { handleValueChange, toSentenceCase } from "@/lib/text";
 import {
+  FormaPagamento,
+  ParcelaPagamento,
+  ParcelaStatus,
+  atualizarParcelaPagamento,
+  registrarPagamento,
+  removerParcelaPagamento,
+  reverterPagamento,
+} from "@/services/financeiro";
+import {
+  Supplier,
+  WeddingSupplier,
   getSupplier,
   getWeddingSupplier,
   listWeddingSuppliers,
   selectSupplierForWedding,
   updateWeddingSupplier,
   uploadSupplierContract,
-  Supplier,
-  WeddingSupplier,
 } from "@/services/suppliers";
-import {
-  ParcelaPagamento,
-  FormaPagamento,
-  ParcelaStatus,
-  registrarPagamento,
-  reverterPagamento,
-  atualizarParcelaPagamento,
-  removerParcelaPagamento,
-} from "@/services/financeiro";
 import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
+  ActionIcon,
   Badge,
   Box,
   Button,
@@ -35,34 +38,41 @@ import {
   Group,
   Image,
   Loader,
+  Menu,
   Modal,
   ScrollArea,
   Select,
   Stack,
-  Table,
   Text,
   TextInput,
   Textarea,
-  Title,
+  Title
 } from "@mantine/core";
+import { DatePickerInput, DatesProvider } from "@mantine/dates";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
   IconArrowLeft,
+  IconDotsVertical,
+  IconEdit,
   IconHeart,
   IconMapPin,
   IconPaperclip,
   IconSparkles,
+  IconTrash,
   IconUpload,
 } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useMediaQuery } from "@mantine/hooks";
-import { handleValueChange, toSentenceCase } from "@/lib/text";
-import { useSubscription } from "@/hooks/useSubscription";
 
 function formatCurrencyInput(value: string) {
   const normalized = value.replace(/[^\d,.-]/g, "").replace(",", ".");
   return normalized;
+}
+
+function parseCombinedValue(value: string) {
+  const numeric = Number(formatCurrencyInput(value));
+  return Number.isNaN(numeric) ? 0 : numeric;
 }
 
 export default function SupplierDetailPage() {
@@ -78,12 +88,14 @@ export default function SupplierDetailPage() {
   const [contractPreviewOpen, setContractPreviewOpen] = useState(false);
   const [contractFile, setContractFile] = useState<File | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [paymentModalMode, setPaymentModalMode] = useState<
-    "plan" | "manual"
-  >("plan");
+  const [paymentModalMode, setPaymentModalMode] = useState<"plan" | "manual">(
+    "plan",
+  );
   const [parcelActionOpen, setParcelActionOpen] = useState(false);
   const [parcelEditOpen, setParcelEditOpen] = useState(false);
-  const [activeParcela, setActiveParcela] = useState<ParcelaPagamento | null>(null);
+  const [activeParcela, setActiveParcela] = useState<ParcelaPagamento | null>(
+    null,
+  );
   const [parcelPaymentForm, setParcelPaymentForm] = useState({
     data_pagamento: new Date().toISOString().slice(0, 10),
     valor: "",
@@ -99,6 +111,12 @@ export default function SupplierDetailPage() {
     observacao: "",
   });
   const [parcelActionLoading, setParcelActionLoading] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [parcelaToDelete, setParcelaToDelete] =
+    useState<ParcelaPagamento | null>(null);
+  const [confirmRevertOpen, setConfirmRevertOpen] = useState(false);
+  const [parcelaToRevert, setParcelaToRevert] =
+    useState<ParcelaPagamento | null>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
   const { isPremium } = useSubscription();
   const supplierLimit = getFeatureLimit("suppliers");
@@ -138,9 +156,10 @@ export default function SupplierDetailPage() {
           setForm({
             status: relation.status || "QUOTING",
             is_favorite: !!relation.is_favorite,
-            valor_combinado: relation.valor_combinado
-              ? String(relation.valor_combinado)
-              : "",
+            valor_combinado:
+              relation.valor_combinado && Number(relation.valor_combinado) > 0
+                ? String(relation.valor_combinado)
+                : "",
             notes: relation.notes || "",
           });
         }
@@ -173,7 +192,10 @@ export default function SupplierDetailPage() {
   const handleSave = async () => {
     if (!supplier) return;
     if (!weddingSupplier && supplierLimitReached) return;
-    if (form.status === "HIRED" && !Boolean(weddingSupplier?.parcelas?.length)) {
+    if (
+      form.status === "HIRED" &&
+      !Boolean(weddingSupplier?.parcelas?.length)
+    ) {
       notifications.show({
         color: "red",
         message:
@@ -225,8 +247,8 @@ export default function SupplierDetailPage() {
     } catch (error) {
       console.error(error);
       const errorMessage =
-        (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        "Não foi possível salvar o fornecedor.";
+        (error as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Não foi possível salvar o fornecedor.";
       notifications.show({
         color: "red",
         message: errorMessage,
@@ -264,7 +286,7 @@ export default function SupplierDetailPage() {
       numero_parcela: parcela.numero_parcela,
       descricao: parcela.descricao,
       valor: String(parcela.valor),
-      data_vencimento: parcela.data_vencimento.slice(0, 10),
+      data_vencimento: parcela.data_vencimento,
       forma_pagamento: parcela.forma_pagamento,
       status: parcela.status,
       observacao: parcela.observacao || "",
@@ -289,7 +311,10 @@ export default function SupplierDetailPage() {
         setWeddingSupplier(fresh);
       }
     } catch {
-      notifications.show({ color: "red", message: "Não foi possível registrar o pagamento." });
+      notifications.show({
+        color: "red",
+        message: "Não foi possível registrar o pagamento.",
+      });
     } finally {
       setParcelActionLoading(false);
     }
@@ -305,7 +330,10 @@ export default function SupplierDetailPage() {
         setWeddingSupplier(fresh);
       }
     } catch {
-      notifications.show({ color: "red", message: "Não foi possível reverter o pagamento." });
+      notifications.show({
+        color: "red",
+        message: "Não foi possível reverter o pagamento.",
+      });
     } finally {
       setParcelActionLoading(false);
     }
@@ -331,14 +359,16 @@ export default function SupplierDetailPage() {
         setWeddingSupplier(fresh);
       }
     } catch {
-      notifications.show({ color: "red", message: "Não foi possível atualizar a parcela." });
+      notifications.show({
+        color: "red",
+        message: "Não foi possível atualizar a parcela.",
+      });
     } finally {
       setParcelActionLoading(false);
     }
   };
 
   const handleDeleteParcel = async (parcela: ParcelaPagamento) => {
-    if (!window.confirm("Remover esta parcela? Esta ação não pode ser desfeita.")) return;
     setParcelActionLoading(true);
     try {
       await removerParcelaPagamento(parcela.id);
@@ -348,9 +378,32 @@ export default function SupplierDetailPage() {
         setWeddingSupplier(fresh);
       }
     } catch {
-      notifications.show({ color: "red", message: "Não foi possível remover a parcela." });
+      notifications.show({
+        color: "red",
+        message: "Não foi possível remover a parcela.",
+      });
     } finally {
       setParcelActionLoading(false);
+    }
+  };
+
+  const confirmDeleteParcel = async () => {
+    if (!parcelaToDelete) return;
+    setConfirmDeleteOpen(false);
+    try {
+      await handleDeleteParcel(parcelaToDelete);
+    } finally {
+      setParcelaToDelete(null);
+    }
+  };
+
+  const confirmRevertParcel = async () => {
+    if (!parcelaToRevert) return;
+    setConfirmRevertOpen(false);
+    try {
+      await handleRevertParcelPayment(parcelaToRevert);
+    } finally {
+      setParcelaToRevert(null);
     }
   };
 
@@ -363,6 +416,44 @@ export default function SupplierDetailPage() {
       style: "currency",
       currency: "BRL",
     });
+  }
+
+  const FORMA_OPTIONS: Array<{ value: FormaPagamento; label: string }> = [
+    { value: "pix", label: "PIX" },
+    { value: "boleto", label: "Boleto" },
+    { value: "cartao_credito", label: "Cartão de Crédito" },
+    { value: "cartao_debito", label: "Cartão de Débito" },
+    { value: "transferencia", label: "Transferência" },
+    { value: "dinheiro", label: "Dinheiro" },
+    { value: "cheque", label: "Cheque" },
+    { value: "outro", label: "Outro" },
+  ];
+
+  function statusLabel(status?: ParcelaStatus) {
+    if (status === "pago") return "Pago";
+    if (status === "em_atraso") return "Em atraso";
+    return "A vencer";
+  }
+
+  function statusColor(status?: ParcelaStatus) {
+    if (status === "pago") return "green";
+    if (status === "em_atraso") return "red";
+    return "yellow";
+  }
+
+  function dueColor(parcela: {
+    status?: ParcelaStatus;
+    data_vencimento: string;
+  }) {
+    const calculated = parcela.status;
+    if (calculated === "pago") return "green";
+    if (calculated === "em_atraso") return "red";
+    const dueDate = new Date(`${parcela.data_vencimento}T00:00:00`);
+    const diffDays = Math.ceil(
+      (dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+    );
+    if (diffDays <= 7) return "yellow";
+    return "teal";
   }
 
   const contractUrl = weddingSupplier?.contract_file_url || "";
@@ -562,23 +653,42 @@ export default function SupplierDetailPage() {
                     </Text>
                   </Stack>
 
-                  {weddingSupplier ? (
-                    <Stack gap={2}>
-                      <Text size="xs" c="dimmed" tt="uppercase" fw={700}>
-                        Valores
-                      </Text>
-                      <Text size="sm">
-                        Estimado:{" "}
-                        {formatCurrency(weddingSupplier.estimated_price)}
-                      </Text>
-                      <Text size="sm">
-                        Negociado:{" "}
-                        {formatCurrency(weddingSupplier.negotiated_price)}
-                      </Text>
-                      <Text size="sm">
-                        Pago: {formatCurrency(weddingSupplier.paid_amount)}
-                      </Text>
-                    </Stack>
+                  {weddingSupplier &&
+                  weddingSupplier.status_financeiro !== "Sem plano" ? (
+                    <>
+                      <Stack gap={2}>
+                        <Text size="xs" c="dimmed">
+                          Valor combinado
+                        </Text>
+                        <Text fw={600}>
+                          {formatCurrency(weddingSupplier.valor_combinado)}
+                        </Text>
+                      </Stack>
+                      <Stack gap={2}>
+                        <Text size="xs" c="dimmed">
+                          Valor Pago
+                        </Text>
+                        <Text fw={600}>
+                          {formatCurrency(weddingSupplier.valor_pago)}
+                        </Text>
+                      </Stack>
+                      <Stack gap={2}>
+                        <Text size="xs" c="dimmed">
+                          Saldo devedor
+                        </Text>
+                        <Text fw={600}>
+                          {formatCurrency(weddingSupplier.saldo_devedor)}
+                        </Text>
+                      </Stack>
+                      <Stack gap={2}>
+                        <Text size="xs" c="dimmed">
+                          Status financeiro
+                        </Text>
+                        <Text fw={600}>
+                          {weddingSupplier.status_financeiro || "Sem plano"}
+                        </Text>
+                      </Stack>
+                    </>
                   ) : null}
 
                   <Stack gap={2}>
@@ -636,7 +746,7 @@ export default function SupplierDetailPage() {
               </Stack>
             </Card>
 
-            <Card radius="xl" p="xl" withBorder>
+            <Card radius="xl" withBorder>
               <Stack gap="md">
                 <Select
                   label="Status"
@@ -679,27 +789,32 @@ export default function SupplierDetailPage() {
                 />
 
                 {isHired && weddingSupplier && !hasPaymentPlan ? (
-                  <Group grow align="flex-start" wrap="wrap">
+                  <Stack gap="xs">
                     <Button
                       variant="default"
                       styles={softButtonStyles}
                       onClick={() => handleOpenPaymentModal("plan")}
+                      disabled={parseCombinedValue(form.valor_combinado) <= 0}
                     >
-                      Criar plano de pagamento
+                      Criar Plano
                     </Button>
-                    <Button
+                    {/* <Button
                       variant="light"
                       styles={primaryButtonStyles}
                       onClick={() => handleOpenPaymentModal("manual")}
+                      disabled={parseCombinedValue(form.valor_combinado) <= 0}
                     >
-                      Adicionar manualmente
-                    </Button>
-                  </Group>
+                      Add manualmente
+                    </Button> */}
+                  </Stack>
                 ) : null}
 
-                {isHired && !hasPaymentPlan ? (
+                {isHired &&
+                !hasPaymentPlan &&
+                parseCombinedValue(form.valor_combinado) <= 0 ? (
                   <Text size="sm" c="red" mt="xs">
-                    Para salvar como contratado é necessário criar ou associar um plano de pagamento.
+                    Informe o valor combinado maior que zero para criar ou
+                    adicionar o plano de pagamento.
                   </Text>
                 ) : null}
 
@@ -725,7 +840,8 @@ export default function SupplierDetailPage() {
                           color={
                             weddingSupplier?.status_financeiro === "Quitado"
                               ? "green"
-                              : weddingSupplier?.status_financeiro === "Em atraso"
+                              : weddingSupplier?.status_financeiro ===
+                                "Em atraso"
                               ? "red"
                               : "yellow"
                           }
@@ -735,81 +851,133 @@ export default function SupplierDetailPage() {
                         </Badge>
                       </Group>
                       <Text size="sm" c="dimmed">
-                        Este plano está vinculado ao fornecedor e mostra as parcelas previstas.
+                        Este plano está vinculado ao fornecedor e mostra as
+                        parcelas previstas.
                       </Text>
-                      <ScrollArea type="auto" style={{ maxHeight: 260 }}>
-                        <Table withTableBorder withColumnBorders highlightOnHover striped>
-                          <Table.Thead>
-                            <Table.Tr>
-                              <Table.Th>Parcela</Table.Th>
-                              <Table.Th>Descrição</Table.Th>
-                              <Table.Th>Vencimento</Table.Th>
-                              <Table.Th>Valor</Table.Th>
-                              <Table.Th>Forma</Table.Th>
-                              <Table.Th>Status</Table.Th>
-                              <Table.Th>Ações</Table.Th>
-                            </Table.Tr>
-                          </Table.Thead>
-                          <Table.Tbody>
-                            {weddingSupplier?.parcelas
-                              ?.slice()
-                              .sort((a, b) => a.numero_parcela - b.numero_parcela)
-                              .map((parcela) => (
-                                <tr key={parcela.id}>
-                                  <td>{parcela.numero_parcela}</td>
-                                  <td>{parcela.descricao}</td>
-                                  <td>
-                                    {new Date(
-                                      `${parcela.data_vencimento}T00:00:00`,
-                                    ).toLocaleDateString("pt-BR")}
-                                  </td>
-                                  <td>{formatCurrency(parcela.valor)}</td>
-                                  <td>{parcela.forma_pagamento}</td>
-                                  <td>{parcela.status.replace("_", " ")}</td>
-                                  <td>
-                                    <Group gap="xs">
-                                      {parcela.status !== "pago" ? (
-                                        <Button
-                                          size="xs"
-                                          variant="outline"
-                                          onClick={() => openParcelPayment(parcela)}
+                      <ScrollArea
+                        type="auto"
+                        styles={{ viewport: { paddingBottom: 12 } }}
+                      >
+                        <Stack gap="sm">
+                          {weddingSupplier?.parcelas
+                            ?.slice()
+                            .sort((a, b) => a.numero_parcela - b.numero_parcela)
+                            .map((parcela) => {
+                              const parcelaStatus =
+                                parcela.status || "a_vencer";
+                              return (
+                                <Card key={parcela.id} radius="md" withBorder>
+                                  <Group noWrap align="center" position="apart">
+                                    <Stack
+                                      gap={2}
+                                      style={{ minWidth: 0, flex: 1 }}
+                                    >
+                                      <Text fw={700} lineClamp={1}>
+                                        {parcela.descricao}
+                                      </Text>
+                                      <Group spacing={8} align="center">
+                                        <Text size="xs" c="dimmed">
+                                          Venc:
+                                        </Text>
+                                        <Text
+                                          size="sm"
+                                          c={
+                                            parcelaStatus === "em_atraso"
+                                              ? "red"
+                                              : dueColor(parcela)
+                                          }
+                                          fw={600}
                                         >
-                                          Pagar
-                                        </Button>
-                                      ) : (
+                                          {new Date(
+                                            `${parcela.data_vencimento}T00:00:00`,
+                                          ).toLocaleDateString("pt-BR")}
+                                        </Text>
+                                      </Group>
+                                      <Text size="sm" fw={600}>
+                                        {formatCurrency(parcela.valor)}
+                                      </Text>
+                                      <Text size="xs">
+                                        {FORMA_OPTIONS.find(
+                                          (item) =>
+                                            item.value ===
+                                            parcela.forma_pagamento,
+                                        )?.label || parcela.forma_pagamento}
+                                      </Text>
+                                    </Stack>
+
+                                    <Group spacing={8} noWrap>
+                                      {/* <Badge color={statusColor(parcelaStatus)}>
+                                        {statusLabel(parcelaStatus)}
+                                      </Badge> */}
+                                      {parcelaStatus === "pago" ? (
                                         <Button
+                                          variant="light"
+                                          color="orange"
                                           size="xs"
-                                          variant="outline"
-                                          onClick={() => handleRevertParcelPayment(parcela)}
-                                          loading={parcelActionLoading}
+                                          onClick={() => {
+                                            setParcelaToRevert(parcela);
+                                            setConfirmRevertOpen(true);
+                                          }}
                                         >
                                           Reverter
                                         </Button>
-                                      )}
-                                      {parcela.status !== "pago" ? (
+                                      ) : (
                                         <Button
+                                          variant="light"
+                                          color="green"
                                           size="xs"
-                                          variant="default"
-                                          onClick={() => openParcelEdit(parcela)}
+                                          onClick={() =>
+                                            openParcelPayment(parcela)
+                                          }
                                         >
-                                          Editar
+                                          Pagar
                                         </Button>
-                                      ) : null}
-                                      <Button
-                                        size="xs"
-                                        color="red"
-                                        variant="subtle"
-                                        onClick={() => handleDeleteParcel(parcela)}
-                                        loading={parcelActionLoading}
-                                      >
-                                        Excluir
-                                      </Button>
+                                      )}
+                                      <Menu withinPortal position="bottom-end">
+                                        <Menu.Target>
+                                          <ActionIcon
+                                            variant="light"
+                                            aria-label="Mais opções"
+                                          >
+                                            <IconDotsVertical size={18} />
+                                          </ActionIcon>
+                                        </Menu.Target>
+                                        <Menu.Dropdown>
+                                          <Menu.Item
+                                            leftSection={<IconEdit size={14} />}
+                                            onClick={() =>
+                                              openParcelEdit(parcela)
+                                            }
+                                            disabled={parcelaStatus === "pago"}
+                                          >
+                                            Editar
+                                          </Menu.Item>
+                                          <Menu.Item
+                                            leftSection={
+                                              <IconTrash size={14} />
+                                            }
+                                            color="red"
+                                            onClick={() => {
+                                              setParcelaToDelete(parcela);
+                                              setConfirmDeleteOpen(true);
+                                            }}
+                                            disabled={parcelaStatus === "pago"}
+                                          >
+                                            Excluir
+                                          </Menu.Item>
+                                        </Menu.Dropdown>
+                                      </Menu>
                                     </Group>
-                                  </td>
-                                </tr>
-                              ))}
-                          </Table.Tbody>
-                        </Table>
+                                  </Group>
+                                  {parcela.observacao ? (
+                                    <Text size="sm" c="dimmed" mt="xs">
+                                      {parcela.observacao}
+                                    </Text>
+                                  ) : null}
+                                </Card>
+                              );
+                            })}
+                        </Stack>
                       </ScrollArea>
                     </Stack>
                   </Card>
@@ -1050,7 +1218,7 @@ export default function SupplierDetailPage() {
                       </Stack>
                       <Stack gap={2}>
                         <Text size="xs" c="dimmed">
-                          Pago
+                          Valor Pago
                         </Text>
                         <Text fw={600}>
                           {formatCurrency(weddingSupplier.valor_pago)}
@@ -1140,22 +1308,25 @@ export default function SupplierDetailPage() {
                       variant="default"
                       styles={softButtonStyles}
                       onClick={() => handleOpenPaymentModal("plan")}
+                      disabled={parseCombinedValue(form.valor_combinado) <= 0}
                     >
                       Criar plano de pagamento
                     </Button>
-                    <Button
+                    {/* <Button
                       variant="light"
                       styles={primaryButtonStyles}
                       onClick={() => handleOpenPaymentModal("manual")}
+                      disabled={parseCombinedValue(form.valor_combinado) <= 0}
                     >
                       Adicionar manualmente
-                    </Button>
+                    </Button> */}
                   </Group>
                 ) : null}
 
                 {isHired && !hasPaymentPlan ? (
                   <Text size="sm" c="red" mt="xs">
-                    Para salvar como contratado é necessário criar ou associar um plano de pagamento.
+                    Para salvar como contratado é necessário criar ou associar
+                    um plano de pagamento.
                   </Text>
                 ) : null}
 
@@ -1181,7 +1352,8 @@ export default function SupplierDetailPage() {
                           color={
                             weddingSupplier?.status_financeiro === "Quitado"
                               ? "green"
-                              : weddingSupplier?.status_financeiro === "Em atraso"
+                              : weddingSupplier?.status_financeiro ===
+                                "Em atraso"
                               ? "red"
                               : "yellow"
                           }
@@ -1191,81 +1363,133 @@ export default function SupplierDetailPage() {
                         </Badge>
                       </Group>
                       <Text size="sm" c="dimmed">
-                        Este plano está vinculado ao fornecedor e mostra as parcelas previstas.
+                        Este plano está vinculado ao fornecedor e mostra as
+                        parcelas previstas.
                       </Text>
-                      <ScrollArea type="auto" style={{ maxHeight: 260 }}>
-                        <Table withTableBorder withColumnBorders highlightOnHover striped>
-                          <Table.Thead>
-                            <Table.Tr>
-                              <Table.Th>Parcela</Table.Th>
-                              <Table.Th>Descrição</Table.Th>
-                              <Table.Th>Vencimento</Table.Th>
-                              <Table.Th>Valor</Table.Th>
-                              <Table.Th>Forma</Table.Th>
-                              <Table.Th>Status</Table.Th>
-                              <Table.Th>Ações</Table.Th>
-                            </Table.Tr>
-                          </Table.Thead>
-                          <Table.Tbody>
-                            {weddingSupplier?.parcelas
-                              ?.slice()
-                              .sort((a, b) => a.numero_parcela - b.numero_parcela)
-                              .map((parcela) => (
-                                <tr key={parcela.id}>
-                                  <td>{parcela.numero_parcela}</td>
-                                  <td>{parcela.descricao}</td>
-                                  <td>
-                                    {new Date(
-                                      `${parcela.data_vencimento}T00:00:00`,
-                                    ).toLocaleDateString("pt-BR")}
-                                  </td>
-                                  <td>{formatCurrency(parcela.valor)}</td>
-                                  <td>{parcela.forma_pagamento}</td>
-                                  <td>{parcela.status.replace("_", " ")}</td>
-                                  <td>
-                                    <Group gap="xs">
-                                      {parcela.status !== "pago" ? (
-                                        <Button
-                                          size="xs"
-                                          variant="outline"
-                                          onClick={() => openParcelPayment(parcela)}
+                      <ScrollArea
+                        type="auto"
+                        styles={{ viewport: { paddingBottom: 12 } }}
+                      >
+                        <Stack gap="sm">
+                          {weddingSupplier?.parcelas?.map((parcela) => {
+                            const parcelaStatus = parcela.status || "a_vencer";
+                            return (
+                              <Card key={parcela.id} radius="md" withBorder>
+                                <Group noWrap align="center" position="apart">
+                                  <Stack
+                                    spacing={2}
+                                    style={{ minWidth: 0, flex: 1 }}
+                                  >
+                                    <Text fw={700} lineClamp={1}>
+                                      {parcela.descricao}
+                                    </Text>
+                                    <Group spacing={8} align="center">
+                                      <Text size="xs" c="dimmed">
+                                        Venc:
+                                      </Text>
+                                      <Text
+                                        size="sm"
+                                        c={
+                                          parcelaStatus === "em_atraso"
+                                            ? "red"
+                                            : dueColor(parcela)
+                                        }
+                                        fw={600}
+                                      >
+                                        {new Date(
+                                          `${parcela.data_vencimento}T00:00:00`,
+                                        ).toLocaleDateString("pt-BR")}
+                                      </Text>
+                                      <Text size="xs" c="dimmed">
+                                        •
+                                      </Text>
+                                      <Text size="sm" fw={600}>
+                                        {formatCurrency(parcela.valor)}
+                                      </Text>
+                                      <Text size="xs" c="dimmed">
+                                        •
+                                      </Text>
+                                      <Text size="xs">
+                                        {FORMA_OPTIONS.find(
+                                          (item) =>
+                                            item.value ===
+                                            parcela.forma_pagamento,
+                                        )?.label || parcela.forma_pagamento}
+                                      </Text>
+                                    </Group>
+                                  </Stack>
+
+                                  <Group spacing={8} noWrap>
+                                    <Badge color={statusColor(parcelaStatus)}>
+                                      {statusLabel(parcelaStatus)}
+                                    </Badge>
+                                    {parcelaStatus === "pago" ? (
+                                      <Button
+                                        variant="light"
+                                        color="orange"
+                                        size="xs"
+                                        onClick={() => {
+                                          setParcelaToRevert(parcela);
+                                          setConfirmRevertOpen(true);
+                                        }}
+                                      >
+                                        Reverter
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        variant="light"
+                                        color="green"
+                                        size="xs"
+                                        onClick={() =>
+                                          openParcelPayment(parcela)
+                                        }
+                                      >
+                                        Pagar
+                                      </Button>
+                                    )}
+                                    <Menu withinPortal position="bottom-end">
+                                      <Menu.Target>
+                                        <ActionIcon
+                                          variant="light"
+                                          aria-label="Mais opções"
                                         >
-                                          Pagar
-                                        </Button>
-                                      ) : (
-                                        <Button
-                                          size="xs"
-                                          variant="outline"
-                                          onClick={() => handleRevertParcelPayment(parcela)}
-                                          loading={parcelActionLoading}
-                                        >
-                                          Reverter
-                                        </Button>
-                                      )}
-                                      {parcela.status !== "pago" ? (
-                                        <Button
-                                          size="xs"
-                                          variant="default"
-                                          onClick={() => openParcelEdit(parcela)}
+                                          <IconDotsVertical size={18} />
+                                        </ActionIcon>
+                                      </Menu.Target>
+                                      <Menu.Dropdown>
+                                        <Menu.Item
+                                          leftSection={<IconEdit size={14} />}
+                                          onClick={() =>
+                                            openParcelEdit(parcela)
+                                          }
+                                          disabled={parcelaStatus === "pago"}
                                         >
                                           Editar
-                                        </Button>
-                                      ) : null}
-                                      <Button
-                                        size="xs"
-                                        color="red"
-                                        variant="subtle"
-                                        onClick={() => handleDeleteParcel(parcela)}
-                                        loading={parcelActionLoading}
-                                      >
-                                        Excluir
-                                      </Button>
-                                    </Group>
-                                  </td>
-                                </tr>
-                              ))}
-                          </Table.Tbody>
-                        </Table>
+                                        </Menu.Item>
+                                        <Menu.Item
+                                          leftSection={<IconTrash size={14} />}
+                                          color="red"
+                                          onClick={() => {
+                                            setParcelaToDelete(parcela);
+                                            setConfirmDeleteOpen(true);
+                                          }}
+                                          disabled={parcelaStatus === "pago"}
+                                        >
+                                          Excluir
+                                        </Menu.Item>
+                                      </Menu.Dropdown>
+                                    </Menu>
+                                  </Group>
+                                </Group>
+                                {parcela.observacao ? (
+                                  <Text size="sm" c="dimmed" mt="xs">
+                                    {parcela.observacao}
+                                  </Text>
+                                ) : null}
+                              </Card>
+                            );
+                          })}
+                        </Stack>
                       </ScrollArea>
                     </Stack>
                   </Card>
@@ -1376,18 +1600,20 @@ export default function SupplierDetailPage() {
           size="md"
         >
           <Stack gap="md">
-            <TextInput
-              label="Data do pagamento"
-              type="date"
-              value={parcelPaymentForm.data_pagamento}
-              onChange={(event) =>
-                setParcelPaymentForm((prev) => ({
-                  ...prev,
-                  data_pagamento: event.currentTarget.value,
-                }))
-              }
-              styles={inputStyles}
-            />
+            <DatesProvider settings={{ locale: "pt-br" }}>
+              <DatePickerInput
+                value={parcelPaymentForm.data_pagamento}
+                onChange={(event) =>
+                  setParcelPaymentForm((prev) => ({
+                    ...prev,
+                    data_pagamento: event,
+                  }))
+                }
+                label="Data do pagamento"
+                valueFormat="DD/MM/YYYY"
+                styles={inputStyles}
+              />
+            </DatesProvider>
             <TextInput
               label="Valor"
               value={parcelPaymentForm.valor}
@@ -1460,18 +1686,20 @@ export default function SupplierDetailPage() {
               }
               styles={inputStyles}
             />
-            <TextInput
-              label="Vencimento"
-              type="date"
-              value={parcelEditForm.data_vencimento}
-              onChange={(event) =>
-                setParcelEditForm((prev) => ({
-                  ...prev,
-                  data_vencimento: event.currentTarget.value,
-                }))
-              }
-              styles={inputStyles}
-            />
+            <DatesProvider settings={{ locale: "pt-br" }}>
+              <DatePickerInput
+                valueFormat="DD/MM/YYYY"
+                label="Vencimento"
+                value={parcelEditForm.data_vencimento}
+                onChange={(event) => {
+                  setParcelEditForm((prev) => ({
+                    ...prev,
+                    data_vencimento: event,
+                  }));
+                }}
+                styles={inputStyles}
+              />
+            </DatesProvider>
             <Select
               label="Forma de pagamento"
               data={[
@@ -1540,10 +1768,83 @@ export default function SupplierDetailPage() {
           </Stack>
         </Modal>
 
+        <Modal
+          opened={confirmDeleteOpen}
+          onClose={() => {
+            setConfirmDeleteOpen(false);
+            setParcelaToDelete(null);
+          }}
+          title="Excluir parcela"
+          centered
+          size="sm"
+        >
+          <Stack gap="md">
+            <Text>
+              Tem certeza que deseja excluir esta parcela? Esta ação não pode
+              ser revertida.
+            </Text>
+            <Group position="right" spacing="sm">
+              <Button
+                variant="default"
+                styles={softButtonStyles}
+                onClick={() => {
+                  setConfirmDeleteOpen(false);
+                  setParcelaToDelete(null);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                color="red"
+                styles={primaryButtonStyles}
+                onClick={confirmDeleteParcel}
+                loading={parcelActionLoading}
+              >
+                Excluir parcela
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
+
+        <Modal
+          opened={confirmRevertOpen}
+          onClose={() => {
+            setConfirmRevertOpen(false);
+            setParcelaToRevert(null);
+          }}
+          title="Reverter pagamento"
+          centered
+          size="sm"
+        >
+          <Stack gap="md">
+            <Text>Deseja reverter o pagamento desta parcela?</Text>
+            <Group position="right" spacing="sm">
+              <Button
+                variant="default"
+                styles={softButtonStyles}
+                onClick={() => {
+                  setConfirmRevertOpen(false);
+                  setParcelaToRevert(null);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                styles={primaryButtonStyles}
+                onClick={confirmRevertParcel}
+                loading={parcelActionLoading}
+              >
+                Reverter pagamento
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
+
         <PaymentPlanModal
           opened={paymentModalOpen}
           mode={paymentModalMode}
           weddingSupplierId={weddingSupplier?.id}
+          valorCombinadoOverride={form.valor_combinado}
           onClose={() => setPaymentModalOpen(false)}
           onSaved={() => {
             if (weddingSupplier?.id) {

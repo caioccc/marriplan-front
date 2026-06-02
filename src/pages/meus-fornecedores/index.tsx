@@ -13,14 +13,14 @@ import {
   WeddingSupplier,
 } from "@/services/suppliers";
 import {
-  inputStyles,
   actionIconStyles,
+  inputStyles,
   primaryButtonStyles,
   softButtonStyles,
 } from "@/styles";
 import {
-  Badge,
   ActionIcon,
+  Badge,
   Button,
   Card,
   Group,
@@ -33,11 +33,11 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { IconFilter, IconPlus, IconSearch } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
-import { useMediaQuery } from "@mantine/hooks";
 
 export default function MySuppliersPage() {
   const router = useRouter();
@@ -66,9 +66,9 @@ export default function MySuppliersPage() {
   const [supplierToRemove, setSupplierToRemove] =
     useState<WeddingSupplier | null>(null);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [paymentModalMode, setPaymentModalMode] = useState<
-    "plan" | "manual"
-  >("plan");
+  const [paymentModalMode, setPaymentModalMode] = useState<"plan" | "manual">(
+    "plan",
+  );
   const [paymentSupplierId, setPaymentSupplierId] = useState<number | null>(
     null,
   );

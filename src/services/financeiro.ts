@@ -62,6 +62,7 @@ export type FinanceSummary = {
   upcoming_7_days: { count: number; total: string | number };
   overdue: { count: number; total: string | number };
   selected: { count: number; total: string | number };
+  total_contracted?: string | number;
 };
 
 export type FinanceListResponse = {

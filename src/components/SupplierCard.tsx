@@ -1,7 +1,7 @@
 import { Supplier, WeddingSupplier } from "@/services/suppliers";
 import {
-  Badge,
   ActionIcon,
+  Badge,
   Box,
   Button,
   Card,
@@ -9,21 +9,22 @@ import {
   Image,
   Menu,
   Stack,
-  Tooltip,
   Text,
+  Tooltip,
 } from "@mantine/core";
 import {
   IconBrandInstagram,
   IconBrandWhatsapp,
+  IconCalendar,
   IconDotsVertical,
   IconEdit,
   IconHeart,
-  IconMapPin,
   IconPaperclip,
   IconPhone,
-  IconWorldWww,
   IconTrash,
+  IconWorldWww,
 } from "@tabler/icons-react";
+import { useRouter } from "next/router";
 
 interface SupplierCardProps {
   supplier: Supplier;
@@ -34,8 +35,18 @@ interface SupplierCardProps {
   onAdd?: (supplier: Supplier) => void;
   onEdit?: (supplier: Supplier) => void;
   onRemove?: (supplier: Supplier) => void;
-  onCreatePlan?: (supplier: Supplier, weddingSupplier?: WeddingSupplier | null) => void;
-  onAddManual?: (supplier: Supplier, weddingSupplier?: WeddingSupplier | null) => void;
+  onCreatePlan?: (
+    supplier: Supplier,
+    weddingSupplier?: WeddingSupplier | null,
+  ) => void;
+  onViewPlan?: (
+    supplier: Supplier,
+    weddingSupplier?: WeddingSupplier | null,
+  ) => void;
+  onAddManual?: (
+    supplier: Supplier,
+    weddingSupplier?: WeddingSupplier | null,
+  ) => void;
   canEdit?: boolean;
 }
 
@@ -209,9 +220,11 @@ export function SupplierCard({
   onEdit,
   onRemove,
   onCreatePlan,
+  onViewPlan,
   onAddManual,
   canEdit = false,
 }: SupplierCardProps) {
+  const router = useRouter();
   const imageUrl = supplier.cover_image_url || "";
   const categoryLabel = supplier.category_detail?.name || "Fornecedor";
   const cityLabel =
@@ -485,6 +498,27 @@ export function SupplierCard({
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
+                {weddingSupplier &&
+                (weddingSupplier.parcelas?.length ||
+                  (weddingSupplier.status_financeiro &&
+                    weddingSupplier.status_financeiro !== "Sem plano")) ? (
+                  <Menu.Item
+                    leftSection={<IconCalendar size={14} />}
+                    onClick={() => {
+                      if (onViewPlan)
+                        return onViewPlan(supplier, weddingSupplier);
+                      // fallback: open financeiro manager modal via route
+                      if (weddingSupplier?.id) {
+                        void router.push({
+                          pathname: "/financeiro",
+                          query: { fornecedor: String(weddingSupplier.id) },
+                        });
+                      }
+                    }}
+                  >
+                    Ver Plano
+                  </Menu.Item>
+                ) : null}
                 {canEdit && onEdit ? (
                   <Menu.Item
                     leftSection={<IconEdit size={14} />}
@@ -506,89 +540,126 @@ export function SupplierCard({
             </Menu>
           ) : null}
         </Box>
+        <Box
+          style={{
+            position: "absolute",
+            bottom: 12,
+            left: 12,
+            right: 12,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 8,
+          }}
+        >
+          <Group gap="xs" wrap="wrap">
+            <Badge
+              variant="light"
+              style={{
+                ...themeBadgeBaseStyle,
+                textTransform: "none",
+                backgroundColor:
+                  weddingSupplier?.status_financeiro === "Quitado"
+                    ? "rgba(72, 187, 120)"
+                    : weddingSupplier?.status_financeiro === "Em atraso"
+                    ? "rgba(255, 85, 85)"
+                    : weddingSupplier?.status_financeiro === "A vencer"
+                    ? "rgba(250, 204, 21)"
+                    : "rgba(181, 139, 122)",
+                color:
+                  weddingSupplier?.status_financeiro === "Quitado"
+                    ? "#000"
+                    : weddingSupplier?.status_financeiro === "Em atraso"
+                    ? "#000"
+                    : weddingSupplier?.status_financeiro === "A vencer"
+                    ? "#000"
+                    : "#000",
+                border:
+                  weddingSupplier?.status_financeiro === "Quitado"
+                    ? "1px solid rgba(72, 187, 120, 0.22)"
+                    : weddingSupplier?.status_financeiro === "Em atraso"
+                    ? "1px solid rgba(255,85,85,0.16)"
+                    : weddingSupplier?.status_financeiro === "A vencer"
+                    ? "1px solid rgba(250,204,21,0.18)"
+                    : "1px solid rgba(181, 139, 122, 0.24)",
+              }}
+            >
+              {weddingSupplier?.status_financeiro || cityLabel}
+            </Badge>
+            {weddingSupplier?.is_favorite ? (
+              <Badge
+                color="pink"
+                variant="light"
+                leftSection={<IconHeart size={12} />}
+              >
+                Favorito
+              </Badge>
+            ) : null}
+            {weddingSupplier?.contract_file_url ? (
+              <Badge
+                variant="light"
+                leftSection={<IconPaperclip size={12} />}
+                style={contractBadgeStyle}
+              >
+                Contrato
+              </Badge>
+            ) : null}
+          </Group>
+        </Box>
       </Box>
       <Stack gap="sm" p="md">
         <Stack gap={4}>
           <Text fw={700} size={compact ? "md" : "lg"} lineClamp={1}>
             {supplier.name}
           </Text>
-          <Text size="sm" c="dimmed" lineClamp={2}>
-            {supplier.description || supplier.company_name || ""}
-          </Text>
+          {weddingSupplier?.status_financeiro !== "Sem plano" &&
+          weddingSupplier?.proxima_parcela ? (
+            <Text size="sm" c="dimmed" ta="left" style={{ width: "100%" }}>
+              {weddingSupplier.proxima_parcela.status === "em_atraso"
+                ? `Em atraso desde ${new Date(
+                    `${weddingSupplier.proxima_parcela.data_vencimento}T00:00:00`,
+                  ).toLocaleDateString("pt-BR")}`
+                : `Próxima parcela (${
+                    weddingSupplier.proxima_parcela.descricao
+                  }) com vencimento em ${new Date(
+                    `${weddingSupplier.proxima_parcela.data_vencimento}T00:00:00`,
+                  ).toLocaleDateString("pt-BR")}`}
+            </Text>
+          ) : (
+            <Text size="sm" c="dimmed" lineClamp={2}>
+              {supplier.description || supplier.company_name || ""}
+            </Text>
+          )}
         </Stack>
-        <Group gap="xs" wrap="wrap">
-          <Badge
-            variant="light"
-            leftSection={<IconMapPin size={12} />}
-            style={locationBadgeStyle}
-          >
-            {cityLabel}
-          </Badge>
-          {weddingSupplier?.is_favorite ? (
-            <Badge
-              color="pink"
-              variant="light"
-              leftSection={<IconHeart size={12} />}
-            >
-              Favorito
-            </Badge>
-          ) : null}
-          {weddingSupplier?.contract_file_url ? (
-            <Badge
-              variant="light"
-              leftSection={<IconPaperclip size={12} />}
-              style={contractBadgeStyle}
-            >
-              Contrato
-            </Badge>
-          ) : null}
-        </Group>
-        {weddingSupplier ? (
-          <Group justify="space-between" gap="sm" wrap="wrap">
-            <Badge
-              color={
-                weddingSupplier.status_financeiro === "Quitado"
-                  ? "green"
-                  : weddingSupplier.status_financeiro === "Em atraso"
-                    ? "red"
-                    : weddingSupplier.status_financeiro === "A vencer"
-                      ? "yellow"
-                      : "gray"
-              }
-              variant="light"
-            >
-              {weddingSupplier.status_financeiro || "Sem plano"}
-            </Badge>
-            <Stack gap={2}>
-              <Text size="xs" c="dimmed">
-                Valor acordado
-              </Text>
-              <Text fw={600}>{formatCurrency(weddingSupplier.valor_combinado)}</Text>
-            </Stack>
-            <Stack gap={2}>
-              <Text size="xs" c="dimmed">
-                Pago
-              </Text>
-              <Text fw={600}>{formatCurrency(weddingSupplier.valor_pago)}</Text>
-            </Stack>
-            <Stack gap={2}>
-              <Text size="xs" c="dimmed">
-                Saldo devedor
-              </Text>
-              <Text fw={600}>{formatCurrency(weddingSupplier.saldo_devedor)}</Text>
-            </Stack>
-            {weddingSupplier.proxima_parcela ? (
-              <Stack gap={2}>
+        {weddingSupplier &&
+        weddingSupplier.status_financeiro !== "Sem plano" ? (
+          <>
+            <Group align="center" spacing="md" style={{ width: "100%" }}>
+              <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
                 <Text size="xs" c="dimmed">
-                  Próxima parcela
+                  Valor combinado
                 </Text>
-                <Text fw={600}>{weddingSupplier.proxima_parcela.descricao}</Text>
-                <Text size="xs" c="dimmed">
-                  {new Date(`${weddingSupplier.proxima_parcela.data_vencimento}T00:00:00`).toLocaleDateString("pt-BR")}
+                <Text size="xs" fw={600}>
+                  {formatCurrency(weddingSupplier.valor_combinado)}
                 </Text>
               </Stack>
-            ) : null}
-          </Group>
+              <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                <Text size="xs" c="dimmed">
+                  Valor Pago
+                </Text>
+                <Text size="xs" fw={600}>
+                  {formatCurrency(weddingSupplier.valor_pago)}
+                </Text>
+              </Stack>
+              <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                <Text size="xs" c="dimmed">
+                  Saldo devedor
+                </Text>
+                <Text size="xs" fw={600}>
+                  {formatCurrency(weddingSupplier.saldo_devedor)}
+                </Text>
+              </Stack>
+            </Group>
+          </>
         ) : null}
         {/* {weddingSupplier && (onCreatePlan || onAddManual) ? (
           <Group grow mt="xs">

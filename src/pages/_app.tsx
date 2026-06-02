@@ -4,6 +4,7 @@ import "@mantine/core/styles.css";
 import "@mantine/carousel/styles.css";
 import "mantine-datatable/styles.layer.css";
 import '@mantine/notifications/styles.css';
+import '@mantine/dates/styles.css';
 
 import { appWithTranslation } from "next-i18next";
 import type { AppProps } from "next/app";
