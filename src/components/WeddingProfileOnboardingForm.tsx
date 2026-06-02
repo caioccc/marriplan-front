@@ -2,10 +2,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { toSentenceCase, toUpperCamelWords } from "@/lib/text";
 import api from "@/services/api";
-import { createWeddingSite, getWeddingSite, updateWeddingSite } from "@/services/weddingSite";
-import { deleteWeddingImage, uploadWeddingImage } from "@/services/weddingImage";
-import { primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
+  createWeddingSite,
+  getWeddingSite,
+  updateWeddingSite,
+} from "@/services/weddingSite";
+import {
+  deleteWeddingImage,
+  uploadWeddingImage,
+} from "@/services/weddingImage";
+import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
+import {
+  ActionIcon,
   Button,
   Group,
   Loader,
@@ -17,11 +25,10 @@ import { useForm } from "@mantine/form";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import axios from "axios";
 import { ptBR } from "date-fns/locale/pt-BR";
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "@mantine/hooks";
 
 import dayjs from "dayjs";
@@ -30,6 +37,13 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { Box, ScrollArea, Text, Stack } from "@mantine/core";
 import { IMaskInput } from "react-imask";
 import { ImageDropzone } from "./ImageUpload";
+import {
+  DatePickerInput,
+  DatesProvider,
+  TimeInput,
+  TimePicker,
+} from "@mantine/dates";
+import { IconCalendarClock, IconClockBitcoin } from "@tabler/icons-react";
 dayjs.extend(relativeTime);
 dayjs.locale("pt-br");
 
@@ -54,12 +68,16 @@ type WeddingImageLike = {
   name?: string;
 };
 
-function getWeddingImageId(image: WeddingImageLike | string | null | undefined) {
+function getWeddingImageId(
+  image: WeddingImageLike | string | null | undefined,
+) {
   if (!image || typeof image === "string") return null;
   return image.id ?? null;
 }
 
-function getWeddingImagePublicId(image: WeddingImageLike | string | null | undefined) {
+function getWeddingImagePublicId(
+  image: WeddingImageLike | string | null | undefined,
+) {
   if (!image || typeof image === "string") return "";
   return (
     image.id_cloudinary ||
@@ -126,23 +144,23 @@ export default function WeddingProfileOnboardingForm({
     nome_noivo: toUpperCamelWords(String(values.nome_noivo ?? "")),
     nome_noiva: toUpperCamelWords(String(values.nome_noiva ?? "")),
     local: toUpperCamelWords(String(values.local ?? "")),
-    bairro: toUpperCamelWords(String(values.bairro ?? "")),
-    cidade: toUpperCamelWords(String(values.cidade ?? "")),
-    estado: toUpperCamelWords(String(values.estado ?? "")),
-    descricao_noivo: toSentenceCase(String(values.descricao_noivo ?? "")),
-    descricao_noiva: toSentenceCase(String(values.descricao_noiva ?? "")),
-    frase_casal: toSentenceCase(String(values.frase_casal ?? "")),
-    historia: toSentenceCase(String(values.historia ?? "")),
+    // bairro: toUpperCamelWords(String(values.bairro ?? "")),
+    // cidade: toUpperCamelWords(String(values.cidade ?? "")),
+    // estado: toUpperCamelWords(String(values.estado ?? "")),
+    // descricao_noivo: toSentenceCase(String(values.descricao_noivo ?? "")),
+    // descricao_noiva: toSentenceCase(String(values.descricao_noiva ?? "")),
+    // frase_casal: toSentenceCase(String(values.frase_casal ?? "")),
+    // historia: toSentenceCase(String(values.historia ?? "")),
     email_noivo: String(values.email_noivo ?? "")
       .trim()
       .toLowerCase(),
     email_noiva: String(values.email_noiva ?? "")
       .trim()
       .toLowerCase(),
-    facebook_noivo: String(values.facebook_noivo ?? "").trim(),
-    instagram_noivo: String(values.instagram_noivo ?? "").trim(),
-    facebook_noiva: String(values.facebook_noiva ?? "").trim(),
-    instagram_noiva: String(values.instagram_noiva ?? "").trim(),
+    // facebook_noivo: String(values.facebook_noivo ?? "").trim(),
+    // instagram_noivo: String(values.instagram_noivo ?? "").trim(),
+    // facebook_noiva: String(values.facebook_noiva ?? "").trim(),
+    // instagram_noiva: String(values.instagram_noiva ?? "").trim(),
     data_casamento: values.data_casamento,
     hora_casamento: values.hora_casamento,
   });
@@ -152,29 +170,30 @@ export default function WeddingProfileOnboardingForm({
       nome_noivo: initial.nome_noivo ?? "",
       telefone_noivo: initial.telefone_noivo ?? "",
       email_noivo: initial.email_noivo ?? "",
-      descricao_noivo: initial.descricao_noivo ?? "",
-      facebook_noivo: initial.facebook_noivo ?? "",
-      instagram_noivo: initial.instagram_noivo ?? "",
+      // descricao_noivo: initial.descricao_noivo ?? "",
+      // facebook_noivo: initial.facebook_noivo ?? "",
+      // instagram_noivo: initial.instagram_noivo ?? "",
       nome_noiva: initial.nome_noiva ?? "",
       telefone_noiva: initial.telefone_noiva ?? "",
       email_noiva: initial.email_noiva ?? "",
-      descricao_noiva: initial.descricao_noiva ?? "",
-      facebook_noiva: initial.facebook_noiva ?? "",
-      instagram_noiva: initial.instagram_noiva ?? "",
+      // descricao_noiva: initial.descricao_noiva ?? "",
+      // facebook_noiva: initial.facebook_noiva ?? "",
+      // instagram_noiva: initial.instagram_noiva ?? "",
       data_casamento: initial.data_casamento ?? "",
       hora_casamento: parseTimeToDate(initial.hora_casamento),
       local: initial.local ?? "",
-      endereco: initial.endereco ?? "",
-      numero: initial.numero ?? "",
-      bairro: initial.bairro ?? "",
-      cidade: initial.cidade ?? "",
-      estado: initial.estado ?? "",
-      latitude: initial.latitude ?? null,
-      longitude: initial.longitude ?? null,
-      cep: initial.cep ?? "",
-      cor_principal: initial.cor_principal ?? "",
-      frase_casal: initial.frase_casal ?? "",
-      historia: initial.historia ?? "",
+      // endereco: initial.endereco ?? "",
+      // numero: initial.numero ?? "",
+      // bairro: initial.bairro ?? "",
+      // cidade: initial.cidade ?? "",
+      // estado: initial.estado ?? "",
+      // latitude: initial.latitude ?? null,
+      // longitude: initial.longitude ?? null,
+      // cep: initial.cep ?? "",
+      // cor_principal: initial.cor_principal ?? "",
+      // frase_casal: initial.frase_casal ?? "",
+      // historia: initial.historia ?? "",
+      // galeria: Array.isArray(initial.galeria) ? initial.galeria : [],
     },
     validate: {
       nome_noivo: (v) => (!v ? "Obrigatorio" : null),
@@ -189,13 +208,15 @@ export default function WeddingProfileOnboardingForm({
     },
   });
 
-  useEffect(() => {
-    if (form.values.latitude && form.values.longitude) {
-      setMapPosition([form.values.latitude, form.values.longitude]);
-    } else {
-      setMapPosition(null);
-    }
-  }, [form.values.latitude, form.values.longitude]);
+  // useEffect(() => {
+  //   if (form.values.latitude && form.values.longitude) {
+  //     setMapPosition([form.values.latitude, form.values.longitude]);
+  //   } else {
+  //     setMapPosition(null);
+  //   }
+  // }, [form.values.latitude, form.values.longitude]);
+
+  const [dropdownOpened, setDropdownOpened] = useState(false);
 
   const handleSave = async () => {
     if (!validateStep(0)) {
@@ -252,45 +273,45 @@ export default function WeddingProfileOnboardingForm({
   };
 
   // Busca endereco pelo CEP
-  const handleCepBlur = async () => {
-    setCepError(null);
-    const rawCep = form.values.cep.replace(/\D/g, "");
-    if (rawCep.length !== 8) {
-      setCepError("CEP invalido");
-      return;
-    }
-    setCepLoading(true);
-    try {
-      const { data } = await axios.get(
-        `https://viacep.com.br/ws/${rawCep}/json/`,
-      );
-      if (!data.erro) {
-        form.setFieldValue("endereco", data.logradouro ?? "");
-        form.setFieldValue("bairro", data.bairro ?? "");
-        form.setFieldValue("cidade", data.localidade ?? "");
-        form.setFieldValue("estado", data.uf ?? "");
-        form.setFieldValue("cep", data.cep ?? rawCep);
-      } else {
-        setCepError("CEP nao encontrado");
-      }
-    } catch {
-      setCepError("Erro ao buscar CEP");
-    }
-    setCepLoading(false);
-  };
+  // const handleCepBlur = async () => {
+  //   setCepError(null);
+  //   const rawCep = form.values.cep.replace(/\D/g, "");
+  //   if (rawCep.length !== 8) {
+  //     setCepError("CEP invalido");
+  //     return;
+  //   }
+  //   setCepLoading(true);
+  //   try {
+  //     const { data } = await axios.get(
+  //       `https://viacep.com.br/ws/${rawCep}/json/`,
+  //     );
+  //     if (!data.erro) {
+  //       form.setFieldValue("endereco", data.logradouro ?? "");
+  //       form.setFieldValue("bairro", data.bairro ?? "");
+  //       form.setFieldValue("cidade", data.localidade ?? "");
+  //       form.setFieldValue("estado", data.uf ?? "");
+  //       form.setFieldValue("cep", data.cep ?? rawCep);
+  //     } else {
+  //       setCepError("CEP nao encontrado");
+  //     }
+  //   } catch {
+  //     setCepError("Erro ao buscar CEP");
+  //   }
+  //   setCepLoading(false);
+  // };
 
   // Funcao para buscar endereco pelas coordenadas (reverse geocode)
-  async function reverseGeocode(lat: number, lon: number) {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-      return data.address || {};
-    } catch {
-      console.error("Erro ao fazer reverse geocoding:");
-      return {};
-    }
-  }
+  // async function reverseGeocode(lat: number, lon: number) {
+  //   const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`;
+  //   try {
+  //     const res = await fetch(url);
+  //     const data = await res.json();
+  //     return data.address || {};
+  //   } catch {
+  //     console.error("Erro ao fazer reverse geocoding:");
+  //     return {};
+  //   }
+  // }
 
   // Funcao para checar se os campos obrigatorios do step atual estao preenchidos
   function isStepValid(step: number): boolean {
@@ -311,8 +332,8 @@ export default function WeddingProfileOnboardingForm({
       form.clearFieldError("nome_noivo");
       form.clearFieldError("telefone_noivo");
       form.clearFieldError("email_noivo");
-      form.clearFieldError("facebook_noivo");
-      form.clearFieldError("instagram_noivo");
+      // form.clearFieldError("facebook_noivo");
+      // form.clearFieldError("instagram_noivo");
 
       let hasError = false;
       if (!form.values.nome_noivo) {
@@ -330,14 +351,14 @@ export default function WeddingProfileOnboardingForm({
         form.setFieldError("email_noivo", "Email invalido");
         hasError = true;
       }
-      if (!isValidOptionalUrl(form.values.facebook_noivo)) {
-        form.setFieldError("facebook_noivo", "URL invalida");
-        hasError = true;
-      }
-      if (!isValidOptionalUrl(form.values.instagram_noivo)) {
-        form.setFieldError("instagram_noivo", "URL invalida");
-        hasError = true;
-      }
+      // if (!isValidOptionalUrl(form.values.facebook_noivo)) {
+      //   form.setFieldError("facebook_noivo", "URL invalida");
+      //   hasError = true;
+      // }
+      // if (!isValidOptionalUrl(form.values.instagram_noivo)) {
+      //   form.setFieldError("instagram_noivo", "URL invalida");
+      //   hasError = true;
+      // }
       return !hasError;
     }
 
@@ -345,8 +366,8 @@ export default function WeddingProfileOnboardingForm({
       form.clearFieldError("nome_noiva");
       form.clearFieldError("telefone_noiva");
       form.clearFieldError("email_noiva");
-      form.clearFieldError("facebook_noiva");
-      form.clearFieldError("instagram_noiva");
+      // form.clearFieldError("facebook_noiva");
+      // form.clearFieldError("instagram_noiva");
 
       let hasError = false;
       if (!form.values.nome_noiva) {
@@ -364,14 +385,14 @@ export default function WeddingProfileOnboardingForm({
         form.setFieldError("email_noiva", "Email invalido");
         hasError = true;
       }
-      if (!isValidOptionalUrl(form.values.facebook_noiva)) {
-        form.setFieldError("facebook_noiva", "URL invalida");
-        hasError = true;
-      }
-      if (!isValidOptionalUrl(form.values.instagram_noiva)) {
-        form.setFieldError("instagram_noiva", "URL invalida");
-        hasError = true;
-      }
+      // if (!isValidOptionalUrl(form.values.facebook_noiva)) {
+      //   form.setFieldError("facebook_noiva", "URL invalida");
+      //   hasError = true;
+      // }
+      // if (!isValidOptionalUrl(form.values.instagram_noiva)) {
+      //   form.setFieldError("instagram_noiva", "URL invalida");
+      //   hasError = true;
+      // }
       return !hasError;
     }
 
@@ -394,12 +415,19 @@ export default function WeddingProfileOnboardingForm({
     return true;
   }
 
-  const mobileStepTitles = [
-    "Dados do noivo",
-    "Dados da noiva",
-    "Evento",
-    "História",
-  ];
+  const mobileStepTitles = ["Dados do noivo", "Dados da noiva", "Evento"];
+
+  const ref = useRef<HTMLInputElement>(null);
+
+  const pickerControl = (
+    <ActionIcon
+      variant="subtle"
+      color="gray"
+      onClick={() => ref.current?.showPicker()}
+    >
+      <IconClockBitcoin size={16} />
+    </ActionIcon>
+  );
 
   const renderMobileStepContent = () => {
     if (active === 0) {
@@ -424,7 +452,7 @@ export default function WeddingProfileOnboardingForm({
             mb="md"
             type="email"
           />
-          <Textarea
+          {/* <Textarea
             label="Descricao do noivo"
             {...form.getInputProps("descricao_noivo")}
             minRows={4}
@@ -443,7 +471,7 @@ export default function WeddingProfileOnboardingForm({
             {...form.getInputProps("instagram_noivo")}
             mb="md"
             placeholder="Link do Instagram"
-          />
+          /> */}
         </>
       );
     }
@@ -470,7 +498,7 @@ export default function WeddingProfileOnboardingForm({
             mb="md"
             type="email"
           />
-          <Textarea
+          {/* <Textarea
             label="Descricao da noiva"
             {...form.getInputProps("descricao_noiva")}
             minRows={4}
@@ -489,7 +517,7 @@ export default function WeddingProfileOnboardingForm({
             {...form.getInputProps("instagram_noiva")}
             mb="md"
             placeholder="Link do Instagram"
-          />
+          /> */}
         </>
       );
     }
@@ -502,7 +530,7 @@ export default function WeddingProfileOnboardingForm({
             {...form.getInputProps("local")}
             mt="md"
           />
-          {mapPosition && (
+          {/* {mapPosition && (
             <LeafletMap
               mapPosition={mapPosition}
               setMapPosition={setMapPosition}
@@ -542,65 +570,51 @@ export default function WeddingProfileOnboardingForm({
             {...form.getInputProps("frase_casal")}
             mt="md"
             placeholder="Alguma frase que representa a sua uniao."
-          />
-          <LocalizationProvider
-            dateAdapter={AdapterDateFns}
-            adapterLocale={ptBR}
-          >
-            <Stack gap="36px" w="100%" mt="md">
-              <DatePicker
-                label="Data do casamento"
-                value={
-                  form.values.data_casamento
-                    ? new Date(form.values.data_casamento)
-                    : null
+          /> */}
+          <DatesProvider settings={{ locale: "pt-br" }}>
+            <DatePickerInput
+              valueFormat="DD/MM/YYYY"
+              label="Data do casamento"
+              value={
+                form.values.data_casamento
+                  ? new Date(form.values.data_casamento)
+                  : null
+              }
+              onChange={(date) => form.setFieldValue("data_casamento", date)}
+            />
+            <TimePicker
+              label="Hora do casamento"
+              withDropdown
+              rightSection={
+                <ActionIcon
+                  onClick={() => setDropdownOpened((prev) => !prev)}
+                  variant="default"
+                >
+                  <IconCalendarClock size={18} />
+                </ActionIcon>
+              }
+              value={
+                form.values.hora_casamento
+                  ? String(
+                      new Date(form.values.hora_casamento)
+                        .toTimeString()
+                        .slice(0, 5),
+                    )
+                  : ""
+              }
+              onChange={(value) => {
+                form.setFieldValue("hora_casamento", value);
+                if (value === "") {
+                  setDropdownOpened(false);
                 }
-                onChange={(date) => form.setFieldValue("data_casamento", date)}
-                slotProps={{
-                  textField: {
-                    fullWidth: true,
-                    required: true,
-                    placeholder: "Selecione a data",
-                    sx: {
-                      height: 36,
-                      minHeight: 36,
-                      ".MuiInputBase-input": {
-                        height: 36,
-                        minHeight: 36,
-                        padding: "0 12px",
-                      },
-                    },
-                  },
-                }}
-                format="dd/MM/yyyy"
-              />
-              <TimePicker
-                label="Hora do casamento"
-                value={form.values.hora_casamento}
-                onChange={(value) =>
-                  form.setFieldValue("hora_casamento", value)
-                }
-                ampm={false}
-                minutesStep={1}
-                slotProps={{
-                  textField: {
-                    fullWidth: true,
-                    required: true,
-                    placeholder: "00:00",
-                    sx: {
-                      height: 36,
-                      minHeight: 36,
-                      ".MuiInputBase-input": {
-                        height: 36,
-                        minHeight: 36,
-                        padding: "0 12px",
-                      },
-                    },
-                  },
-                }}
-              />
-            </Stack>
-          </LocalizationProvider>
+              }}
+              popoverProps={{
+                opened: dropdownOpened,
+                onChange: (_opened) => !_opened && setDropdownOpened(false),
+              }}
+            />
+
+          </DatesProvider>
         </>
       );
     }
@@ -748,7 +762,7 @@ export default function WeddingProfileOnboardingForm({
             mb="md"
             type="email"
           />
-          <Textarea
+          {/* <Textarea
             label="Descricao do noivo"
             {...form.getInputProps("descricao_noivo")}
             minRows={4}
@@ -767,7 +781,7 @@ export default function WeddingProfileOnboardingForm({
             {...form.getInputProps("instagram_noivo")}
             mb="md"
             placeholder="Link do Instagram"
-          />
+          /> */}
         </Stepper.Step>
         <Stepper.Step label="Dados da noiva">
           <TextInput
@@ -791,7 +805,7 @@ export default function WeddingProfileOnboardingForm({
             mb="md"
             type="email"
           />
-          <Textarea
+          {/* <Textarea
             label="Descricao da noiva"
             {...form.getInputProps("descricao_noiva")}
             minRows={4}
@@ -810,7 +824,7 @@ export default function WeddingProfileOnboardingForm({
             {...form.getInputProps("instagram_noiva")}
             mb="md"
             placeholder="Link do Instagram"
-          />
+          /> */}
         </Stepper.Step>
         <Stepper.Step label="Evento">
           <TextInput
@@ -818,7 +832,7 @@ export default function WeddingProfileOnboardingForm({
             {...form.getInputProps("local")}
             mt="md"
           />
-          {mapPosition && (
+          {/* {mapPosition && (
             <LeafletMap
               mapPosition={mapPosition}
               setMapPosition={setMapPosition}
@@ -860,80 +874,64 @@ export default function WeddingProfileOnboardingForm({
             {...form.getInputProps("frase_casal")}
             mt="md"
             placeholder="Alguma frase que representa a sua uniao."
-          />
-          <Group grow>
-            <LocalizationProvider
-              dateAdapter={AdapterDateFns}
-              adapterLocale={ptBR}
-            >
-              <Group
-                gap="md"
-                style={{
-                  alignItems: "flex-end",
-                  flexWrap: "nowrap",
-                  width: "100%",
-                  marginTop: 16,
-                  marginBottom: 16,
+          /> */}
+          <Group justify="space-between" gap="md" grow my="md">
+            <DatesProvider settings={{ locale: "pt-br" }}>
+              <DatePickerInput
+                valueFormat="DD/MM/YYYY"
+                label="Data do casamento"
+                value={
+                  form.values.data_casamento
+                    ? new Date(form.values.data_casamento)
+                    : null
+                }
+                onChange={(date) => form.setFieldValue("data_casamento", date)}
+              />
+              <TimePicker
+                label="Hora do casamento"
+                withDropdown
+                rightSection={
+                  <ActionIcon
+                    onClick={() => setDropdownOpened((prev) => !prev)}
+                    variant="default"
+                  >
+                    <IconCalendarClock size={18} />
+                  </ActionIcon>
+                }
+                value={
+                  form.values.hora_casamento
+                    ? String(
+                        new Date(form.values.hora_casamento)
+                          .toTimeString()
+                          .slice(0, 5),
+                      )
+                    : ""
+                }
+                onChange={(value) => {
+                  form.setFieldValue("hora_casamento", value);
+                  if (value === "") {
+                    setDropdownOpened(false);
+                  }
                 }}
-              >
-                <DatePicker
-                  label="Data do casamento"
-                  value={
-                    form.values.data_casamento
-                      ? new Date(form.values.data_casamento)
-                      : null
-                  }
-                  onChange={(date) =>
-                    form.setFieldValue("data_casamento", date)
-                  }
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      required: true,
-                      placeholder: "Selecione a data",
-                      sx: {
-                        height: 36,
-                        minHeight: 36,
-                        ".MuiInputBase-input": {
-                          height: 36,
-                          minHeight: 36,
-                          padding: "0 12px",
-                        },
-                      },
-                      style: { flex: 1 },
-                    },
-                  }}
-                  format="dd/MM/yyyy"
-                />
-                <TimePicker
-                  label="Hora do casamento"
-                  value={form.values.hora_casamento}
-                  onChange={(value) =>
-                    form.setFieldValue("hora_casamento", value)
-                  }
-                  ampm={false}
-                  minutesStep={1}
-                  slotProps={{
-                    textField: {
-                      fullWidth: true,
-                      required: true,
-                      placeholder: "00:00",
-                      sx: {
-                        height: 36,
-                        minHeight: 36,
-                        ".MuiInputBase-input": {
-                          height: 36,
-                          minHeight: 36,
-                          padding: "0 12px",
-                        },
-                      },
-                      style: { flex: 1 },
-                    },
-                  }}
-                />
-              </Group>
-            </LocalizationProvider>
+                popoverProps={{
+                  opened: dropdownOpened,
+                  onChange: (_opened) => !_opened && setDropdownOpened(false),
+                }}
+              />
+            </DatesProvider>
           </Group>
+
+          {/* <TimeInput
+              label="Hora do casamento"
+              ref={ref}
+              rightSection={pickerControl}
+              value={
+                form.values.hora_casamento
+                  ? new Date(form.values.hora_casamento)
+                  : null
+              }
+              onChange={(value) => form.setFieldValue("hora_casamento", value)}
+            /> */}
         </Stepper.Step>
         <Stepper.Step label="Historia">
           <Textarea

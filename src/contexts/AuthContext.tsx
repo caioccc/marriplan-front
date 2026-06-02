@@ -42,6 +42,7 @@ export const unprotectedRoutes = [
   "/guests/thank-you",
   "/moodboard/[id]",
   "/public/moodboard/[id]",
+  "/financeiro/simulacao/[token]",
 ];
 
 type AuthProviderProps = {

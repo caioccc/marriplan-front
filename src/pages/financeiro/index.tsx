@@ -47,7 +47,7 @@ import {
   IconRefresh,
   IconTrash,
 } from "@tabler/icons-react";
-import { DollarSignIcon } from "lucide-react";
+import { BadgeDollarSignIcon, DollarSignIcon } from "lucide-react";
 import { useRouter } from "next/router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -509,12 +509,14 @@ export default function FinanceiroPage() {
           description="Centralize vencimentos, saldos devedores e ações de pagamento dos fornecedores contratados."
           actions={
             <Button
-              leftSection={<IconRefresh size={18} />}
+              leftSection={<BadgeDollarSignIcon size={18} />}
               styles={softButtonStyles}
               variant="default"
-              onClick={() => void loadParcelas()}
+              onClick={() => {
+                 router.push("/financeiro/simulacao")
+              }}
             >
-              Atualizar
+              Simular Custos
             </Button>
           }
           filters={
@@ -1048,7 +1050,6 @@ export default function FinanceiroPage() {
 
               <ScrollArea
                 type="auto"
-                style={{ maxHeight: 420 }}
                 styles={{ viewport: { paddingBottom: 12 } }}
               >
                 <Stack gap="sm">
@@ -1279,7 +1280,7 @@ export default function FinanceiroPage() {
 
           {planPreview.length ? (
             <Stack gap="sm">
-              <ScrollArea type="auto" style={{ maxHeight: 360 }}>
+              <ScrollArea type="auto">
                 <Table withTableBorder withColumnBorders highlightOnHover>
                   <Table.Thead>
                     <Table.Tr>

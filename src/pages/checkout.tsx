@@ -77,9 +77,9 @@ export default function CheckoutPage() {
               fw={700}
               style={{ letterSpacing: 2, color: "var(--marriplan-rose)" }}
             >
-              Billing
+              Upgrade de plano
             </Text>
-            <Title order={2}>Checkout Premium</Title>
+            <Title order={2}>Checkout</Title>
             {loading && !errorMessage && !success && !canceled && (
               <Group gap="sm">
                 <IconLoader2 size={18} className="animate-spin" />
@@ -111,9 +111,9 @@ export default function CheckoutPage() {
               Seu plano Premium libera convidados ilimitados, checklist completo, inspirações salvas, exportações e IA.
             </Text>
             {/* Aviso de redirecionamento automático */}
-            <Alert variant="light" color="blue">
+            {/* <Alert variant="light" color="blue">
               Você será redirecionado automaticamente ao Stripe Checkout em instantes. Se preferir, clique em Ir para o Stripe.
-            </Alert>
+            </Alert> */}
 
             <Group justify="space-between" wrap="wrap">
               <Button
