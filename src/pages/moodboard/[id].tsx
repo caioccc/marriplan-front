@@ -12,15 +12,19 @@ import {
   WeddingIdentityInspirationApiItem,
 } from "@/types/weddingIdentity";
 import {
+  ActionIcon,
   Box,
   Card,
+  CloseButton,
   Container,
   Group,
   Image,
+  Modal,
   SimpleGrid,
   Stack,
   Text,
 } from "@mantine/core";
+import { IconMaximize } from "@tabler/icons-react";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 
@@ -32,12 +36,20 @@ type PublicMoodboardData = {
   inspirations?: WeddingIdentityInspirationApiItem[];
 };
 
+type FullscreenImageState = {
+  src: string;
+  alt: string;
+};
+
 export default function PublicMoodboardPage() {
   const router = useRouter();
   const { id } = router.query;
   const [data, setData] = useState<PublicMoodboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const token = Array.isArray(id) ? id[0] : id;
+
+  const [fullscreenImage, setFullscreenImage] =
+    useState<FullscreenImageState | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -74,6 +86,14 @@ export default function PublicMoodboardPage() {
   const dressesImage = data.dress_code
     ? DRESS_CODE_REFERENCE_IMAGES[data.dress_code]
     : undefined;
+
+  const openFullscreenImage = (src: string, alt: string) => {
+    setFullscreenImage({ src, alt });
+  };
+
+  const closeFullscreenImage = () => {
+    setFullscreenImage(null);
+  };
 
   const renderFallbackVisual = (
     label: string,
@@ -212,168 +232,179 @@ export default function PublicMoodboardPage() {
           </Card>
         </SimpleGrid>
 
-        <Card withBorder radius="lg" p="lg">
-          <Stack gap="md">
-            <Text
-              size="sm"
-              c="dimmed"
-              tt="uppercase"
-              fw={700}
-              style={{ letterSpacing: 1.2 }}
+        <Stack gap="md">
+          <Text size="sm" c="dimmed" tt="uppercase" fw={700} lts={1.2}>
+            Dress Code e Estilo Visual
+          </Text>
+          <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
+            <Card
+              withBorder
+              radius="lg"
+              p={0}
+              style={{ overflow: "hidden", height: "100%", minHeight: 420 }}
             >
-              Prévia da Paleta
-            </Text>
-            <Group gap={10} align="flex-start" wrap="nowrap">
-              {data.palette?.map((c) => (
-                <Stack key={c.id} gap={8} align="center" style={{ flex: 1 }}>
-                  <Card
-                    withBorder
-                    radius="md"
-                    p={0}
-                    style={{
-                      height: 80,
-                      width: "100%",
-                      aspectRatio: "1",
-                      background: c.hex,
-                      boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-                    }}
-                  />
-                  <Text size="9px" c="dimmed" ta="center" fw={600}>
-                    {c.hex}
-                  </Text>
-                </Stack>
-              ))}
-            </Group>
-          </Stack>
-        </Card>
-
-        <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md">
-          <Card
-            withBorder
-            radius="lg"
-            p={0}
-            style={{ overflow: "hidden", height: "100%", minHeight: 420 }}
-          >
-            <Box
-              style={{
-                position: "relative",
-                width: "100%",
-                height: "100%",
-                minHeight: 420,
-              }}
-            >
-              {styleImage ? (
-                <Image
-                  src={styleImage}
-                  alt={styleData?.label || "Estilo Nao Definido"}
-                  w="100%"
-                  h="100%"
-                  fit="cover"
-                  style={{ position: "absolute", inset: 0 }}
-                />
-              ) : (
-                renderFallbackVisual(
-                  styleData?.label || "Estilo Nao Definido",
-                  styleData?.emoji || "✦",
-                  "linear-gradient(135deg,#1a1a1a,#3a3a3a)",
-                )
-              )}
               <Box
                 style={{
-                  position: "absolute",
-                  inset: 0,
-                  background:
-                    "linear-gradient(180deg, rgba(20,14,10,0.02) 0%, rgba(20,14,10,0.18) 40%, rgba(20,14,10,0.86) 100%)",
-                }}
-              />
-              <Stack
-                justify="flex-end"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  padding: 20,
-                  zIndex: 2,
+                  position: "relative",
+                  width: "100%",
+                  height: "100%",
+                  minHeight: 420,
                 }}
               >
-                <Text c="white" fw={700} size="xl" style={{ lineHeight: 1.1 }}>
-                  {styleData?.label || "Estilo Nao Definido"}
-                </Text>
-                <Text c="rgba(255,255,255,0.8)" size="sm">
-                  {styleData?.subtitle || ""}
-                </Text>
-              </Stack>
-            </Box>
-          </Card>
-
-          <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-            {dressesImage &&
-              Object.entries(dressesImage).map(([key, imageUrl]) => {
-                const label = key.charAt(0).toUpperCase() + key.slice(1);
-                const emoji =
-                  key === "noivo" ? "🤵" : key === "noiva" ? "👰" : "👥";
-
-                return (
-                  <Card
-                    key={key}
-                    withBorder
-                    radius="lg"
-                    p={0}
-                    style={{ overflow: "hidden", minHeight: 200 }}
+                {styleImage ? (
+                  <Image
+                    src={styleImage}
+                    alt={styleData?.label || "Estilo Nao Definido"}
+                    w="100%"
+                    h="100%"
+                    fit="cover"
+                    style={{ position: "absolute", inset: 0 }}
+                  />
+                ) : (
+                  renderFallbackVisual(
+                    styleData?.label || "Estilo Nao Definido",
+                    styleData?.emoji || "✦",
+                    "linear-gradient(135deg,#1a1a1a,#3a3a3a)",
+                  )
+                )}
+                <Box
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background:
+                      "linear-gradient(180deg, rgba(20,14,10,0.02) 0%, rgba(20,14,10,0.18) 40%, rgba(20,14,10,0.86) 100%)",
+                  }}
+                />
+                <Stack
+                  justify="flex-end"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    padding: 20,
+                    zIndex: 2,
+                  }}
+                >
+                  <Text
+                    c="white"
+                    fw={700}
+                    size="xl"
+                    style={{ lineHeight: 1.1 }}
                   >
-                    <Box
+                    {styleData?.label || "Estilo Nao Definido"}
+                  </Text>
+                  <Text c="rgba(255,255,255,0.8)" size="sm">
+                    {styleData?.subtitle || ""}
+                  </Text>
+                </Stack>
+              </Box>
+            </Card>
+
+            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+              {dressesImage &&
+                Object.entries(dressesImage).map(([key, imageUrl]) => {
+                  const label = key.charAt(0).toUpperCase() + key.slice(1);
+                  const emoji =
+                    key === "noivo" ? "🤵" : key === "noiva" ? "👰" : "👥";
+
+                  return (
+                    <Card
+                      key={key}
+                      withBorder
+                      radius="lg"
+                      p={0}
                       style={{
+                        overflow: "hidden",
+                        minHeight: 200,
                         position: "relative",
-                        width: "100%",
-                        aspectRatio: "4 / 5",
                       }}
                     >
-                      {imageUrl ? (
-                        <Image
-                          src={imageUrl}
-                          alt={label}
-                          w="100%"
-                          h="100%"
-                          fit="cover"
-                          style={{ position: "absolute", inset: 0 }}
-                        />
-                      ) : (
-                        renderFallbackVisual(
-                          label,
-                          emoji,
-                          key === "noivo"
-                            ? "linear-gradient(135deg,#1a1a1a,#3a3a3a)"
-                            : key === "noiva"
-                            ? `linear-gradient(135deg,${
-                                dressData?.color || "#C9A96E"
-                              }88,${dressData?.color || "#C9A96E"}44)`
-                            : "linear-gradient(135deg,#2a2a3a,#3a3a5a)",
-                        )
-                      )}
                       <Box
                         style={{
-                          position: "absolute",
-                          inset: 0,
-                          background:
-                            "linear-gradient(180deg, rgba(20,14,10,0.04) 0%, rgba(20,14,10,0.1) 100%)",
+                          position: "relative",
+                          width: "100%",
+                          aspectRatio: "4 / 5",
                         }}
-                      />
-                      <Text
-                        pos="absolute"
-                        bottom={10}
-                        left={12}
-                        c="white"
-                        fw={700}
-                        size="sm"
-                        style={{ zIndex: 2 }}
                       >
-                        {label}
-                      </Text>
-                    </Box>
-                  </Card>
-                );
-              })}
+                        {imageUrl ? (
+                          <Image
+                            src={imageUrl}
+                            alt={label}
+                            w="100%"
+                            h="100%"
+                            fit="cover"
+                            style={{ position: "absolute", inset: 0 }}
+                          />
+                        ) : (
+                          renderFallbackVisual(
+                            label,
+                            emoji,
+                            key === "noivo"
+                              ? "linear-gradient(135deg,#1a1a1a,#3a3a3a)"
+                              : key === "noiva"
+                              ? `linear-gradient(135deg,${
+                                  dressData?.color || "#C9A96E"
+                                }88,${dressData?.color || "#C9A96E"}44)`
+                              : "linear-gradient(135deg,#2a2a3a,#3a3a5a)",
+                          )
+                        )}
+                        <Box
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            background:
+                              "linear-gradient(180deg, rgba(20,14,10,0.04) 0%, rgba(20,14,10,0.1) 100%)",
+                          }}
+                        />
+                        <Stack
+                          justify="flex-end"
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            padding: 20,
+                            zIndex: 2,
+                          }}
+                        >
+                          <Text
+                            pos="absolute"
+                            bottom={10}
+                            left={12}
+                            c="white"
+                            fw={700}
+                            size="sm"
+                            style={{ zIndex: 2 }}
+                          >
+                            {label}
+                          </Text>
+                        </Stack>
+                        <ActionIcon
+                          variant="filled"
+                          color="dark"
+                          radius="xl"
+                          size="md"
+                          aria-label="Abrir imagem em fullscreen"
+                          onClick={() =>
+                            openFullscreenImage(
+                              imageUrl,
+                              label || "Estilo Não Definido",
+                            )
+                          }
+                          style={{
+                            position: "absolute",
+                            top: 12,
+                            right: 12,
+                            zIndex: 3,
+                            boxShadow: "0 2px 10px rgba(0,0,0,0.22)",
+                          }}
+                        >
+                          <IconMaximize size={14} />
+                        </ActionIcon>
+                      </Box>
+                    </Card>
+                  );
+                })}
+            </SimpleGrid>
           </SimpleGrid>
-        </SimpleGrid>
+        </Stack>
 
         {inspirations.length > 0 && (
           <Stack gap="md">
@@ -383,24 +414,104 @@ export default function PublicMoodboardPage() {
             <SimpleGrid cols={{ base: 2, sm: 3, md: 4 }} spacing="sm">
               {inspirations.map((item: WeddingIdentityInspirationApiItem) => (
                 <Card
+                  className="marriplan-card"
                   key={item.id}
                   withBorder
                   radius="md"
                   p={0}
-                  style={{ overflow: "hidden" }}
+                  style={{ overflow: "hidden", position: "relative" }}
                 >
-                  <Image
-                    src={item.image_url}
-                    fit="cover"
-                    style={{ height: "350px" }}
-                    alt="Inspiração salva"
-                  />
+                  <Box style={{ position: "relative" }}>
+                    <Image
+                      src={item.image_url}
+                      fit="cover"
+                      style={{ height: "300px" }}
+                      alt="Inspiração salva"
+                    />
+
+                    <ActionIcon
+                      variant="filled"
+                      color="dark"
+                      radius="xl"
+                      size="sm"
+                      aria-label="Abrir imagem em fullscreen"
+                      onClick={() =>
+                        openFullscreenImage(item.image_url, "Inspiração salva")
+                      }
+                      style={{
+                        position: "absolute",
+                        top: 10,
+                        right: 10,
+                        zIndex: 3,
+                        boxShadow: "0 2px 10px rgba(0,0,0,0.22)",
+                      }}
+                    >
+                      <IconMaximize size={13} />
+                    </ActionIcon>
+                  </Box>
                 </Card>
               ))}
             </SimpleGrid>
           </Stack>
         )}
       </Stack>
+
+      <Modal
+        opened={Boolean(fullscreenImage)}
+        onClose={closeFullscreenImage}
+        fullScreen
+        withCloseButton={false}
+        centered={false}
+        zIndex={1000}
+        size="100%"
+        radius="lg"
+        padding={0}
+        styles={{
+          content: {
+            background: "var(--mantine-color-body)",
+          },
+          body: {
+            height: "100%",
+            padding: 0,
+            background: "var(--mantine-color-body)",
+          },
+        }}
+      >
+        {fullscreenImage ? (
+          <Box
+            style={{
+              width: "100%",
+              height: "100dvh",
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: 24,
+              background: "var(--mantine-color-body)",
+            }}
+          >
+            <CloseButton
+              onClick={closeFullscreenImage}
+              aria-label="Fechar fullscreen"
+              size="lg"
+              style={{
+                position: "absolute",
+                top: 16,
+                right: 16,
+                zIndex: 3,
+              }}
+            />
+            <Image
+              src={fullscreenImage.src}
+              alt={fullscreenImage.alt}
+              fit="contain"
+              w="100%"
+              h="100%"
+              style={{ maxHeight: "100%" }}
+            />
+          </Box>
+        ) : null}
+      </Modal>
     </Container>
   );
 }

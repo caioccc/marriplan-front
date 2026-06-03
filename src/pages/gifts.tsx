@@ -7,24 +7,26 @@ import { MarkAsPurchasedModal } from "@/components/MarkAsPurchasedModal";
 import { MarriplanStatusBadge } from "@/components/MarriplanStatusBadge";
 import PageSectionHeader from "@/components/PageSectionHeader";
 import { PixSettingsModal } from "@/components/gifts/pix/PixSettingsModal";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  getAllCategoryOptions,
+  getCategoryOptionsFromSlugs,
+} from "@/lib/giftCategories";
 import { giftsService } from "@/services/giftsService";
 import { guests_list } from "@/services/guests";
-import { useAuth } from "@/contexts/AuthContext";
 import {
   inputStyles,
   primaryButtonStyles,
   segmentedTabsStyles,
   softButtonStyles,
 } from "@/styles";
-import {
-  getCategoryOptionsFromSlugs,
-  getAllCategoryOptions,
-} from "@/lib/giftCategories";
 import { Gift } from "@/types/gift";
 import {
   ActionIcon,
+  Badge,
   Box,
   Button,
+  Card,
   Flex,
   Group,
   Menu,
@@ -35,6 +37,7 @@ import {
   Stack,
   Text,
   TextInput,
+  Title,
   Tooltip,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
@@ -101,6 +104,7 @@ const paginationThemeStyles = `
 
 const GiftsPage: NextPage = () => {
   const router = useRouter();
+  const isMobile = useMediaQuery("(max-width: 600px)");
   const { user } = useAuth();
   const [gifts, setGifts] = useState<Gift[]>([]);
   const [status, setStatus] = useState("");
@@ -134,7 +138,7 @@ const GiftsPage: NextPage = () => {
     null,
   );
   const [viewMode, setViewMode] = useState<"table" | "cards" | "gallery">(
-    "table",
+    "gallery",
   );
   const isCompactLayout = useMediaQuery("(max-width: 1024px)");
   const pageSize = 10;
@@ -236,7 +240,12 @@ const GiftsPage: NextPage = () => {
   }
 
   async function refreshGiftList() {
-    const res = await giftsService.listGifts({ page, status, search, category });
+    const res = await giftsService.listGifts({
+      page,
+      status,
+      search,
+      category,
+    });
     setGifts(res.results);
     setTotal(res.count);
     return res;
@@ -277,11 +286,20 @@ const GiftsPage: NextPage = () => {
   const handleConfirmMark = async (purchasedBy: string) => {
     if (!markModal.gift) return;
     setLoading(true);
-    await giftsService.markAsPurchased(markModal.gift.id, {
-      purchased_by: purchasedBy,
-    });
-    refreshGiftList().finally(() => setLoading(false));
-    setMarkModal({ open: false });
+    await giftsService
+      .markAsPurchased(markModal.gift.id, {
+        purchased_by: purchasedBy,
+      })
+      .then(() => {
+        refreshGiftList().finally(() => setLoading(false));
+        setMarkModal({ open: false });
+      })
+      .catch(() => {
+        notifications.show({
+          color: "red",
+          message: "Não foi possível marcar o presente como comprado.",
+        });
+      });
   };
 
   const handleConfirmDeleteGift = async () => {
@@ -805,7 +823,9 @@ const GiftsPage: NextPage = () => {
                         <ActionIcon
                           variant="subtle"
                           color="red"
-                          onClick={() => setDeleteModal({ open: true, gift: g })}
+                          onClick={() =>
+                            setDeleteModal({ open: true, gift: g })
+                          }
                         >
                           <IconTrash size={18} />
                         </ActionIcon>
@@ -834,154 +854,319 @@ const GiftsPage: NextPage = () => {
           </Box>
         )}
         {viewMode === "cards" && (
-          <ListView
-            items={gifts}
-            getItemId={(g) => g.id}
-            getImageUrl={(g) => g.image}
-            fallbackIcon={
-              <IconGift size={48} color="var(--mantine-color-gray-5)" />
-            }
-            renderContent={(g) => (
-              <>
-                <Text fw={500} lineClamp={2}>
-                  {g.name}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  Valor: R$ {g.value}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  Categoria:{" "}
-                  {categoryOptions.find((c) => c.value === g.category)?.label ||
-                    g.category}
-                </Text>
-                {g.link && (
-                  <Text
-                    size="sm"
-                    c="blue"
-                    style={{ cursor: "pointer" }}
-                    onClick={() => window.open(g.link, "_blank")}
-                  >
-                    Ver link
-                  </Text>
-                )}
-              </>
-            )}
-            renderStatus={(g) => (
-              <MarriplanStatusBadge kind="gift" status={g.status} />
-            )}
-            renderActions={(g) => (
-              <>
-                {g.status === "available" && (
-                  <Menu.Item
-                    leftSection={<IconCheck size={14} />}
-                    onClick={() => handleMarkAsPurchased(g)}
-                  >
-                    Marcar como comprado
-                  </Menu.Item>
-                )}
-                {(g.status === "purchased" || g.status === "reserved") && (
-                  <Menu.Item
-                    leftSection={<IconStatusChange size={14} />}
-                    onClick={() => handleMarkAsAvailable(g)}
-                  >
-                    Marcar como disponível
-                  </Menu.Item>
-                )}
-                {g.link && (
-                  <Menu.Item
-                    leftSection={<IconEye size={14} />}
-                    onClick={() => window.open(g.link, "_blank")}
-                  >
-                    Ver presente
-                  </Menu.Item>
-                )}
-                <Menu.Item
-                  leftSection={<IconEdit size={14} />}
-                  onClick={() => {
-                    setEditingGift(g);
-                    setModalOpen(true);
+          <>
+            {gifts.length === 0 && (
+              <Card
+                radius="xl"
+                withBorder
+                p="xl"
+                style={{
+                  position: "relative",
+                  overflow: "hidden",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(246,238,228,0.92) 100%)",
+                  border: "1px solid var(--marriplan-border)",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: "auto -36px -36px auto",
+                    width: 180,
+                    height: 180,
+                    borderRadius: "50%",
+                    background:
+                      "radial-gradient(circle, rgba(181,139,122,0.18), transparent 68%)",
+                    pointerEvents: "none",
                   }}
-                >
-                  Editar
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconTrash size={14} />}
-                  color="red"
-                  onClick={() => setDeleteModal({ open: true, gift: g })}
-                >
-                  Excluir
-                </Menu.Item>
-              </>
+                />
+                <Stack gap="md" align="center" style={{ position: "relative" }}>
+                  <div
+                    style={{
+                      width: 92,
+                      height: 92,
+                      borderRadius: 28,
+                      background:
+                        "linear-gradient(135deg, #f7efe7 0%, #ead7ca 100%)",
+                      display: "grid",
+                      placeItems: "center",
+                      boxShadow: "inset 0 0 0 1px rgba(181, 139, 122, 0.16)",
+                    }}
+                  >
+                    <IconGift size={64} />
+                  </div>
+
+                  <Stack gap={4} align="center" ta="center" maw={520}>
+                    <Title order={3}>Lista de presentes vazia</Title>
+                    <Text c="dimmed">
+                      Parece que ainda não há presentes cadastrados. Clique no
+                      botão abaixo para adicionar o primeiro presente à lista!
+                    </Text>
+                  </Stack>
+
+                  <Group justify="center" wrap="wrap">
+                    <Button
+                      onClick={() => {
+                        router.push("/gifts/marketplace");
+                      }}
+                      styles={primaryButtonStyles}
+                      leftSection={<IconGiftFilled size={18} />}
+                    >
+                      Ir ao marketplace
+                    </Button>
+                  </Group>
+                </Stack>
+              </Card>
             )}
-          />
+            <ListView
+              items={gifts}
+              getItemId={(g) => g.id}
+              getImageUrl={(g) => g.image}
+              fallbackIcon={
+                <IconGift size={48} color="var(--mantine-color-gray-5)" />
+              }
+              renderSoloActions={(g) => (
+                <Group gap={4}>
+                  {g.status !== "purchased" && (
+                    <Tooltip label="Marcar como comprado">
+                      <ActionIcon
+                        variant="subtle"
+                        color="green"
+                        onClick={() => handleMarkAsPurchased(g)}
+                      >
+                        <IconCheck size={18} />
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                  {(g.status === "purchased" || g.status === "reserved") && (
+                    <Tooltip label="Marcar como disponível">
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        onClick={() => handleMarkAsAvailable(g)}
+                      >
+                        <IconStatusChange size={18} />
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                </Group>
+              )}
+              renderContent={(g) => (
+                <>
+                  <Text fw={500} lineClamp={2}>
+                    {g.name}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    Categoria:{" "}
+                    {categoryOptions.find((c) => c.value === g.category)
+                      ?.label || g.category}
+                  </Text>
+                  <Stack gap={4} my={4}>
+                    <Text size="md" lineClamp={2}>
+                      R$ {g.value}
+                    </Text>
+                    <MarriplanStatusBadge kind="gift" status={g.status} />
+                  </Stack>
+                  {g.link && !isMobile && (
+                    <Text
+                      size="sm"
+                      c="blue"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => window.open(g.link, "_blank")}
+                    >
+                      Ver link
+                    </Text>
+                  )}
+                </>
+              )}
+              renderActions={(g) => (
+                <>
+                  {g.status === "available" && (
+                    <Menu.Item
+                      leftSection={<IconCheck size={14} />}
+                      onClick={() => handleMarkAsPurchased(g)}
+                    >
+                      Marcar como comprado
+                    </Menu.Item>
+                  )}
+                  {(g.status === "purchased" || g.status === "reserved") && (
+                    <Menu.Item
+                      leftSection={<IconStatusChange size={14} />}
+                      onClick={() => handleMarkAsAvailable(g)}
+                    >
+                      Marcar como disponível
+                    </Menu.Item>
+                  )}
+                  {g.link && (
+                    <Menu.Item
+                      leftSection={<IconEye size={14} />}
+                      onClick={() => window.open(g.link, "_blank")}
+                    >
+                      Ver presente
+                    </Menu.Item>
+                  )}
+                  <Menu.Item
+                    leftSection={<IconEdit size={14} />}
+                    onClick={() => {
+                      setEditingGift(g);
+                      setModalOpen(true);
+                    }}
+                  >
+                    Editar
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconTrash size={14} />}
+                    color="red"
+                    onClick={() => setDeleteModal({ open: true, gift: g })}
+                  >
+                    Excluir
+                  </Menu.Item>
+                </>
+              )}
+            />
+          </>
         )}
         {viewMode === "gallery" && (
-          <GalleryView
-            items={gifts}
-            getItemId={(g) => g.id}
-            getImageUrl={(g) => g.image}
-            cols={
-              isCompactLayout ? { base: 1, sm: 1, md: 1, lg: 1 } : undefined
-            }
-            fallbackIcon={
-              <IconGift size={48} color="var(--mantine-color-gray-5)" />
-            }
-            renderContent={(g) => (
-              <Flex direction="column" gap="xs">
-                <Text fw={500} lineClamp={2}>
-                  {g.name}
-                </Text>
-                <MarriplanStatusBadge kind="gift" status={g.status} fullWidth />
-                <Text size="sm" c="dimmed">
-                  Valor: R$ {g.value}
-                </Text>
-              </Flex>
-            )}
-            renderActions={(g) => (
-              <>
-                {g.status === "available" && (
-                  <Menu.Item
-                    leftSection={<IconCheck size={14} />}
-                    onClick={() => handleMarkAsPurchased(g)}
-                  >
-                    Marcar como comprado
-                  </Menu.Item>
-                )}
-                {(g.status === "purchased" || g.status === "reserved") && (
-                  <Menu.Item
-                    leftSection={<IconStatusChange size={14} />}
-                    onClick={() => handleMarkAsAvailable(g)}
-                  >
-                    Marcar como disponível
-                  </Menu.Item>
-                )}
-                {g.link && (
-                  <Menu.Item
-                    leftSection={<IconEye size={14} />}
-                    onClick={() => window.open(g.link, "_blank")}
-                  >
-                    Ver presente
-                  </Menu.Item>
-                )}
-                <Menu.Item
-                  leftSection={<IconEdit size={14} />}
-                  onClick={() => {
-                    setEditingGift(g);
-                    setModalOpen(true);
+          <>
+            {gifts.length === 0 && (
+              <Card
+                radius="xl"
+                withBorder
+                p="xl"
+                style={{
+                  position: "relative",
+                  overflow: "hidden",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(246,238,228,0.92) 100%)",
+                  border: "1px solid var(--marriplan-border)",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: "auto -36px -36px auto",
+                    width: 180,
+                    height: 180,
+                    borderRadius: "50%",
+                    background:
+                      "radial-gradient(circle, rgba(181,139,122,0.18), transparent 68%)",
+                    pointerEvents: "none",
                   }}
-                >
-                  Editar
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconTrash size={14} />}
-                  color="red"
-                  onClick={() => setDeleteModal({ open: true, gift: g })}
-                >
-                  Excluir
-                </Menu.Item>
-              </>
+                />
+                <Stack gap="md" align="center" style={{ position: "relative" }}>
+                  <div
+                    style={{
+                      width: 92,
+                      height: 92,
+                      borderRadius: 28,
+                      background:
+                        "linear-gradient(135deg, #f7efe7 0%, #ead7ca 100%)",
+                      display: "grid",
+                      placeItems: "center",
+                      boxShadow: "inset 0 0 0 1px rgba(181, 139, 122, 0.16)",
+                    }}
+                  >
+                    <IconGift size={64} />
+                  </div>
+
+                  <Stack gap={4} align="center" ta="center" maw={520}>
+                    <Title order={3}>Lista de presentes vazia</Title>
+                    <Text c="dimmed">
+                      Parece que ainda não há presentes cadastrados. Clique no
+                      botão abaixo para adicionar o primeiro presente à lista!
+                    </Text>
+                  </Stack>
+
+                  <Group justify="center" wrap="wrap">
+                    <Button
+                      onClick={() => {
+                        router.push("/gifts/marketplace");
+                      }}
+                      styles={primaryButtonStyles}
+                      leftSection={<IconGiftFilled size={18} />}
+                    >
+                      Ir ao marketplace
+                    </Button>
+                  </Group>
+                </Stack>
+              </Card>
             )}
-          />
+            <GalleryView
+              items={gifts}
+              getItemId={(g) => g.id}
+              getImageUrl={(g) => g.image}
+              cols={
+                isCompactLayout ? { base: 1, sm: 1, md: 1, lg: 1 } : undefined
+              }
+              fallbackIcon={
+                <IconGift size={48} color="var(--mantine-color-gray-5)" />
+              }
+              renderContent={(g) => (
+                <Flex direction="column" gap="xs">
+                  <Text fw={500} lineClamp={2}>
+                    {g.name}
+                  </Text>
+                  <MarriplanStatusBadge
+                    kind="gift"
+                    status={g.status}
+                    fullWidth
+                  />
+                  <Badge
+                    variant="light"
+                    color={"gray"}
+                    size="lg"
+                    style={{ alignSelf: "center" }}
+                  >
+                    R$ {g.value}
+                  </Badge>
+                </Flex>
+              )}
+              renderActions={(g) => (
+                <>
+                  {g.status === "available" && (
+                    <Menu.Item
+                      leftSection={<IconCheck size={14} />}
+                      onClick={() => handleMarkAsPurchased(g)}
+                    >
+                      Marcar como comprado
+                    </Menu.Item>
+                  )}
+                  {(g.status === "purchased" || g.status === "reserved") && (
+                    <Menu.Item
+                      leftSection={<IconStatusChange size={14} />}
+                      onClick={() => handleMarkAsAvailable(g)}
+                    >
+                      Marcar como disponível
+                    </Menu.Item>
+                  )}
+                  {g.link && (
+                    <Menu.Item
+                      leftSection={<IconEye size={14} />}
+                      onClick={() => window.open(g.link, "_blank")}
+                    >
+                      Ver presente
+                    </Menu.Item>
+                  )}
+                  <Menu.Item
+                    leftSection={<IconEdit size={14} />}
+                    onClick={() => {
+                      setEditingGift(g);
+                      setModalOpen(true);
+                    }}
+                  >
+                    Editar
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconTrash size={14} />}
+                    color="red"
+                    onClick={() => setDeleteModal({ open: true, gift: g })}
+                  >
+                    Excluir
+                  </Menu.Item>
+                </>
+              )}
+            />
+          </>
         )}
         {(viewMode === "cards" || viewMode === "gallery") && (
           <Group justify="center" mt="md">
@@ -1093,7 +1278,11 @@ const GiftsPage: NextPage = () => {
             >
               Cancelar
             </Button>
-            <Button color="red" onClick={handleConfirmDeleteGift} loading={loading}>
+            <Button
+              color="red"
+              onClick={handleConfirmDeleteGift}
+              loading={loading}
+            >
               Excluir
             </Button>
           </Group>

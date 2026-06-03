@@ -1,4 +1,5 @@
 import { ActionIcon, Box, Card, Flex, Image, Menu } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { IconDotsVertical, IconPhoto } from "@tabler/icons-react";
 import React, { useState } from "react";
 
@@ -8,6 +9,7 @@ interface ItemCardProps<T> {
   renderContent: (item: T) => React.ReactNode;
   renderActions: (item: T) => React.ReactNode;
   renderStatus?: (item: T) => React.ReactNode;
+  renderSoloActions?: (item: T) => React.ReactNode;
   fallbackIcon?: React.ReactNode;
   layout?: "horizontal" | "vertical";
 }
@@ -18,6 +20,7 @@ export function ItemCard<T>({
   renderContent,
   renderActions,
   renderStatus,
+  renderSoloActions,
   fallbackIcon,
   layout = "horizontal",
 }: ItemCardProps<T>) {
@@ -31,13 +34,13 @@ export function ItemCard<T>({
     <Flex
       justify="center"
       align="center"
-      w={'100%'}
+      w={"100%"}
       h={180}
       bg="gray.1"
       style={{ borderRadius: "var(--mantine-radius-md)" }}
     >
       {fallbackIcon || (
-        <IconPhoto size={48} color="var(--mantine-color-gray-5)" />
+        <IconPhoto size={64} color="var(--mantine-color-gray-5)" />
       )}
     </Flex>
   );
@@ -46,13 +49,13 @@ export function ItemCard<T>({
     <Flex
       justify="center"
       align="center"
-      w={layout === "horizontal" ? 100 : "100%"}
-      h={layout === "horizontal" ? 100 : 160}
+      w={layout === "horizontal" ? "100%" : "100%"}
+      h={layout === "horizontal" ? "100%" : 160}
       bg="gray.1"
       style={{ borderRadius: "var(--mantine-radius-md)" }}
     >
       {fallbackIcon || (
-        <IconPhoto size={48} color="var(--mantine-color-gray-5)" />
+        <IconPhoto size={64} color="var(--mantine-color-gray-5)" />
       )}
     </Flex>
   );
@@ -69,8 +72,10 @@ export function ItemCard<T>({
         style={{ display: "block" }}
         onError={handleImageError}
       />
+    ) : layout === "vertical" ? (
+      imagePlaceholderVertical
     ) : (
-      layout === "vertical" ? imagePlaceholderVertical : imagePlaceholderHorizontal
+      imagePlaceholderHorizontal
     );
 
   const menu = (
@@ -109,41 +114,59 @@ export function ItemCard<T>({
             <Box
               w="100%"
               h={180}
-              style={{ margin: "0 auto", overflow: "hidden", borderTopLeftRadius: 12, borderTopRightRadius: 12 }}
+              style={{
+                margin: "0 auto",
+                overflow: "hidden",
+                borderTopLeftRadius: 12,
+                borderTopRightRadius: 12,
+              }}
             >
               {imageContent}
             </Box>
           </Card.Section>
-          <Box mt="sm">{renderContent(item)}</Box>
+          <Box>{renderContent(item)}</Box>
         </Flex>
       </Card>
     );
   }
 
   return (
-    <Card padding="lg" radius="lg" withBorder style={cardStyle}>
-      <Flex gap="lg" align="flex-start">
-        <Box
-          w={100}
-          h={100}
-          style={{ flexShrink: 0, overflow: "hidden", borderRadius: 12 }}
-        >
-          {imageContent}
-        </Box>
-        <Flex
-          direction="column"
-          justify="space-between"
-          style={{ flex: 1, minHeight: 100 }}
-        >
-          <Flex justify="space-between" align="flex-start" gap="md">
-            <Box style={{ flex: 1 }}>{renderContent(item)}</Box>
-            {menu}
-          </Flex>
-          {renderStatus && (
-            <Flex justify="flex-end" mt="sm">
-              {renderStatus(item)}
-            </Flex>
-          )}
+    <Card
+      padding="sm"
+      radius="md"
+      withBorder
+      style={{ width: "100%", ...cardStyle }}
+    >
+      <Flex
+        gap="md"
+        align="center"
+        justify="space-between"
+        style={{ width: "100%" }}
+      >
+        {/* Bloco Esquerdo: Avatar + Informações textuais */}
+        <Flex gap="sm" align="center" style={{ flex: 1, minWidth: 0 }}>
+          <Box
+            w={100}
+            h={100}
+            style={{
+              flexShrink: 0,
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {imageContent}
+          </Box>
+
+          {/* Conteúdo de texto com tratamento de quebra de linha */}
+          <Box style={{ flex: 1, minWidth: 0 }}>{renderContent(item)}</Box>
+        </Flex>
+
+        {/* Bloco Direito: Botões de Ação e Menu Alinhados Lado a Lado */}
+        <Flex gap="xs" align="center" style={{ flexShrink: 0 }}>
+          {renderSoloActions && renderSoloActions(item)}
+          {menu}
         </Flex>
       </Flex>
     </Card>

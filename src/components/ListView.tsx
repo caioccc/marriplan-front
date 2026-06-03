@@ -10,6 +10,7 @@ interface ListViewProps<T> {
   getImageUrl: (item: T) => string | undefined;
   getItemId: (item: T) => string | number;
   fallbackIcon?: React.ReactNode;
+  renderSoloActions?: (item: T) => React.ReactNode;
 }
 
 export function ListView<T>({
@@ -19,10 +20,11 @@ export function ListView<T>({
   renderStatus,
   getImageUrl,
   getItemId,
+  renderSoloActions,
   fallbackIcon,
 }: ListViewProps<T>) {
   return (
-    <SimpleGrid cols={1} spacing="lg">
+    <SimpleGrid cols={1} spacing="xs">
       {items.map((item) => (
         <ItemCard
           key={getItemId(item)}
@@ -32,6 +34,7 @@ export function ListView<T>({
           renderActions={renderActions}
           renderStatus={renderStatus}
           fallbackIcon={fallbackIcon}
+          renderSoloActions={renderSoloActions}
           layout="horizontal"
         />
       ))}

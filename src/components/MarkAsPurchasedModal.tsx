@@ -31,11 +31,12 @@ export function MarkAsPurchasedModal({
   const handleConfirm = () => {
     if (useCustomName && customName) {
       onConfirm(customName);
+      onClose();
     } else if (!useCustomName && selectedGuest) {
       const guest = guests.find((g) => g.id == selectedGuest);
       onConfirm(guest?.name || "");
+      onClose();
     }
-    onClose();
   };
 
   const content = (

@@ -1,7 +1,7 @@
-import { GalleryView } from "@/components/GalleryView";
-import ImportGuestsModal from "@/components/ImportGuestsModal";
 import { FeatureLimitModal } from "@/components/billing/FeatureLimitModal";
 import { FreePlanLimitBanner } from "@/components/billing/FreePlanLimitBanner";
+import { GalleryView } from "@/components/GalleryView";
+import ImportGuestsModal from "@/components/ImportGuestsModal";
 import { ListView } from "@/components/ListView";
 import {
   FEATURE_LABELS,
@@ -21,9 +21,11 @@ import {
 import {
   ActionIcon,
   Badge,
+  Box,
   Button,
   Card,
   Checkbox,
+  Flex,
   Group,
   Menu,
   Modal,
@@ -33,18 +35,22 @@ import {
   Select,
   SimpleGrid,
   Stack,
-  ThemeIcon,
   Text,
   TextInput,
+  ThemeIcon,
+  Title,
   Tooltip,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
-  IconBrandWhatsapp,
   IconAlertTriangle,
+  IconBrandWhatsapp,
   IconCards,
   IconCheck,
+  IconClock,
+  IconCopy,
   IconDotsVertical,
   IconDownload,
   IconEdit,
@@ -56,17 +62,18 @@ import {
   IconMail,
   IconPlus,
   IconSearch,
-  IconUsers,
-  IconX,
   IconTrash,
   IconUpload,
   IconUser,
-  IconClock,
+  IconUsers,
+  IconX,
 } from "@tabler/icons-react";
 import { DataTable, type DataTableSortStatus } from "mantine-datatable";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useMediaQuery } from "@mantine/hooks";
 
+import { ImageDropzone } from "@/components/ImageUpload";
+import { toSentenceCase, toUpperCamelWords } from "@/lib/text";
+import { uploadCloudinaryImage } from "@/services/weddingImage";
 import {
   actionIconDangerStyles,
   actionIconEditStyles,
@@ -78,9 +85,6 @@ import {
 } from "@/styles";
 import { Pagination } from "@mantine/core";
 import PageSectionHeader from "./PageSectionHeader";
-import { toSentenceCase, toUpperCamelWords } from "@/lib/text";
-import { ImageDropzone } from "@/components/ImageUpload";
-import { uploadCloudinaryImage } from "@/services/weddingImage";
 
 interface Guest {
   [key: string]: unknown;
@@ -140,7 +144,7 @@ export default function GuestTable() {
   });
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState("table");
+  const [viewMode, setViewMode] = useState("cards");
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [advancedFilterOpen, setAdvancedFilterOpen] = useState(false);
   const [companionsRange, setCompanionsRange] = useState<[number, number]>([
@@ -236,7 +240,6 @@ export default function GuestTable() {
     statusFilter !== "all";
   const hasFilteredView = Boolean(searchQuery) || filtersActive;
 
-
   useEffect(() => {
     pageTopRef.current?.scrollIntoView({
       behavior: "smooth",
@@ -256,12 +259,9 @@ export default function GuestTable() {
     return guests.filter((guest) => {
       if (
         searchQuery &&
-        ![
-          guest.name,
-          guest.email,
-          guest.phone,
-          guest.whatsapp,
-        ].some((value) => (value || "").toLowerCase().includes(searchQuery))
+        ![guest.name, guest.email, guest.phone, guest.whatsapp].some((value) =>
+          (value || "").toLowerCase().includes(searchQuery),
+        )
       ) {
         return false;
       }
@@ -797,7 +797,12 @@ export default function GuestTable() {
                     }}
                   >
                     <Group gap="sm" align="center" style={{ minWidth: 0 }}>
-                      <ThemeIcon size={34} radius="xl" variant="light" color={card.color}>
+                      <ThemeIcon
+                        size={34}
+                        radius="xl"
+                        variant="light"
+                        color={card.color}
+                      >
                         <Icon size={18} />
                       </ThemeIcon>
                       <Stack gap={1} style={{ minWidth: 0 }}>
@@ -850,7 +855,12 @@ export default function GuestTable() {
                       {card.helper}
                     </Text>
                   </Stack>
-                  <ThemeIcon size={44} radius="xl" variant="light" color={card.color}>
+                  <ThemeIcon
+                    size={44}
+                    radius="xl"
+                    variant="light"
+                    color={card.color}
+                  >
                     <Icon size={22} />
                   </ThemeIcon>
                 </Group>
@@ -1079,6 +1089,7 @@ export default function GuestTable() {
           <Group>
             <Button
               styles={softButtonStyles}
+              leftSection={<IconCopy size={16} />}
               onClick={async () => {
                 if (!confirmationData?.confirmation_url) return;
                 try {
@@ -1101,6 +1112,7 @@ export default function GuestTable() {
             </Button>
             {confirmationData?.whatsapp_link && (
               <Button
+                leftSection={<IconBrandWhatsapp size={16} />}
                 component="a"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -1160,276 +1172,470 @@ export default function GuestTable() {
         </Stack>
       </Modal>
       {viewMode === "cards" && (
-        <ListView
-          items={paginatedGuests}
-          getItemId={(g) => g.id}
-          getImageUrl={(g) => g.photo_url || undefined}
-          fallbackIcon={
-            <IconUser size={48} color="var(--mantine-color-gray-5)" />
-          }
-          renderContent={(g) => (
-            <>
-              <Text fw={500} lineClamp={2}>
-                {g.name}
-              </Text>
-              <Group my="xs">
-                <BadgeStatus {...g} />
+        <>
+          {allGuests.length === 0 && (
+            <Card
+              radius="xl"
+              withBorder
+              p="xl"
+              style={{
+                position: "relative",
+                overflow: "hidden",
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(246,238,228,0.92) 100%)",
+                border: "1px solid var(--marriplan-border)",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "auto -36px -36px auto",
+                  width: 180,
+                  height: 180,
+                  borderRadius: "50%",
+                  background:
+                    "radial-gradient(circle, rgba(181,139,122,0.18), transparent 68%)",
+                  pointerEvents: "none",
+                }}
+              />
+              <Stack gap="md" align="center" style={{ position: "relative" }}>
+                <div
+                  style={{
+                    width: 92,
+                    height: 92,
+                    borderRadius: 28,
+                    background:
+                      "linear-gradient(135deg, #f7efe7 0%, #ead7ca 100%)",
+                    display: "grid",
+                    placeItems: "center",
+                    boxShadow: "inset 0 0 0 1px rgba(181, 139, 122, 0.16)",
+                  }}
+                >
+                  <IconUsers size={64} />
+                </div>
+
+                <Stack gap={4} align="center" ta="center" maw={520}>
+                  <Title order={3}>Lista de convidados vazia</Title>
+                  <Text c="dimmed">
+                    Adicione seus convidados para começar a organizar seu
+                    casamento. Você pode criar momentos especiais para cada
+                    convidado e acompanhar as confirmações de presença em tempo
+                    real.
+                  </Text>
+                </Stack>
+
+                <Group justify="center" wrap="wrap">
+                  <Button
+                    onClick={handleAdd}
+                    styles={primaryButtonStyles}
+                    leftSection={<IconPlus size={16} />}
+                  >
+                    Adicionar convidado
+                  </Button>
+                </Group>
+              </Stack>
+            </Card>
+          )}
+          <ListView
+            items={paginatedGuests}
+            getItemId={(g) => g.id}
+            getImageUrl={(g) => g.photo_url || undefined}
+            fallbackIcon={
+              <IconUser size={24} color="var(--mantine-color-gray-5)" />
+            }
+            renderStatus={(g) => <BadgeStatus {...g} />}
+            renderSoloActions={(guest) => (
+              <Group gap={4}>
+                {guest.status_presenca === "Pending" && (
+                  <Tooltip label="Confirmar Presença">
+                    <ActionIcon
+                      size="sm"
+                      variant="light"
+                      color="blue"
+                      onClick={() => {
+                        setSelectedGuest(guest);
+                        setPresencaModalOpen(true);
+                      }}
+                    >
+                      <IconCheck size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
+                {guest.status_presenca !== "Pending" && (
+                  <Tooltip label="Gerar link de confirmação">
+                    <ActionIcon
+                      size="sm"
+                      variant="light"
+                      color="blue"
+                      onClick={async () => {
+                        try {
+                          const res = await guests_generate_confirmation_link(
+                            guest.id,
+                          );
+                          setConfirmationData({
+                            confirmation_url: res.confirmation_url,
+                            whatsapp_link: res.whatsapp_link,
+                            token: res.token,
+                          });
+                          setConfirmationModalOpen(true);
+                        } catch {
+                          notifications.show({
+                            color: "red",
+                            message: "Erro ao gerar link de confirmação.",
+                          });
+                        }
+                      }}
+                    >
+                      <IconLink size={16} />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
               </Group>
-              {g.whatsapp && (
-                <Text size="sm" c="dimmed">
-                  WhatsApp: {g.whatsapp}
-                </Text>
-              )}
-              {g.acompanhantes !== undefined && (
-                <Text size="sm" c="dimmed">
-                  Acompanhantes: {g.acompanhantes}
-                </Text>
-              )}
-            </>
-          )}
-          renderActions={(g) => (
-            <>
-              {g.status_presenca === "Pending" && (
-                <Tooltip label="Confirmar Presença">
-                  <Menu.Item
-                    leftSection={<IconCheck size={16} />}
-                    onClick={() => {
-                      setSelectedGuest(g);
-                      setPresencaModalOpen(true);
-                    }}
-                  >
-                    Confirmar Presença
-                  </Menu.Item>
-                </Tooltip>
-              )}
-              {g.whatsapp && g.status_presenca === "Pending" && (
-                <Tooltip label="Enviar RSVP por WhatsApp">
-                  <Menu.Item
-                    leftSection={<IconBrandWhatsapp size={16} />}
-                    onClick={async () => {
-                      try {
-                        const res = await guests_generate_confirmation_link(
-                          g.id,
-                        );
-                        setConfirmationData({
-                          confirmation_url: res.confirmation_url,
-                          whatsapp_link: res.whatsapp_link,
-                          token: res.token,
-                        });
-                        setConfirmationModalOpen(true);
-                      } catch {
-                        notifications.show({
-                          color: "red",
-                          message: "Erro ao gerar link de confirmação.",
-                        });
-                      }
-                    }}
-                  >
-                    Enviar RSVP
-                  </Menu.Item>
-                </Tooltip>
-              )}
-              {g.status_presenca !== "Pending" && (
-                <Tooltip label="Gerar link de confirmação">
-                  <Menu.Item
-                    leftSection={<IconLink size={16} />}
-                    onClick={async () => {
-                      try {
-                        const res = await guests_generate_confirmation_link(
-                          g.id,
-                        );
-                        setConfirmationData({
-                          confirmation_url: res.confirmation_url,
-                          whatsapp_link: res.whatsapp_link,
-                          token: res.token,
-                        });
-                        setConfirmationModalOpen(true);
-                      } catch {
-                        notifications.show({
-                          color: "red",
-                          message: "Erro ao gerar link de confirmação.",
-                        });
-                      }
-                    }}
-                  >
-                    Gerar Link
-                  </Menu.Item>
-                </Tooltip>
-              )}
-              {g.email && (
-                <Tooltip label="Enviar RSVP por Email" position="right">
-                  <Menu.Item
-                    leftSection={<IconMail size={14} />}
-                    component="a"
-                    href={`mailto:${g.email}?subject=${encodeURIComponent(
-                      "Confirmação de Presença - Casamento",
-                    )}&body=${encodeURIComponent(
-                      "Olá! Por gentileza, confirme sua presença no nosso casamento respondendo este e-mail ou pelo site. O convite formal será enviado via papelaria. Obrigado!",
-                    )}`}
-                  >
-                    Email
-                  </Menu.Item>
-                </Tooltip>
-              )}
-              <Tooltip label="Editar convidado" position="right">
-                <Menu.Item
-                  leftSection={
-                    <IconEdit size={14} color="var(--marriplan-rose)" />
-                  }
-                  onClick={() => handleEdit(g)}
+            )}
+            renderContent={(g) => (
+              <Flex direction="column" gap={2}>
+                {/* Nome do Convidado */}
+                <Text
+                  fw={600}
+                  size="sm"
+                  lineClamp={1}
+                  style={{ color: "#2B2B2B" }}
                 >
-                  Editar
-                </Menu.Item>
-              </Tooltip>
-              <Tooltip label="Excluir convidado" position="right">
-                <Menu.Item
-                  leftSection={
-                    <IconTrash size={14} color="var(--marriplan-rose)" />
-                  }
-                  onClick={() => openDeleteConfirm(g)}
-                  color="red"
-                >
-                  Excluir
-                </Menu.Item>
-              </Tooltip>
-            </>
-          )}
-        />
+                  {g.name}
+                </Text>
+
+                {/* Grupo / Família (Ex: Família Silva) */}
+                {/* {g.grupo && (
+                <Text size="xs" c="dimmed" style={{ lineHeight: 1.2 }}>
+                  {g.grupo}
+                </Text>
+              )} */}
+
+                {g.whatsapp && (
+                  <Text size="xs" c="dimmed">
+                    WhatsApp: {g.whatsapp}
+                  </Text>
+                )}
+
+                {/* Detalhamento de assentos de forma resumida e humanizada */}
+                {g.acompanhantes !== undefined && (
+                  <Text size="xs" c="dimmed" style={{ lineHeight: 1.2 }}>
+                    {g.acompanhantes === 0
+                      ? "1 Assento individual"
+                      : `Convite familiar • ${g.acompanhantes + 1} pessoas`}
+                  </Text>
+                )}
+              </Flex>
+            )}
+            renderActions={(g) => (
+              <>
+                {g.status_presenca === "Pending" && (
+                  <Tooltip label="Confirmar Presença">
+                    <Menu.Item
+                      leftSection={<IconCheck size={16} />}
+                      onClick={() => {
+                        setSelectedGuest(g);
+                        setPresencaModalOpen(true);
+                      }}
+                    >
+                      Confirmar Presença
+                    </Menu.Item>
+                  </Tooltip>
+                )}
+                {g.whatsapp && g.status_presenca === "Pending" && (
+                  <Tooltip label="Enviar RSVP por WhatsApp">
+                    <Menu.Item
+                      leftSection={<IconBrandWhatsapp size={16} />}
+                      onClick={async () => {
+                        try {
+                          const res = await guests_generate_confirmation_link(
+                            g.id,
+                          );
+                          setConfirmationData({
+                            confirmation_url: res.confirmation_url,
+                            whatsapp_link: res.whatsapp_link,
+                            token: res.token,
+                          });
+                          setConfirmationModalOpen(true);
+                        } catch {
+                          notifications.show({
+                            color: "red",
+                            message: "Erro ao gerar link de confirmação.",
+                          });
+                        }
+                      }}
+                    >
+                      Enviar RSVP
+                    </Menu.Item>
+                  </Tooltip>
+                )}
+                {g.status_presenca !== "Pending" && (
+                  <Tooltip label="Gerar link de confirmação">
+                    <Menu.Item
+                      leftSection={<IconLink size={16} />}
+                      onClick={async () => {
+                        try {
+                          const res = await guests_generate_confirmation_link(
+                            g.id,
+                          );
+                          setConfirmationData({
+                            confirmation_url: res.confirmation_url,
+                            whatsapp_link: res.whatsapp_link,
+                            token: res.token,
+                          });
+                          setConfirmationModalOpen(true);
+                        } catch {
+                          notifications.show({
+                            color: "red",
+                            message: "Erro ao gerar link de confirmação.",
+                          });
+                        }
+                      }}
+                    >
+                      Gerar Link
+                    </Menu.Item>
+                  </Tooltip>
+                )}
+                {g.email && (
+                  <Tooltip label="Enviar RSVP por Email" position="right">
+                    <Menu.Item
+                      leftSection={<IconMail size={14} />}
+                      component="a"
+                      href={`mailto:${g.email}?subject=${encodeURIComponent(
+                        "Confirmação de Presença - Casamento",
+                      )}&body=${encodeURIComponent(
+                        "Olá! Por gentileza, confirme sua presença no nosso casamento respondendo este e-mail ou pelo site. O convite formal será enviado via papelaria. Obrigado!",
+                      )}`}
+                    >
+                      Email
+                    </Menu.Item>
+                  </Tooltip>
+                )}
+                <Tooltip label="Editar convidado" position="right">
+                  <Menu.Item
+                    leftSection={
+                      <IconEdit size={14} color="var(--marriplan-rose)" />
+                    }
+                    onClick={() => handleEdit(g)}
+                  >
+                    Editar
+                  </Menu.Item>
+                </Tooltip>
+                <Tooltip label="Excluir convidado" position="right">
+                  <Menu.Item
+                    leftSection={
+                      <IconTrash size={14} color="var(--marriplan-rose)" />
+                    }
+                    onClick={() => openDeleteConfirm(g)}
+                    color="red"
+                  >
+                    Excluir
+                  </Menu.Item>
+                </Tooltip>
+              </>
+            )}
+          />
+        </>
       )}
       {viewMode === "gallery" && (
-        <GalleryView
-          items={paginatedGuests}
-          getItemId={(g) => g.id}
-          getImageUrl={(g) => g.photo_url || undefined}
-          fallbackIcon={
-            <IconUser size={48} color="var(--mantine-color-gray-5)" />
-          }
-          renderContent={(g) => (
-            <Stack gap="xs">
-              <Text fw={500} lineClamp={2}>
-                {g.name}
-              </Text>
-              <BadgeStatus {...g} />
-              {g.whatsapp && (
-                <Text size="sm" c="dimmed">
-                  WhatsApp: {g.whatsapp}
-                </Text>
-              )}
-              {g.acompanhantes !== undefined && (
-                <Text size="sm" c="dimmed">
-                  Acompanhantes: {g.acompanhantes}
-                </Text>
-              )}
-            </Stack>
-          )}
-          renderActions={(g) => (
-            <>
-              {g.status_presenca === "Pending" && (
-                <Tooltip label="Confirmar Presença">
-                  <Menu.Item
-                    leftSection={<IconCheck size={16} />}
-                    onClick={() => {
-                      setSelectedGuest(g);
-                      setPresencaModalOpen(true);
-                    }}
-                  >
-                    Confirmar Presença
-                  </Menu.Item>
-                </Tooltip>
-              )}
-              {g.whatsapp && g.status_presenca === "Pending" && (
-                <Tooltip label="Enviar RSVP por WhatsApp">
-                  <Menu.Item
-                    leftSection={<IconBrandWhatsapp size={16} />}
-                    onClick={async () => {
-                      try {
-                        const res = await guests_generate_confirmation_link(
-                          g.id,
-                        );
-                        setConfirmationData({
-                          confirmation_url: res.confirmation_url,
-                          whatsapp_link: res.whatsapp_link,
-                          token: res.token,
-                        });
-                        setConfirmationModalOpen(true);
-                      } catch {
-                        notifications.show({
-                          color: "red",
-                          message: "Erro ao gerar link de confirmação.",
-                        });
-                      }
-                    }}
-                  >
-                    Enviar RSVP
-                  </Menu.Item>
-                </Tooltip>
-              )}
-              {g.status_presenca !== "Pending" && (
-                <Tooltip label="Gerar link de confirmação">
-                  <Menu.Item
-                    leftSection={<IconLink size={16} />}
-                    onClick={async () => {
-                      try {
-                        const res = await guests_generate_confirmation_link(
-                          g.id,
-                        );
-                        setConfirmationData({
-                          confirmation_url: res.confirmation_url,
-                          whatsapp_link: res.whatsapp_link,
-                          token: res.token,
-                        });
-                        setConfirmationModalOpen(true);
-                      } catch {
-                        notifications.show({
-                          color: "red",
-                          message: "Erro ao gerar link de confirmação.",
-                        });
-                      }
-                    }}
-                  >
-                    Gerar Link
-                  </Menu.Item>
-                </Tooltip>
-              )}
-              {g.email && (
-                <Tooltip label="Enviar RSVP por Email" position="right">
-                  <Menu.Item
-                    leftSection={<IconMail size={14} />}
-                    component="a"
-                    href={`mailto:${g.email}?subject=${encodeURIComponent(
-                      "Confirmação de Presença - Casamento",
-                    )}&body=${encodeURIComponent(
-                      "Olá! Por gentileza, confirme sua presença no nosso casamento respondendo este e-mail ou pelo site. Esperamos você! 🥂",
-                    )}`}
-                  >
-                    Email
-                  </Menu.Item>
-                </Tooltip>
-              )}
-              <Tooltip label="Editar convidado" position="right">
-                <Menu.Item
-                  leftSection={
-                    <IconEdit size={14} color="var(--marriplan-rose)" />
-                  }
-                  onClick={() => handleEdit(g)}
+        <>
+          {allGuests.length === 0 && (
+            <Card
+              radius="xl"
+              withBorder
+              p="xl"
+              style={{
+                position: "relative",
+                overflow: "hidden",
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(246,238,228,0.92) 100%)",
+                border: "1px solid var(--marriplan-border)",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  inset: "auto -36px -36px auto",
+                  width: 180,
+                  height: 180,
+                  borderRadius: "50%",
+                  background:
+                    "radial-gradient(circle, rgba(181,139,122,0.18), transparent 68%)",
+                  pointerEvents: "none",
+                }}
+              />
+              <Stack gap="md" align="center" style={{ position: "relative" }}>
+                <div
+                  style={{
+                    width: 92,
+                    height: 92,
+                    borderRadius: 28,
+                    background:
+                      "linear-gradient(135deg, #f7efe7 0%, #ead7ca 100%)",
+                    display: "grid",
+                    placeItems: "center",
+                    boxShadow: "inset 0 0 0 1px rgba(181, 139, 122, 0.16)",
+                  }}
                 >
-                  Editar
-                </Menu.Item>
-              </Tooltip>
-              <Tooltip label="Excluir convidado" position="right">
-                <Menu.Item
-                  leftSection={
-                    <IconTrash size={14} color="var(--marriplan-rose)" />
-                  }
-                  onClick={() => openDeleteConfirm(g)}
-                  color="red"
-                >
-                  Excluir
-                </Menu.Item>
-              </Tooltip>
-            </>
+                  <IconUsers size={64} />
+                </div>
+
+                <Stack gap={4} align="center" ta="center" maw={520}>
+                  <Title order={3}>Lista de convidados vazia</Title>
+                  <Text c="dimmed">
+                    Adicione seus convidados para começar a organizar seu
+                    casamento. Você pode criar momentos especiais para cada
+                    convidado e acompanhar as confirmações de presença em tempo
+                    real.
+                  </Text>
+                </Stack>
+
+                <Group justify="center" wrap="wrap">
+                  <Button
+                    onClick={handleAdd}
+                    styles={primaryButtonStyles}
+                    leftSection={<IconPlus size={16} />}
+                  >
+                    Adicionar convidado
+                  </Button>
+                </Group>
+              </Stack>
+            </Card>
           )}
-        />
+          <GalleryView
+            items={paginatedGuests}
+            getItemId={(g) => g.id}
+            getImageUrl={(g) => g.photo_url || undefined}
+            fallbackIcon={
+              <IconUser size={48} color="var(--mantine-color-gray-5)" />
+            }
+            renderContent={(g) => (
+              <Box>
+                <Text fw={500} lineClamp={2}>
+                  {g.name}
+                </Text>
+                <BadgeStatus {...g} />
+                {g.whatsapp && (
+                  <Text size="sm" c="dimmed">
+                    WhatsApp: {g.whatsapp}
+                  </Text>
+                )}
+                {g.acompanhantes !== undefined && (
+                  <Text size="sm" c="dimmed">
+                    Acompanhantes: {g.acompanhantes}
+                  </Text>
+                )}
+              </Box>
+            )}
+            renderActions={(g) => (
+              <>
+                {g.status_presenca === "Pending" && (
+                  <Tooltip label="Confirmar Presença">
+                    <Menu.Item
+                      leftSection={<IconCheck size={16} />}
+                      onClick={() => {
+                        setSelectedGuest(g);
+                        setPresencaModalOpen(true);
+                      }}
+                    >
+                      Confirmar Presença
+                    </Menu.Item>
+                  </Tooltip>
+                )}
+                {g.whatsapp && g.status_presenca === "Pending" && (
+                  <Tooltip label="Enviar RSVP por WhatsApp">
+                    <Menu.Item
+                      leftSection={<IconBrandWhatsapp size={16} />}
+                      onClick={async () => {
+                        try {
+                          const res = await guests_generate_confirmation_link(
+                            g.id,
+                          );
+                          setConfirmationData({
+                            confirmation_url: res.confirmation_url,
+                            whatsapp_link: res.whatsapp_link,
+                            token: res.token,
+                          });
+                          setConfirmationModalOpen(true);
+                        } catch {
+                          notifications.show({
+                            color: "red",
+                            message: "Erro ao gerar link de confirmação.",
+                          });
+                        }
+                      }}
+                    >
+                      Enviar RSVP
+                    </Menu.Item>
+                  </Tooltip>
+                )}
+                {g.status_presenca !== "Pending" && (
+                  <Tooltip label="Gerar link de confirmação">
+                    <Menu.Item
+                      leftSection={<IconLink size={16} />}
+                      onClick={async () => {
+                        try {
+                          const res = await guests_generate_confirmation_link(
+                            g.id,
+                          );
+                          setConfirmationData({
+                            confirmation_url: res.confirmation_url,
+                            whatsapp_link: res.whatsapp_link,
+                            token: res.token,
+                          });
+                          setConfirmationModalOpen(true);
+                        } catch {
+                          notifications.show({
+                            color: "red",
+                            message: "Erro ao gerar link de confirmação.",
+                          });
+                        }
+                      }}
+                    >
+                      Gerar Link
+                    </Menu.Item>
+                  </Tooltip>
+                )}
+                {g.email && (
+                  <Tooltip label="Enviar RSVP por Email" position="right">
+                    <Menu.Item
+                      leftSection={<IconMail size={14} />}
+                      component="a"
+                      href={`mailto:${g.email}?subject=${encodeURIComponent(
+                        "Confirmação de Presença - Casamento",
+                      )}&body=${encodeURIComponent(
+                        "Olá! Por gentileza, confirme sua presença no nosso casamento respondendo este e-mail ou pelo site. Esperamos você! 🥂",
+                      )}`}
+                    >
+                      Email
+                    </Menu.Item>
+                  </Tooltip>
+                )}
+                <Tooltip label="Editar convidado" position="right">
+                  <Menu.Item
+                    leftSection={
+                      <IconEdit size={14} color="var(--marriplan-rose)" />
+                    }
+                    onClick={() => handleEdit(g)}
+                  >
+                    Editar
+                  </Menu.Item>
+                </Tooltip>
+                <Tooltip label="Excluir convidado" position="right">
+                  <Menu.Item
+                    leftSection={
+                      <IconTrash size={14} color="var(--marriplan-rose)" />
+                    }
+                    onClick={() => openDeleteConfirm(g)}
+                    color="red"
+                  >
+                    Excluir
+                  </Menu.Item>
+                </Tooltip>
+              </>
+            )}
+          />
+        </>
       )}
       {(viewMode === "cards" || viewMode === "gallery") && (
         <Group justify="center" mt="md">
@@ -1448,6 +1654,7 @@ export default function GuestTable() {
         centered
         size="xl"
         overlayProps={{ blur: 2 }}
+        fullScreen={isMobile}
       >
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <Stack>

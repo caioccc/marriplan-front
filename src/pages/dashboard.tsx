@@ -59,6 +59,7 @@ import {
   IconChecklist,
   IconChevronRight,
   IconClock,
+  IconCopy,
   IconDotsVertical,
   IconEye,
   IconGift,
@@ -1543,6 +1544,7 @@ const MarriplanDashboard: React.FC = () => {
           <Group>
             <Button
               styles={softButtonStyles}
+              leftSection={<IconCopy size={16} />}
               onClick={async () => {
                 if (!confirmationData?.confirmation_url) return;
                 try {
@@ -1565,6 +1567,7 @@ const MarriplanDashboard: React.FC = () => {
             </Button>
             {confirmationData?.whatsapp_link && (
               <Button
+                leftSection={<IconBrandWhatsapp size={16} />}
                 component="a"
                 target="_blank"
                 rel="noopener noreferrer"

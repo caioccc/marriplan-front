@@ -1,3 +1,5 @@
+import { MobileFullscreenModal } from "@/components/MobileFullscreenModal";
+import { toSentenceCase } from "@/lib/text";
 import { primaryButtonStylesWithDisabled } from "@/styles";
 import {
   ChecklistTask,
@@ -10,16 +12,11 @@ import {
   Modal,
   Select,
   Textarea,
-  TextInput
+  TextInput,
 } from "@mantine/core";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { ptBR } from "date-fns/locale";
-import { useEffect, useState } from "react";
+import { DatePickerInput, DatesProvider } from "@mantine/dates";
 import { useMediaQuery } from "@mantine/hooks";
-import { toSentenceCase } from "@/lib/text";
-import { MobileFullscreenModal } from "@/components/MobileFullscreenModal";
+import { useEffect, useState } from "react";
 
 function getDefaultTaskDates() {
   const startDate = new Date();
@@ -28,7 +25,7 @@ function getDefaultTaskDates() {
   const dueDate = new Date(startDate);
   dueDate.setDate(dueDate.getDate() + 1);
 
-  return { startDate, dueDate };
+  return { startDate: startDate.toISOString().slice(0, 10), dueDate: dueDate.toISOString().slice(0, 10) };
 }
 
 const PRIORITY_OPTIONS = [
@@ -58,11 +55,11 @@ export default function ChecklistTaskModal({
   const isMobile = useMediaQuery("(max-width: 768px)");
   const defaultDates = getDefaultTaskDates();
   const [description, setDescription] = useState(initial?.description || "");
-  const [startDate, setStartDate] = useState<Date | null>(
-    initial?.start_date ? new Date(initial.start_date) : defaultDates.startDate,
+  const [startDate, setStartDate] = useState<string | null>(
+    initial?.start_date ?initial.start_date : defaultDates.startDate,
   );
-  const [dueDate, setDueDate] = useState<Date | null>(
-    initial?.due_date ? new Date(initial.due_date) : defaultDates.dueDate,
+  const [dueDate, setDueDate] = useState<string | null>(
+    initial?.due_date ? initial.due_date : defaultDates.dueDate,
   );
   const [priority, setPriority] = useState<ChecklistTaskPriority>(
     initial?.priority || "medium",
@@ -82,9 +79,9 @@ export default function ChecklistTaskModal({
 
     setDescription(initial?.description || "");
     setStartDate(
-      initial?.start_date ? new Date(initial.start_date) : nextStartDate,
+      initial?.start_date ? initial.start_date : nextStartDate,
     );
-    setDueDate(initial?.due_date ? new Date(initial.due_date) : nextDueDate);
+    setDueDate(initial?.due_date ? initial.due_date : nextDueDate);
     setPriority(initial?.priority || "medium");
     setStatus(initial?.status || "pending");
     setFile(null);
@@ -95,8 +92,8 @@ export default function ChecklistTaskModal({
     onSave(
       {
         description: toSentenceCase(description),
-        start_date: startDate?.toISOString().slice(0, 10),
-        due_date: dueDate?.toISOString().slice(0, 10),
+        start_date: startDate || undefined,
+        due_date: dueDate || undefined,
         priority,
         status,
         notes: toSentenceCase(notes),
@@ -115,56 +112,22 @@ export default function ChecklistTaskModal({
         mb="sm"
       />
 
-      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
-        <Group grow mb="sm">
-          <DatePicker
+      <Group grow mb="sm">
+        <DatesProvider settings={{ locale: "pt-br" }}>
+          <DatePickerInput
             label="Início"
             value={startDate}
-            onChange={setStartDate}
-            slotProps={{
-              textField: {
-                fullWidth: true,
-                required: true,
-                placeholder: "Selecione a data",
-                sx: {
-                  height: 36,
-                  minHeight: 36,
-                  ".MuiInputBase-input": {
-                    height: 36,
-                    minHeight: 36,
-                    padding: "0 12px",
-                  },
-                },
-                style: { flex: 1 },
-              },
-            }}
-            format="dd/MM/yyyy"
+            onChange={(date) => setStartDate(date || null)}
+            valueFormat="DD/MM/YYYY"
           />
-          <DatePicker
+          <DatePickerInput
             label="Vencimento"
             value={dueDate}
-            onChange={setDueDate}
-            slotProps={{
-              textField: {
-                fullWidth: true,
-                required: true,
-                placeholder: "Selecione a data",
-                sx: {
-                  height: 36,
-                  minHeight: 36,
-                  ".MuiInputBase-input": {
-                    height: 36,
-                    minHeight: 36,
-                    padding: "0 12px",
-                  },
-                },
-                style: { flex: 1 },
-              },
-            }}
-            format="dd/MM/yyyy"
+            onChange={(date) => setDueDate(date || null)}
+            valueFormat="DD/MM/YYYY"
           />
-        </Group>
-      </LocalizationProvider>
+        </DatesProvider>
+      </Group>
       <Group grow mb="sm" mt="lg">
         <Select
           label="Prioridade"
