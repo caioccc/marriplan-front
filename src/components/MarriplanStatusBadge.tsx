@@ -50,6 +50,7 @@ const statusMaps: Record<StatusBadgeKind, StatusBadgeMap> = {
     pending: { label: "Pendente", tone: "neutral" }, // aguardando resposta (em progresso)
     confirmed: { label: "Confirmado", tone: "rose" }, // concluído/confirmado
     declined: { label: "Recusado", tone: "muted" }, // recusado
+    refused: { label: "Recusado", tone: "muted" }, // recusado (variante de status negativo)
   },
   gift: {
     available: { label: "Disponível", tone: "neutral" }, // não iniciado

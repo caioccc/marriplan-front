@@ -81,7 +81,6 @@ useEffect(() => {
   async function fetchPublicSimulation() {
     try {
       await api.get(`api/simulations/${token}/`).then((res) => {
-          console.log(res.data.simulation);
           setSimulation(res.data.simulation);
 
           // Efeito refinado de celebração ao carregar com sucesso

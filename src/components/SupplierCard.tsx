@@ -1,4 +1,5 @@
 import { Supplier, WeddingSupplier } from "@/services/suppliers";
+import { softButtonStyles } from "@/styles";
 import {
   ActionIcon,
   Badge,
@@ -392,18 +393,32 @@ export function SupplierCard({
                 justifyContent: "flex-end",
               }}
             >
-              <Button
-                size="xs"
-                radius="xl"
-                onClick={() => onAdd(supplier)}
-                style={{
-                  backgroundColor: "var(--marriplan-rose)",
-                  color: "#fff",
-                  boxShadow: "0 10px 24px rgba(181, 139, 122, 0.26)",
-                }}
-              >
-                {weddingSupplier ? "Gerenciar" : "Adicionar ao casamento"}
-              </Button>
+              {weddingSupplier &&
+              weddingSupplier.status_financeiro === "Sem plano" ? (
+                <Button
+                  size="xs"
+                  radius="xl"
+                  onClick={() => onAdd(supplier)}
+                  variant="default"
+                  type="button"
+                  styles={softButtonStyles}
+                >
+                  Contratar
+                </Button>
+              ) : (
+                <Button
+                  size="xs"
+                  radius="xl"
+                  onClick={() => onAdd(supplier)}
+                  style={{
+                    backgroundColor: "var(--marriplan-rose)",
+                    color: "#fff",
+                    boxShadow: "0 10px 24px rgba(181, 139, 122, 0.26)",
+                  }}
+                >
+                  {weddingSupplier ? "Gerenciar" : "Adicionar ao casamento"}
+                </Button>
+              )}
             </Box>
           ) : null}
         </Box>
