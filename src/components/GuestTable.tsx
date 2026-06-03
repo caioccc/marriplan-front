@@ -1292,7 +1292,7 @@ export default function GuestTable() {
                 )}
               </Group>
             )}
-            renderContent={(g) => (
+            renderContent={(g: Guest) => (
               <Flex direction="column" gap={2}>
                 {/* Nome do Convidado */}
                 <Text
@@ -1310,6 +1310,8 @@ export default function GuestTable() {
                   {g.grupo}
                 </Text>
               )} */}
+
+                <BadgeStatus {...g} />
 
                 {g.whatsapp && (
                   <Text size="xs" c="dimmed">
@@ -1504,12 +1506,12 @@ export default function GuestTable() {
           )}
           <GalleryView
             items={paginatedGuests}
-            getItemId={(g) => g.id}
-            getImageUrl={(g) => g.photo_url || undefined}
+            getItemId={(g: Guest) => g.id}
+            getImageUrl={(g: Guest) => g.photo_url || undefined}
             fallbackIcon={
               <IconUser size={48} color="var(--mantine-color-gray-5)" />
             }
-            renderContent={(g) => (
+            renderContent={(g: Guest) => (
               <Box>
                 <Text fw={500} lineClamp={2}>
                   {g.name}
