@@ -5,7 +5,6 @@ import { IconCopy, IconShare } from '@tabler/icons-react';
 type PixGiftPreviewProps = {
   coupleName: string;
   recipientName: string;
-  city: string;
   qrCodePayload?: string;
   pixCopyPasteCode?: string;
   shareUrl?: string;
@@ -18,7 +17,6 @@ type PixGiftPreviewProps = {
 export function PixGiftPreview({
   coupleName,
   recipientName,
-  city,
   qrCodePayload,
   pixCopyPasteCode,
   shareUrl,
@@ -57,9 +55,6 @@ export function PixGiftPreview({
               <Badge radius="xl">{amountLabel}</Badge>
             </Group>
           ) : null}
-          <Text size="sm" fw={600} c="var(--marriplan-text)">
-            {city ? `Cidade: ${city}` : 'Cidade não informada'}
-          </Text>
         </Stack>
 
         {loading ? (
@@ -154,7 +149,7 @@ export function PixGiftPreview({
             </Box>
 
             <Text size="sm" c="dimmed" ta="center">
-              {resolvedShareUrl ? `Link público: ${resolvedShareUrl}` : 'O link público será liberado após salvar as configurações.'}
+              {resolvedShareUrl ? `` : 'O link público será liberado após salvar as configurações.'}
             </Text>
           </Stack>
         )}

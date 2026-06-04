@@ -20,6 +20,7 @@ import {
 } from "@/services/guests";
 import {
   ActionIcon,
+  Avatar,
   Badge,
   Box,
   Button,
@@ -581,6 +582,12 @@ export default function GuestTable() {
     },
   ] as const;
 
+  useEffect(() => {
+    if (isCompactLayout && viewMode === "table") {
+      setViewMode("cards");
+    }
+  }, [isCompactLayout, viewMode]);
+
   return (
     <Stack gap="lg">
       <div ref={pageTopRef} style={{ scrollMarginTop: "-50px" }} />
@@ -683,10 +690,13 @@ export default function GuestTable() {
                 value={viewMode}
                 onChange={setViewMode}
                 data={
-                  isMobile
+                  isCompactLayout
                     ? [
-                        { value: "gallery", label: <IconCards size={16} /> },
-                        { value: "cards", label: <IconList size={16} /> },
+                        { value: "cards", label: <IconCards size={16} /> },
+                        {
+                          value: "gallery",
+                          label: <IconLayoutGrid size={16} />,
+                        },
                       ]
                     : [
                         { value: "table", label: <IconList size={16} /> },
@@ -869,7 +879,7 @@ export default function GuestTable() {
           })}
         </SimpleGrid>
       )}
-      {!isMobile && viewMode === "table" && (
+      {!isCompactLayout && viewMode === "table" && (
         <DataTable<Guest>
           className="guest-table"
           withTableBorder
@@ -880,7 +890,36 @@ export default function GuestTable() {
           minHeight={200}
           noRecordsText="Nenhum convidado cadastrado."
           columns={[
-            { accessor: "name", title: "Nome", width: 140, sortable: true },
+            {
+              accessor: "name",
+              title: "Nome",
+              width: 180,
+              sortable: true,
+              render: (g) => {
+                return (
+                  // Adicionamos style={{ flexWrap: 'nowrap', minWidth: 0 }} para forçar o flex container a aceitar o truncamento dos filhos
+                  <Group gap={4} style={{ flexWrap: "nowrap", minWidth: 0 }}>
+                    {g.image ? (
+                      <Avatar src={g.photo_url} alt={g.name} />
+                    ) : (
+                      <Avatar
+                        name={g.name}
+                        size={38}
+                        color="var(--mantine-color-gray-5)"
+                        allowedInitialsColors={[
+                          "var(--mantine-color-gray-5), var(--mantine-color-gray-6), var(--mantine-color-gray-7)",
+                        ]}
+                      />
+                    )}
+                    <Tooltip label={g.name} withArrow>
+                      <Text size="sm" truncate="end">
+                        {g.name}
+                      </Text>
+                    </Tooltip>
+                  </Group>
+                );
+              },
+            },
             {
               accessor: "whatsapp",
               title: "WhatsApp",
@@ -890,7 +929,6 @@ export default function GuestTable() {
               textAlign: "center",
               sortable: true,
             },
-            { accessor: "email", title: "Email", width: 160, sortable: true },
             {
               accessor: "acompanhantes",
               title: "Acompanhantes",
@@ -1240,30 +1278,34 @@ export default function GuestTable() {
             items={paginatedGuests}
             getItemId={(g) => g.id}
             getImageUrl={(g) => g.photo_url || undefined}
-            fallbackIcon={
-              <IconUser size={24} color="var(--mantine-color-gray-5)" />
-            }
+            fallbackIcon={(g) => (
+              <Avatar src={g.photo_url} radius="md" size="xl" name={g.name} />
+            )}
             renderStatus={(g) => <BadgeStatus {...g} />}
             renderSoloActions={(guest) => (
               <Group gap={4}>
                 {guest.status_presenca === "Pending" && (
                   <Tooltip label="Confirmar Presença">
-                    <ActionIcon
+                    <Button
+                      styles={softButtonStyles}
+                      px={8}
                       size="sm"
-                      variant="light"
-                      color="blue"
+                      style={{ minWidth: 38 }}
                       onClick={() => {
                         setSelectedGuest(guest);
                         setPresencaModalOpen(true);
                       }}
                     >
                       <IconCheck size={16} />
-                    </ActionIcon>
+                    </Button>
                   </Tooltip>
                 )}
                 {guest.status_presenca !== "Pending" && (
                   <Tooltip label="Gerar link de confirmação">
-                    <ActionIcon
+                    <Button
+                      styles={softButtonStyles}
+                      px={8}
+                      style={{ minWidth: 38 }}
                       size="sm"
                       variant="light"
                       color="blue"
@@ -1287,7 +1329,7 @@ export default function GuestTable() {
                       }}
                     >
                       <IconLink size={16} />
-                    </ActionIcon>
+                    </Button>
                   </Tooltip>
                 )}
               </Group>
@@ -1508,9 +1550,9 @@ export default function GuestTable() {
             items={paginatedGuests}
             getItemId={(g: Guest) => g.id}
             getImageUrl={(g: Guest) => g.photo_url || undefined}
-            fallbackIcon={
-              <IconUser size={48} color="var(--mantine-color-gray-5)" />
-            }
+            fallbackIcon={(g: Guest) => (
+              <Avatar src={g.photo_url} radius="md" size="xl" name={g.name} />
+            )}
             renderContent={(g: Guest) => (
               <Box>
                 <Text fw={500} lineClamp={2}>

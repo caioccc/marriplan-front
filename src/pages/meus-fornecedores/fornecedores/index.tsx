@@ -524,7 +524,7 @@ export default function SuppliersMarketplacePage() {
               loading={addingSupplier}
               disabled={addingSupplier || supplierLimitReached}
             >
-              Confirmar adição
+              Confirmar
             </Button>
           </div>
         </Stack>

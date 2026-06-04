@@ -19,6 +19,7 @@ export type WeddingSupplierFinanceSummary = {
     name: string;
     company_name?: string;
     category_detail?: { id: number; name: string; slug: string };
+    cover_image_url?: string;
   };
   wedding_profile?: {
     id: number;

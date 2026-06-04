@@ -7,6 +7,7 @@ import PalettePage from "@/components/wedding/identity/pages/PalettePage";
 import { WeddingInspirationsPage } from "@/components/wedding/identity/pages/WeddingInspirationsPage";
 import WeddingSizePage from "@/components/wedding/identity/pages/WeddingSizePage";
 import WeddingStylePage from "@/components/wedding/identity/pages/WeddingStylePage";
+import { getFeatureLimit } from "@/constants/plans";
 import {
   DRESS_CODE_OPTIONS,
   DRESS_CODE_REFERENCE_IMAGES,
@@ -14,6 +15,7 @@ import {
   WEDDING_SIZES,
   WEDDING_STYLES,
 } from "@/constants/weddingIdentityData";
+import { useSubscription } from "@/hooks/useSubscription";
 import { useWeddingIdentityState } from "@/hooks/useWeddingIdentityState";
 import {
   createWeddingIdentityShareToken,
@@ -55,12 +57,9 @@ import {
   IconFileTypePdf,
   IconMaximize,
   IconShare,
-  IconShare3,
   IconTrash,
 } from "@tabler/icons-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useSubscription } from "@/hooks/useSubscription";
-import { getFeatureLimit } from "@/constants/plans";
 
 const FIRST_STEPS_REFRESH_EVENT = "marriplan:first-steps-refresh";
 
@@ -102,6 +101,19 @@ export default function OverviewPage() {
   const { isPremium } = useSubscription();
 
   const modalTopRef = useRef<HTMLDivElement>(null);
+
+  const [openDeleteInspirationModal, setOpenDeleteInspirationModal] =
+    useState(false);
+
+  const handleRemoveOpenModal = (id: number) => {
+    setDeletingId(id);
+    setOpenDeleteInspirationModal(true);
+  };
+
+  const onCloseDeleteModal = () => {
+    setDeletingId(null);
+    setOpenDeleteInspirationModal(false);
+  };
 
   const handleShareLink = async () => {
     const { token } = await createWeddingIdentityShareToken();
@@ -508,7 +520,6 @@ export default function OverviewPage() {
             </Group>
           }
         />
-
         {!hasIdentity ? (
           <EmptyState
             icon="✦"
@@ -913,7 +924,7 @@ export default function OverviewPage() {
                           radius="xl"
                           size="md"
                           loading={deletingId === item.id}
-                          onClick={() => handleRemoveInspiration(item.id)}
+                          onClick={() => handleRemoveOpenModal(item.id)}
                           style={{
                             position: "absolute",
                             bottom: "10px",
@@ -931,18 +942,9 @@ export default function OverviewPage() {
               </Stack>
             )}
 
-            <Card
-              className="marriplan-card"
-              withBorder
-              radius="lg"
-              p="lg"
-              mt={8}
-              style={{
-                background: "var(--mantine-color-body)",
-                borderColor: "var(--mantine-color-gray-3)",
-                boxShadow: "0 10px 30px rgba(20,14,10,0.06)",
-              }}
-            >
+            <div className="relative overflow-hidden rounded-[2.4rem] border border-[#eadfd3] bg-[linear-gradient(135deg,#2f2822_0%,#4b3f36_58%,#6a584b_100%)] px-8 py-14 shadow-[0_28px_80px_rgba(47,40,34,0.22)] sm:px-12 lg:px-16 lg:py-16">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(242,230,216,0.24),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(200,176,138,0.16),transparent_28%)]" />
+
               <Group
                 justify="space-between"
                 align="center"
@@ -953,16 +955,25 @@ export default function OverviewPage() {
                   <Text
                     size="11px"
                     fw={700}
-                    c="dimmed"
                     tt="uppercase"
-                    style={{ letterSpacing: 2 }}
+                    style={{
+                      letterSpacing: 2,
+                      color: "rgba(255,255,255,0.85)",
+                    }}
                   >
                     Compartilhar
                   </Text>
-                  <Text fw={700} size="lg">
+                  <Text
+                    fw={700}
+                    size="xl"
+                    style={{ color: "white", lineHeight: 1.2 }}
+                  >
                     Envie para seus Fornecedores
                   </Text>
-                  <Text size="sm" c="dimmed" style={{ maxWidth: 420 }}>
+                  <Text
+                    size="md"
+                    style={{ maxWidth: 420, color: "white" }}
+                  >
                     Gere um link exclusivo ou PDF com toda a identidade visual
                     do casamento para compartilhar com fornecedores.
                   </Text>
@@ -970,20 +981,17 @@ export default function OverviewPage() {
                 <Group gap="xs">
                   <Button
                     styles={primaryButtonStyles}
-                    style={{
-                      borderRadius: 10,
-                    }}
                     leftSection={<IconShare size={14} />}
                     onClick={handleShareLink}
+                    size="lg"
                   >
                     Compartilhar
                   </Button>
                 </Group>
               </Group>
-            </Card>
+            </div>
           </>
         )}
-
         {isMobile ? (
           <MobileFullscreenModal
             opened={isIdentityModalOpen}
@@ -1146,7 +1154,6 @@ export default function OverviewPage() {
             </Stack>
           </Modal>
         )}
-
         <Modal
           opened={Boolean(fullscreenImage)}
           onClose={closeFullscreenImage}
@@ -1203,6 +1210,36 @@ export default function OverviewPage() {
             </Box>
           ) : null}
         </Modal>
+        {deletingId !== null && (
+          <Modal
+            opened={openDeleteInspirationModal}
+            onClose={onCloseDeleteModal}
+            title="Confirmar exclusão"
+            centered
+            radius="md"
+            padding="lg"
+            size="md"
+          >
+            <Stack gap="md">
+              <Text>
+                Tem certeza que deseja remover esta inspiração do mural?
+              </Text>
+              <Group justify="flex-end" gap="md">
+                <Button styles={softButtonStyles} onClick={onCloseDeleteModal}>
+                  Cancelar
+                </Button>
+                <Button
+                  styles={primaryButtonStyles}
+                  onClick={() =>
+                    handleRemoveInspiration(deletingId ? deletingId : 0)
+                  }
+                >
+                  Excluir
+                </Button>
+              </Group>
+            </Stack>
+          </Modal>
+        )}
       </Stack>
     </BaseLayout>
   );

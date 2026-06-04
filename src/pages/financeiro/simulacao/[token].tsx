@@ -1,45 +1,44 @@
-import {
-    formatCurrency
-} from "@/lib/simulationResultUtils";
+import { formatCurrency } from "@/lib/simulationResultUtils";
 import { SimulationResult } from "@/lib/simulationUtils";
 import api from "@/services/api";
+import { translateEventLevel } from "@/utils/financeiro";
 import { BarChart, DonutChart } from "@mantine/charts";
 import {
-    Alert,
-    Badge,
-    Box,
-    Button,
-    Card,
-    Center,
-    Container,
-    Divider,
-    Grid,
-    Group,
-    Progress,
-    RingProgress,
-    SimpleGrid,
-    Skeleton,
-    Stack,
-    Text,
-    ThemeIcon,
-    Title
+  Alert,
+  Badge,
+  Box,
+  Button,
+  Card,
+  Center,
+  Container,
+  Divider,
+  Grid,
+  Group,
+  Progress,
+  RingProgress,
+  SimpleGrid,
+  Skeleton,
+  Stack,
+  Text,
+  ThemeIcon,
+  Title,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
-    IconCalendar,
-    IconCheck,
-    IconChecklist,
-    IconCopy,
-    IconCrown,
-    IconExternalLink,
-    IconLamp,
-    IconMapPin,
-    IconMessageReport,
-    IconShare,
-    IconSparkles,
-    IconTrendingUp,
-    IconUsers
+  IconCalendar,
+  IconCheck,
+  IconChecklist,
+  IconCopy,
+  IconCrown,
+  IconExternalLink,
+  IconLamp,
+  IconMapPin,
+  IconMessageReport,
+  IconShare,
+  IconSparkles,
+  IconTrendingUp,
+  IconUsers,
 } from "@tabler/icons-react";
 import confetti from "canvas-confetti";
 import { motion } from "framer-motion";
@@ -74,13 +73,13 @@ const PublicWeddingSimulationPage: React.FC = () => {
   const [simulation, setSimulation] = useState<SimulationResult | null>(null);
   const [copied, setCopied] = useState(false);
 
- // 1. Chamada de API pública (Não autenticada)
-useEffect(() => {
-  if (!token) return;
+  // 1. Chamada de API pública (Não autenticada)
+  useEffect(() => {
+    if (!token) return;
 
-  async function fetchPublicSimulation() {
-    try {
-      await api.get(`api/simulations/${token}/`).then((res) => {
+    async function fetchPublicSimulation() {
+      try {
+        await api.get(`api/simulations/${token}/`).then((res) => {
           setSimulation(res.data.simulation);
 
           // Efeito refinado de celebração ao carregar com sucesso
@@ -90,18 +89,18 @@ useEffect(() => {
             origin: { y: 0.65 },
             colors: [PALETTE.roseGold, "#D4AF37", PALETTE.warmGray],
           });
-      });
-    } catch (err) {
-      setSimulation(null); // Aqui sim ele deve zerar em caso de erro!
-      console.error("Erro ao buscar simulação pública:", err);
-    } finally {
-      // REMOVIDO: setSimulation(null); <-- Isso estava apagando os dados de sucesso!
-      setLoading(false);
+        });
+      } catch (err) {
+        setSimulation(null); // Aqui sim ele deve zerar em caso de erro!
+        console.error("Erro ao buscar simulação pública:", err);
+      } finally {
+        // REMOVIDO: setSimulation(null); <-- Isso estava apagando os dados de sucesso!
+        setLoading(false);
+      }
     }
-  }
 
-  fetchPublicSimulation();
-}, [token]);
+    fetchPublicSimulation();
+  }, [token]);
 
   // Handlers de Compartilhamento Unificado
   const currentUrl = typeof window !== "undefined" ? window.location.href : "";
@@ -140,7 +139,7 @@ useEffect(() => {
       <Container size="lg" py={50}>
         <Stack gap="xl">
           <Skeleton height={60} radius="xl" width="50%" mx="auto" />
-          <Skeleton height={280} radius="2xl" />
+          <Skeleton height={280} radius="xl" />
           <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
             <Skeleton height={150} radius="xl" />
             <Skeleton height={150} radius="xl" />
@@ -164,7 +163,7 @@ useEffect(() => {
           variants={fadeInUpVariants}
         >
           <Card
-            radius="2xl"
+            radius="xl"
             p="xl"
             ta="center"
             style={{
@@ -270,7 +269,7 @@ useEffect(() => {
               style={{ letterSpacing: -0.5, cursor: "pointer" }}
               onClick={() => router.push("/")}
             >
-              marriplan<span style={{ color: PALETTE.roseGold }}>.</span>
+              Marriplan<span style={{ color: PALETTE.roseGold }}>.</span>
             </Text>
             <Badge color="var(--marriplan-rose)" variant="light" radius="sm">
               Acesso Público
@@ -287,7 +286,7 @@ useEffect(() => {
           variants={fadeInUpVariants}
         >
           <Card
-            radius="2xl"
+            radius="xl"
             p={{ base: "xl", md: 60 }}
             ta="center"
             style={{
@@ -295,18 +294,6 @@ useEffect(() => {
               border: `1px solid ${PALETTE.line}`,
             }}
           >
-            <Group justify="center" gap="xs" mb="md">
-              <Badge color="var(--marriplan-rose)" radius="sm">
-                Simulação Personalizada
-              </Badge>
-              <Badge color="gray" variant="light" radius="sm">
-                Compartilhável
-              </Badge>
-              <Badge color="teal" radius="sm">
-                Gerada pelo Marriplan
-              </Badge>
-            </Group>
-
             <Title
               order={1}
               c={PALETTE.ink}
@@ -372,7 +359,7 @@ useEffect(() => {
             {
               icon: IconCrown,
               title: "Padrão",
-              value: inputs.eventLevel.toUpperCase(),
+              value: translateEventLevel(inputs.eventLevel).toUpperCase(),
             },
           ].map((item, idx) => (
             <Card
@@ -613,7 +600,7 @@ useEffect(() => {
         {/* PLANEJAMENTO FINANCEIRO DE APORTE */}
         <Box mt={50}>
           <Card
-            radius="2xl"
+            radius="xl"
             p="xl"
             style={{
               border: `1px solid ${PALETTE.line}`,
@@ -731,7 +718,7 @@ useEffect(() => {
         {/* COMPARTILHAR SIMULAÇÃO */}
         <Box mt={50}>
           <Card
-            radius="2xl"
+            radius="xl"
             p="lg"
             ta="center"
             style={{
@@ -851,7 +838,7 @@ useEffect(() => {
         {/* CALL TO ACTION (CTA) FINAL DE CONVERSÃO */}
         <motion.div whileHover={{ y: -2 }} transition={{ duration: 0.2 }}>
           <Card
-            radius="2xl"
+            radius="xl"
             p={{ base: "xl", md: 50 }}
             ta="center"
             style={{

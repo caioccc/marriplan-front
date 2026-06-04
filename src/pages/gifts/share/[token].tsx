@@ -36,20 +36,8 @@ import {
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { getCategoryLabel } from "@/lib/giftCategories";
+import { formatCurrency, getStatusBadgeStyle, STATUS_LABELS } from "@/utils/gifts";
 
-const STATUS_LABELS: Record<string, string> = {
-  available: "Disponível",
-  purchased: "Comprado",
-  reserved: "Reservado",
-};
-// categorias agora centralizadas em frontend/src/lib/giftCategories.ts
-
-function formatCurrency(value: number | string) {
-  if (typeof value === "string") value = parseFloat(value);
-  return value
-    ? value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-    : "R$ 0,00";
-}
 
 const sharePaginationStyles = `
   .share-pagination .mantine-Pagination-control {
@@ -65,26 +53,7 @@ const sharePaginationStyles = `
   }
 `;
 
-function getStatusBadgeStyle(status: string) {
-  if (status === "available") {
-    return {
-      backgroundColor: "var(--marriplan-rose)",
-      color: "#fff",
-    };
-  }
 
-  if (status === "reserved") {
-    return {
-      backgroundColor: "rgba(242, 230, 216, 0.95)",
-      color: "var(--marriplan-text)",
-    };
-  }
-
-  return {
-    backgroundColor: "var(--marriplan-border)",
-    color: "var(--marriplan-text)",
-  };
-}
 
 type WeddingProfileLite = {
   nome_noivo?: string;
@@ -476,7 +445,7 @@ export default function GiftsSharePage() {
             <Loader size="lg" />
           </Group>
         ) : (
-          <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="md">
+          <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4, xl: 5 }} spacing="md">
             {gifts.length === 0 && (
               <Text color="dimmed">Nenhum presente encontrado.</Text>
             )}

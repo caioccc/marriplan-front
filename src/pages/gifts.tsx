@@ -10,6 +10,7 @@ import { PixSettingsModal } from "@/components/gifts/pix/PixSettingsModal";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getAllCategoryOptions,
+  getCategoryLabel,
   getCategoryOptionsFromSlugs,
 } from "@/lib/giftCategories";
 import { giftsService } from "@/services/giftsService";
@@ -22,7 +23,13 @@ import {
 } from "@/styles";
 import { Gift } from "@/types/gift";
 import {
+  formatCurrency,
+  getStatusBadgeStyle,
+  STATUS_LABELS,
+} from "@/utils/gifts";
+import {
   ActionIcon,
+  Avatar,
   Badge,
   Box,
   Button,
@@ -51,6 +58,7 @@ import {
   IconDotsVertical,
   IconDownload,
   IconEdit,
+  IconExternalLink,
   IconEye,
   IconFileTypePdf,
   IconFilter,
@@ -748,18 +756,89 @@ const GiftsPage: NextPage = () => {
             <DataTable
               records={gifts}
               columns={[
-                { accessor: "name", title: "Nome" },
+                {
+                  accessor: "name",
+                  title: "Nome",
+                  // 1. Definimos uma largura (ex: 250 ou uma porcentagem) ou usamos a prop 'width' do Mantine DataTable
+                  // para ajudar a delimitar o espaço se necessário.
+                  width: 300,
+                  render: (g) => {
+                    const isLocked = g.status !== "available";
+                    return (
+                      // Adicionamos style={{ flexWrap: 'nowrap', minWidth: 0 }} para forçar o flex container a aceitar o truncamento dos filhos
+                      <Group
+                        gap={4}
+                        style={{ flexWrap: "nowrap", minWidth: 0 }}
+                      >
+                        {g.image ? (
+                          <Avatar src={g.image} alt={g.name} />
+                        ) : (
+                          <Avatar
+                            name={g.name}
+                            size={38}
+                            color="var(--mantine-color-gray-5)"
+                            allowedInitialsColors={[
+                              "var(--mantine-color-gray-5), var(--mantine-color-gray-6), var(--mantine-color-gray-7)",
+                            ]}
+                          />
+                        )}
+                        <Tooltip label={g.name} withArrow>
+                          <Text
+                            size="sm"
+                            // 2. Passamos o 'truncate' como prop direta
+                            truncate="end"
+                            style={{
+                              ...(isLocked
+                                ? { textDecoration: "line-through" }
+                                : {}),
+                              // Removido o truncate daqui
+                            }}
+                          >
+                            {g.name}
+                          </Text>
+                        </Tooltip>
+                      </Group>
+                    );
+                  },
+                },
                 {
                   accessor: "value",
                   title: "Valor",
-                  render: (g) => `R$ ${g.value}`,
+                  render: (g) => {
+                    const isLocked = g.status !== "available";
+                    return (
+                      <Text
+                        size="sm"
+                        style={{
+                          ...(isLocked
+                            ? { textDecoration: "line-through" }
+                            : {}),
+                        }}
+                      >
+                        R$ {g.value}
+                      </Text>
+                    );
+                  },
                 },
                 {
                   accessor: "category",
                   title: "Categoria",
-                  render: (g) =>
-                    categoryOptions.find((c) => c.value === g.category)
-                      ?.label || g.category,
+                  render: (g) => {
+                    const isLocked = g.status !== "available";
+                    return (
+                      <Text
+                        size="sm"
+                        style={{
+                          ...(isLocked
+                            ? { textDecoration: "line-through" }
+                            : {}),
+                        }}
+                      >
+                        {categoryOptions.find((c) => c.value === g.category)
+                          ?.label || g.category}
+                      </Text>
+                    );
+                  },
                 },
                 {
                   accessor: "status",
@@ -922,63 +1001,80 @@ const GiftsPage: NextPage = () => {
               items={gifts}
               getItemId={(g) => g.id}
               getImageUrl={(g) => g.image}
-              fallbackIcon={
+              fallbackIcon={(g) => (
                 <IconGift size={48} color="var(--mantine-color-gray-5)" />
-              }
+              )}
               renderSoloActions={(g) => (
                 <Group gap={4}>
                   {g.status !== "purchased" && (
                     <Tooltip label="Marcar como comprado">
-                      <ActionIcon
-                        variant="subtle"
-                        color="green"
+                      <Button
+                        styles={softButtonStyles}
+                        px={4}
+                        style={{ minWidth: 38 }}
                         onClick={() => handleMarkAsPurchased(g)}
                       >
                         <IconCheck size={18} />
-                      </ActionIcon>
+                      </Button>
                     </Tooltip>
                   )}
                   {(g.status === "purchased" || g.status === "reserved") && (
                     <Tooltip label="Marcar como disponível">
-                      <ActionIcon
-                        variant="subtle"
-                        color="gray"
+                      <Button
+                        styles={softButtonStyles}
+                        px={4}
+                        style={{ minWidth: 38 }}
                         onClick={() => handleMarkAsAvailable(g)}
                       >
                         <IconStatusChange size={18} />
-                      </ActionIcon>
+                      </Button>
                     </Tooltip>
                   )}
                 </Group>
               )}
-              renderContent={(g) => (
-                <>
-                  <Text fw={500} lineClamp={2}>
-                    {g.name}
-                  </Text>
-                  <Text size="sm" c="dimmed">
-                    Categoria:{" "}
-                    {categoryOptions.find((c) => c.value === g.category)
-                      ?.label || g.category}
-                  </Text>
-                  <Stack gap={4} my={4}>
-                    <Text size="md" lineClamp={2}>
-                      R$ {g.value}
+              renderContent={(g) => {
+                const isLocked = g.status !== "available";
+                return (
+                  <>
+                    <Text
+                      fw={500}
+                      lineClamp={2}
+                      style={{
+                        ...(isLocked
+                          ? { textDecoration: "line-through", color: "#888" }
+                          : {}),
+                      }}
+                    >
+                      {g.name}
                     </Text>
-                    <MarriplanStatusBadge kind="gift" status={g.status} />
-                  </Stack>
-                  {g.link && !isMobile && (
                     <Text
                       size="sm"
-                      c="blue"
-                      style={{ cursor: "pointer" }}
-                      onClick={() => window.open(g.link, "_blank")}
+                      c="dimmed"
+                      style={{
+                        ...(isLocked ? { textDecoration: "line-through" } : {}),
+                      }}
                     >
-                      Ver link
+                      Categoria:{" "}
+                      {categoryOptions.find((c) => c.value === g.category)
+                        ?.label || g.category}
                     </Text>
-                  )}
-                </>
-              )}
+                    <Stack gap={4} my={4}>
+                      <Text
+                        size="md"
+                        lineClamp={2}
+                        style={{
+                          ...(isLocked
+                            ? { textDecoration: "line-through" }
+                            : {}),
+                        }}
+                      >
+                        R$ {g.value}
+                      </Text>
+                      <MarriplanStatusBadge kind="gift" status={g.status} />
+                    </Stack>
+                  </>
+                );
+              }}
               renderActions={(g) => (
                 <>
                   {g.status === "available" && (
@@ -1098,29 +1194,101 @@ const GiftsPage: NextPage = () => {
               cols={
                 isCompactLayout ? { base: 1, sm: 1, md: 1, lg: 1 } : undefined
               }
-              fallbackIcon={
+              fallbackIcon={(g) => (
                 <IconGift size={48} color="var(--mantine-color-gray-5)" />
-              }
-              renderContent={(g) => (
-                <Flex direction="column" gap="xs">
-                  <Text fw={500} lineClamp={2}>
-                    {g.name}
-                  </Text>
-                  <MarriplanStatusBadge
-                    kind="gift"
-                    status={g.status}
-                    fullWidth
-                  />
-                  <Badge
-                    variant="light"
-                    color={"gray"}
-                    size="lg"
-                    style={{ alignSelf: "center" }}
-                  >
-                    R$ {g.value}
-                  </Badge>
-                </Flex>
               )}
+              renderContent={(gift) => {
+                const isLocked = gift.status !== "available";
+                return (
+                  <Flex direction="column" gap="xs">
+                    <Tooltip
+                      label={
+                        gift.name +
+                        (gift.description ? ": " + gift.description : "")
+                      }
+                      withArrow
+                      position="top"
+                    >
+                      <Title
+                        order={4}
+                        mt="sm"
+                        style={{
+                          ...(isLocked
+                            ? { textDecoration: "line-through", color: "#888" }
+                            : {}),
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "clip",
+                        }}
+                      >
+                        {gift.name}
+                      </Title>
+                    </Tooltip>
+                    <Text
+                      size="sm"
+                      color="dimmed"
+                      style={{
+                        ...(isLocked ? { textDecoration: "line-through" } : {}),
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "clip",
+                      }}
+                    >
+                      {gift.description}
+                    </Text>
+                    <Text
+                      mt="xs"
+                      style={isLocked ? { textDecoration: "line-through" } : {}}
+                    >
+                      <b>Valor:</b>{" "}
+                      {gift.value
+                        ? formatCurrency(gift.value)
+                        : "não informado"}
+                    </Text>
+                    {gift.category ? (
+                      <Text
+                        style={
+                          isLocked ? { textDecoration: "line-through" } : {}
+                        }
+                      >
+                        <b>Categoria:</b> {getCategoryLabel(gift.category)}
+                      </Text>
+                    ) : (
+                      <Text
+                        style={
+                          isLocked ? { textDecoration: "line-through" } : {}
+                        }
+                      >
+                        <b>Categoria:</b> não informado
+                      </Text>
+                    )}
+                    <Group mt="xs" justify="space-between" align="center">
+                      <Badge style={getStatusBadgeStyle(gift.status)}>
+                        {STATUS_LABELS[gift.status] || gift.status}
+                      </Badge>
+                      {gift.link && (
+                        <Tooltip
+                          label="Abrir link do produto"
+                          withArrow
+                          position="top"
+                        >
+                          <Button
+                            component="a"
+                            href={gift.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            leftSection={<IconExternalLink size={16} />}
+                            size="xs"
+                            styles={softButtonStyles}
+                          >
+                            Ver Produto
+                          </Button>
+                        </Tooltip>
+                      )}
+                    </Group>
+                  </Flex>
+                );
+              }}
               renderActions={(g) => (
                 <>
                   {g.status === "available" && (
@@ -1292,6 +1460,8 @@ const GiftsPage: NextPage = () => {
           onClose={() => setShareModal(false)}
           title="Compartilhar Lista de Presentes"
           centered
+          size="lg"
+          padding="lg"
           overlayProps={{ blur: 2 }}
         >
           <Text c="dimmed">Compartilhe sua lista com convidados:</Text>
@@ -1302,6 +1472,12 @@ const GiftsPage: NextPage = () => {
               styles={primaryButtonStyles}
               onClick={() => {
                 navigator.clipboard.writeText(shareUrl);
+                notifications.show({
+                  color: "green",
+                  title: "Link copiado!",
+                  message:
+                    "O link público da sua lista de presentes foi copiado para a área de transferência.",
+                });
               }}
             >
               Copiar link
@@ -1329,12 +1505,6 @@ const GiftsPage: NextPage = () => {
               Facebook
             </Button>
           </Group>
-          <Text mt="sm" size="sm" color="dimmed">
-            Link publico:{" "}
-            <a href={shareUrl} target="_blank" rel="noopener noreferrer">
-              {shareUrl}
-            </a>
-          </Text>
         </Modal>
         <ImportGiftsModal
           opened={importModalOpen}

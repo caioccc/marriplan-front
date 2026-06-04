@@ -51,6 +51,24 @@ body {
     --marriplan-rose: #b58b7a;
     --marriplan-gold: #c8b08a;
     --marriplan-shadow: 0 16px 40px rgba(70, 56, 43, 0.08);
+
+    /* Sucesso */
+  --marriplan-success-soft: #c8dbb2; /* Sage Soft */
+  --marriplan-success-text: #5b684e; /* Sage Dark */
+
+  /* Alerta */
+  --marriplan-warning-soft: #ffdea4; /* Ocre Soft */
+  --marriplan-warning-text: #967d58; /* Ocre Dark */
+
+  /* Perigo */
+  --marriplan-danger-soft: #ff7053; /* Rose Soft (Perto do Rose original) */
+  --marriplan-danger-text: #ffffff; /* Rose Dark (Perto do Rose original escuro) */
+
+  /* Neutro */
+  --marriplan-neutral-soft: #e9e2db; /* RoseGold Soft */
+  --marriplan-neutral-text: #78706a; /* WarmGray Dark */
+
+  --marriplan-image-overlay: rgba(0, 0, 0, 0.04);
   }
   .dark {
     --background: 0 0% 3.9%;

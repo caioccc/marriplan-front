@@ -7,7 +7,7 @@ import {
   isFeatureLimitReached,
 } from "@/constants/plans";
 import { useSubscription } from "@/hooks/useSubscription";
-import { handleValueChange, toSentenceCase } from "@/lib/text";
+import { toSentenceCase } from "@/lib/text";
 import {
   FormaPagamento,
   ParcelaPagamento,
@@ -27,9 +27,14 @@ import {
   updateWeddingSupplier,
   uploadSupplierContract,
 } from "@/services/suppliers";
-import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
-  ActionIcon,
+  badgeStyles,
+  inputStyles,
+  primaryButtonStyles,
+  softButtonStyles,
+} from "@/styles";
+import { dueColor } from "@/utils/financeiro";
+import {
   Badge,
   Box,
   Button,
@@ -40,13 +45,15 @@ import {
   Loader,
   Menu,
   Modal,
+  NumberInput,
+  Progress,
   ScrollArea,
   Select,
   Stack,
   Text,
   TextInput,
   Textarea,
-  Title
+  Title,
 } from "@mantine/core";
 import { DatePickerInput, DatesProvider } from "@mantine/dates";
 import { useMediaQuery } from "@mantine/hooks";
@@ -58,22 +65,14 @@ import {
   IconHeart,
   IconMapPin,
   IconPaperclip,
+  IconRefresh,
   IconSparkles,
   IconTrash,
   IconUpload,
 } from "@tabler/icons-react";
+import { DollarSignIcon } from "lucide-react";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
-
-function formatCurrencyInput(value: string) {
-  const normalized = value.replace(/[^\d,.-]/g, "").replace(",", ".");
-  return normalized;
-}
-
-function parseCombinedValue(value: string) {
-  const numeric = Number(formatCurrencyInput(value));
-  return Number.isNaN(numeric) ? 0 : numeric;
-}
 
 export default function SupplierDetailPage() {
   const router = useRouter();
@@ -126,7 +125,7 @@ export default function SupplierDetailPage() {
   const [form, setForm] = useState({
     status: "QUOTING" as NonNullable<WeddingSupplier["status"]>,
     is_favorite: false,
-    valor_combinado: "",
+    valor_combinado: null as number | null,
     notes: "",
   });
 
@@ -158,8 +157,8 @@ export default function SupplierDetailPage() {
             is_favorite: !!relation.is_favorite,
             valor_combinado:
               relation.valor_combinado && Number(relation.valor_combinado) > 0
-                ? String(relation.valor_combinado)
-                : "",
+                ? relation.valor_combinado
+                : null,
             notes: relation.notes || "",
           });
         }
@@ -209,7 +208,7 @@ export default function SupplierDetailPage() {
       const weddingPayload = {
         status: form.status,
         is_favorite: form.is_favorite,
-        valor_combinado: formatCurrencyInput(form.valor_combinado),
+        valor_combinado: form.valor_combinado,
         notes: toSentenceCase(form.notes),
       };
 
@@ -408,6 +407,7 @@ export default function SupplierDetailPage() {
   };
 
   function formatCurrency(value?: string | number | null) {
+    console.log("Formatting value:", value);
     if (value === undefined || value === null || value === "")
       return "A combinar";
     const numeric = typeof value === "number" ? value : Number(value);
@@ -435,27 +435,6 @@ export default function SupplierDetailPage() {
     return "A vencer";
   }
 
-  function statusColor(status?: ParcelaStatus) {
-    if (status === "pago") return "green";
-    if (status === "em_atraso") return "red";
-    return "yellow";
-  }
-
-  function dueColor(parcela: {
-    status?: ParcelaStatus;
-    data_vencimento: string;
-  }) {
-    const calculated = parcela.status;
-    if (calculated === "pago") return "green";
-    if (calculated === "em_atraso") return "red";
-    const dueDate = new Date(`${parcela.data_vencimento}T00:00:00`);
-    const diffDays = Math.ceil(
-      (dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-    );
-    if (diffDays <= 7) return "yellow";
-    return "teal";
-  }
-
   const contractUrl = weddingSupplier?.contract_file_url || "";
 
   const isImageContract = useMemo(
@@ -467,8 +446,15 @@ export default function SupplierDetailPage() {
   const hasPaymentPlan = Boolean(weddingSupplier?.parcelas?.length);
   const saveDisabled = isHired && !hasPaymentPlan;
 
+  const valorInputRef = useRef<HTMLInputElement>(null);
 
-  
+  const handleIniciarContratacao = () => {
+    setForm((prev) => ({ ...prev, status: "HIRED" }));
+    setTimeout(() => {
+      valorInputRef.current?.focus();
+      valorInputRef.current?.select();
+    }, 100);
+  };
 
   const handleDownloadContract = () => {
     if (!contractUrl) return;
@@ -485,6 +471,15 @@ export default function SupplierDetailPage() {
     link.click();
     document.body.removeChild(link);
   };
+
+  // Armazene os valores em variáveis simples para não poluir o JSX
+  const parcelasPagas =
+    weddingSupplier?.parcelas?.filter((p) => p.status === "pago").length || 0;
+  const totalParcelas = weddingSupplier?.parcelas?.length || 0;
+
+  // Evita divisão por zero caso o fornecedor não tenha parcelas cadastradas ainda
+  const porcentagemProgresso =
+    totalParcelas > 0 ? (parcelasPagas / totalParcelas) * 100 : 0;
 
   if (loading) {
     return (
@@ -574,6 +569,84 @@ export default function SupplierDetailPage() {
                 </Group>
               </Group>
             </Card>
+
+            {/* Condicional para renderizar o card apenas se o status for cotando ou negociando */}
+            {(weddingSupplier?.status === "QUOTING" ||
+              weddingSupplier?.status === "NEGOTIATING") && (
+              <Card
+                radius="xl"
+                p="xl"
+                withBorder
+                className="marriplan-card"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #fffaf6 0%, #f6efe7 56%, #efe4d8 100%)",
+                  borderColor: "rgba(181, 139, 122, 0.22)",
+                  boxShadow: "0 18px 40px rgba(70, 56, 43, 0.08)",
+                  marginBottom: "24px", // Um respiro em relação ao resto da página
+                }}
+              >
+                <Group
+                  justify="space-between"
+                  align="center"
+                  wrap="wrap"
+                  gap="md"
+                >
+                  <Stack
+                    gap={6}
+                    style={{ maxWidth: 620, flex: 1, minWidth: 280 }}
+                  >
+                    <Text
+                      c="var(--marriplan-rose)"
+                      tt="uppercase"
+                      fw={700}
+                      size="xs"
+                      style={{ letterSpacing: 2 }}
+                    >
+                      {weddingSupplier?.status === "QUOTING"
+                        ? "Próximo Passo"
+                        : "Negociação Avançada"}
+                    </Text>
+
+                    <Title
+                      order={3}
+                      c="var(--marriplan-text)"
+                      style={{ fontSize: "1.35rem" }}
+                    >
+                      {weddingSupplier?.status === "QUOTING"
+                        ? "Pronto para fechar com este fornecedor?"
+                        : "Fechou o acordo ideal?"}
+                    </Title>
+
+                    <Text
+                      c="var(--marriplan-muted)"
+                      size="sm"
+                      style={{ lineHeight: 1.7 }}
+                    >
+                      {weddingSupplier?.status === "QUOTING"
+                        ? "Transforme esta cotação em um contrato oficial! Ao iniciar a contratação, você libera o cronograma financeiro, o controle de parcelas e os alertas de vencimento deste fornecedor."
+                        : "Tudo certo com os valores e condições? Mude o status para contratado para começar a planejar o fluxo de pagamentos, gerar as parcelas e manter o financeiro do seu casamento impecável."}
+                    </Text>
+                  </Stack>
+
+                  <Button
+                    size="md"
+                    radius="xl"
+                    leftSection={<IconSparkles size={18} />}
+                    onClick={handleIniciarContratacao} // Nova Ação vinculada aqui
+                    style={{
+                      background: "var(--marriplan-rose)",
+                      color: "#fff",
+                      border: "1px solid rgba(181, 139, 122, 0.2)",
+                    }}
+                  >
+                    {weddingSupplier?.status === "QUOTING"
+                      ? "Confirmar Contratação"
+                      : "Iniciar Contrato"}
+                  </Button>
+                </Group>
+              </Card>
+            )}
 
             <Card
               radius="xl"
@@ -779,14 +852,24 @@ export default function SupplierDetailPage() {
                   }
                 />
 
-                <TextInput
+                <NumberInput
+                  ref={valorInputRef}
+                  min={1}
+                  rightSection={<span style={{ paddingRight: 8 }}>R$</span>}
                   label="Valor combinado"
-                  value={form.valor_combinado}
+                  value={Number(form.valor_combinado) || undefined}
                   onChange={(event) =>
                     setForm((prev) => ({
                       ...prev,
-                      valor_combinado: event.currentTarget.value,
+                      valor_combinado: Number(event) || null,
                     }))
+                  }
+                  error={
+                    isHired &&
+                    !hasPaymentPlan &&
+                    Number(form.valor_combinado) <= 0
+                      ? "Informe um valor combinado maior que zero para criar ou adicionar o plano de pagamento."
+                      : false
                   }
                   styles={inputStyles}
                 />
@@ -797,7 +880,7 @@ export default function SupplierDetailPage() {
                       variant="default"
                       styles={softButtonStyles}
                       onClick={() => handleOpenPaymentModal("plan")}
-                      disabled={parseCombinedValue(form.valor_combinado) <= 0}
+                      disabled={Number(form.valor_combinado) <= 0}
                     >
                       Criar Plano
                     </Button>
@@ -805,7 +888,7 @@ export default function SupplierDetailPage() {
                       variant="light"
                       styles={primaryButtonStyles}
                       onClick={() => handleOpenPaymentModal("manual")}
-                      disabled={parseCombinedValue(form.valor_combinado) <= 0}
+                      disabled={Number(form.valor_combinado) <= 0}
                     >
                       Add manualmente
                     </Button> */}
@@ -814,178 +897,202 @@ export default function SupplierDetailPage() {
 
                 {isHired &&
                 !hasPaymentPlan &&
-                parseCombinedValue(form.valor_combinado) <= 0 ? (
+                Number(form.valor_combinado) <= 0 ? (
                   <Text size="sm" c="red" mt="xs">
                     Informe o valor combinado maior que zero para criar ou
                     adicionar o plano de pagamento.
                   </Text>
                 ) : null}
+              </Stack>
+            </Card>
 
-                <Textarea
-                  label="Observações"
-                  minRows={4}
-                  value={form.notes}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      notes: event.currentTarget.value,
-                    }))
-                  }
-                  styles={inputStyles}
-                />
-
-                {hasPaymentPlan ? (
-                  <Card radius="lg" withBorder p="md" mt="md">
+            {hasPaymentPlan ? (
+              <Card radius="lg" withBorder p="md">
+                <Stack gap="sm">
+                  <Group justify="space-between" align="center">
+                    <Text fw={700}>Plano de pagamento associado</Text>
+                    <Badge
+                      style={
+                        weddingSupplier?.status_financeiro === "Quitado"
+                          ? badgeStyles.success.root
+                          : weddingSupplier?.status_financeiro === "Em atraso"
+                          ? badgeStyles.danger.root
+                          : weddingSupplier?.status_financeiro === "A vencer"
+                          ? badgeStyles.warning.root
+                          : badgeStyles.neutral.root
+                      }
+                    >
+                      {weddingSupplier?.status_financeiro || "Sem plano"}
+                    </Badge>
+                  </Group>
+                  <Text size="sm" c="dimmed">
+                    Este plano está vinculado ao fornecedor e mostra as parcelas
+                    previstas.
+                  </Text>
+                  <ScrollArea
+                    type="auto"
+                    styles={{ viewport: { paddingBottom: 12 } }}
+                  >
                     <Stack gap="sm">
-                      <Group justify="space-between" align="center">
-                        <Text fw={700}>Plano de pagamento associado</Text>
-                        <Badge
-                          color={
-                            weddingSupplier?.status_financeiro === "Quitado"
-                              ? "green"
-                              : weddingSupplier?.status_financeiro ===
-                                "Em atraso"
-                              ? "red"
-                              : "yellow"
-                          }
-                          variant="light"
-                        >
-                          {weddingSupplier?.status_financeiro || "Sem plano"}
-                        </Badge>
-                      </Group>
-                      <Text size="sm" c="dimmed">
-                        Este plano está vinculado ao fornecedor e mostra as
-                        parcelas previstas.
-                      </Text>
-                      <ScrollArea
-                        type="auto"
-                        styles={{ viewport: { paddingBottom: 12 } }}
-                      >
-                        <Stack gap="sm">
-                          {weddingSupplier?.parcelas
-                            ?.slice()
-                            .sort((a, b) => a.numero_parcela - b.numero_parcela)
-                            .map((parcela) => {
-                              const parcelaStatus =
-                                parcela.status || "a_vencer";
-                              return (
-                                <Card key={parcela.id} radius="md" withBorder>
-                                  <Group noWrap align="center" position="apart">
-                                    <Stack
-                                      gap={2}
-                                      style={{ minWidth: 0, flex: 1 }}
-                                    >
-                                      <Text fw={700} lineClamp={1}>
-                                        {parcela.descricao}
-                                      </Text>
-                                      <Group spacing={8} align="center">
-                                        <Text size="xs" c="dimmed">
-                                          Venc:
-                                        </Text>
-                                        <Text
-                                          size="sm"
-                                          c={
-                                            parcelaStatus === "em_atraso"
-                                              ? "red"
-                                              : dueColor(parcela)
+                      {weddingSupplier?.parcelas
+                        ?.slice()
+                        .sort((a, b) => a.numero_parcela - b.numero_parcela)
+                        .map((parcela) => {
+                          const parcelaStatus = parcela.status || "a_vencer";
+                          return (
+                            <Card key={parcela.id} radius="md" withBorder>
+                              <Group align="center">
+                                <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
+                                  <Text
+                                    fw={700}
+                                    lineClamp={1}
+                                    style={
+                                      parcela.status === "pago"
+                                        ? {
+                                            textDecoration: "line-through",
+                                            color: "var(--marriplan-muted)",
                                           }
-                                          fw={600}
-                                        >
-                                          {new Date(
-                                            `${parcela.data_vencimento}T00:00:00`,
-                                          ).toLocaleDateString("pt-BR")}
-                                        </Text>
-                                      </Group>
-                                      <Text size="sm" fw={600}>
-                                        {formatCurrency(parcela.valor)}
-                                      </Text>
-                                      <Text size="xs">
-                                        {FORMA_OPTIONS.find(
-                                          (item) =>
-                                            item.value ===
-                                            parcela.forma_pagamento,
-                                        )?.label || parcela.forma_pagamento}
-                                      </Text>
-                                    </Stack>
+                                        : {}
+                                    }
+                                  >
+                                    {parcela.descricao}
+                                  </Text>
+                                  <Group gap={8} align="center">
+                                    <Text
+                                      size="xs"
+                                      c="dimmed"
+                                      style={
+                                        parcela.status === "pago"
+                                          ? {
+                                              textDecoration: "line-through",
+                                              color: "var(--marriplan-muted)",
+                                            }
+                                          : {}
+                                      }
+                                    >
+                                      Venc:
+                                    </Text>
+                                    <Text
+                                      size="sm"
+                                      c={
+                                        parcelaStatus === "em_atraso"
+                                          ? "red"
+                                          : parcelaStatus === "pago"
+                                          ? "var(--marriplan-muted)"
+                                          : dueColor(parcela)
+                                      }
+                                      fw={600}
+                                      style={
+                                        parcela.status === "pago"
+                                          ? {
+                                              textDecoration: "line-through",
+                                              color: "var(--marriplan-muted)",
+                                            }
+                                          : {}
+                                      }
+                                    >
+                                      {new Date(
+                                        `${parcela.data_vencimento}T00:00:00`,
+                                      ).toLocaleDateString("pt-BR")}
+                                    </Text>
+                                  </Group>
+                                  <Text
+                                    size="sm"
+                                    fw={600}
+                                    style={
+                                      parcela.status === "pago"
+                                        ? {
+                                            textDecoration: "line-through",
+                                            color: "var(--marriplan-muted)",
+                                          }
+                                        : {}
+                                    }
+                                  >
+                                    {formatCurrency(parcela.valor)}
+                                  </Text>
+                                  <Text size="xs">
+                                    {FORMA_OPTIONS.find(
+                                      (item) =>
+                                        item.value === parcela.forma_pagamento,
+                                    )?.label || parcela.forma_pagamento}
+                                  </Text>
+                                </Stack>
 
-                                    <Group spacing={8} noWrap>
-                                      {/* <Badge color={statusColor(parcelaStatus)}>
+                                <Group gap={8}>
+                                  {/* <Badge color={statusColor(parcelaStatus)}>
                                         {statusLabel(parcelaStatus)}
                                       </Badge> */}
-                                      {parcelaStatus === "pago" ? (
-                                        <Button
-                                          variant="light"
-                                          color="orange"
-                                          size="xs"
-                                          onClick={() => {
-                                            setParcelaToRevert(parcela);
-                                            setConfirmRevertOpen(true);
-                                          }}
-                                        >
-                                          Reverter
-                                        </Button>
-                                      ) : (
-                                        <Button
-                                          variant="light"
-                                          color="green"
-                                          size="xs"
-                                          onClick={() =>
-                                            openParcelPayment(parcela)
-                                          }
-                                        >
-                                          Pagar
-                                        </Button>
-                                      )}
-                                      <Menu withinPortal position="bottom-end">
-                                        <Menu.Target>
-                                          <ActionIcon
-                                            variant="light"
-                                            aria-label="Mais opções"
-                                          >
-                                            <IconDotsVertical size={18} />
-                                          </ActionIcon>
-                                        </Menu.Target>
-                                        <Menu.Dropdown>
-                                          <Menu.Item
-                                            leftSection={<IconEdit size={14} />}
-                                            onClick={() =>
-                                              openParcelEdit(parcela)
-                                            }
-                                            disabled={parcelaStatus === "pago"}
-                                          >
-                                            Editar
-                                          </Menu.Item>
-                                          <Menu.Item
-                                            leftSection={
-                                              <IconTrash size={14} />
-                                            }
-                                            color="red"
-                                            onClick={() => {
-                                              setParcelaToDelete(parcela);
-                                              setConfirmDeleteOpen(true);
-                                            }}
-                                            disabled={parcelaStatus === "pago"}
-                                          >
-                                            Excluir
-                                          </Menu.Item>
-                                        </Menu.Dropdown>
-                                      </Menu>
-                                    </Group>
-                                  </Group>
-                                  {parcela.observacao ? (
-                                    <Text size="sm" c="dimmed" mt="xs">
-                                      {parcela.observacao}
-                                    </Text>
-                                  ) : null}
-                                </Card>
-                              );
-                            })}
-                        </Stack>
-                      </ScrollArea>
+                                  {parcelaStatus === "pago" ? (
+                                    <Button
+                                      styles={softButtonStyles}
+                                      size="xs"
+                                      leftSection={<IconRefresh size={12} />}
+                                      onClick={() => {
+                                        setParcelaToRevert(parcela);
+                                        setConfirmRevertOpen(true);
+                                      }}
+                                    >
+                                      Reverter
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      styles={primaryButtonStyles}
+                                      size="xs"
+                                      leftSection={<DollarSignIcon size={12} />}
+                                      onClick={() => openParcelPayment(parcela)}
+                                    >
+                                      Pagar
+                                    </Button>
+                                  )}
+                                  <Menu withinPortal position="bottom-end">
+                                    <Menu.Target>
+                                      <Button
+                                        styles={softButtonStyles}
+                                        px={8}
+                                        size="xs"
+                                      >
+                                        <IconDotsVertical size={14} />
+                                      </Button>
+                                    </Menu.Target>
+                                    <Menu.Dropdown>
+                                      <Menu.Item
+                                        leftSection={<IconEdit size={14} />}
+                                        onClick={() => openParcelEdit(parcela)}
+                                        disabled={parcelaStatus === "pago"}
+                                      >
+                                        Editar
+                                      </Menu.Item>
+                                      <Menu.Item
+                                        leftSection={<IconTrash size={14} />}
+                                        color="red"
+                                        onClick={() => {
+                                          setParcelaToDelete(parcela);
+                                          setConfirmDeleteOpen(true);
+                                        }}
+                                        disabled={parcelaStatus === "pago"}
+                                      >
+                                        Excluir
+                                      </Menu.Item>
+                                    </Menu.Dropdown>
+                                  </Menu>
+                                </Group>
+                              </Group>
+                              {parcela.observacao ? (
+                                <Text size="sm" c="dimmed" mt="xs">
+                                  {parcela.observacao}
+                                </Text>
+                              ) : null}
+                            </Card>
+                          );
+                        })}
                     </Stack>
-                  </Card>
-                ) : null}
+                  </ScrollArea>
+                </Stack>
+              </Card>
+            ) : null}
 
+            <Card radius="xl" withBorder>
+              <Stack gap="md">
                 <Card
                   radius="lg"
                   withBorder
@@ -993,6 +1100,19 @@ export default function SupplierDetailPage() {
                   style={{ background: "rgba(246,238,228,0.45)" }}
                 >
                   <Stack gap="sm">
+                    <Textarea
+                      label="Observações"
+                      minRows={4}
+                      value={form.notes}
+                      onChange={(event) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          notes: event.currentTarget.value,
+                        }))
+                      }
+                      styles={inputStyles}
+                    />
+
                     <Group justify="space-between" align="center" wrap="wrap">
                       <Group gap="xs">
                         <IconPaperclip size={16} />
@@ -1102,6 +1222,84 @@ export default function SupplierDetailPage() {
                 </Group>
               </Group>
             </Card>
+
+            {/* Condicional para renderizar o card apenas se o status for cotando ou negociando */}
+            {(weddingSupplier?.status === "QUOTING" ||
+              weddingSupplier?.status === "NEGOTIATING") && (
+              <Card
+                radius="xl"
+                p="xl"
+                withBorder
+                className="marriplan-card"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #fffaf6 0%, #f6efe7 56%, #efe4d8 100%)",
+                  borderColor: "rgba(181, 139, 122, 0.22)",
+                  boxShadow: "0 18px 40px rgba(70, 56, 43, 0.08)",
+                  marginBottom: "24px", // Um respiro em relação ao resto da página
+                }}
+              >
+                <Group
+                  justify="space-between"
+                  align="center"
+                  wrap="wrap"
+                  gap="md"
+                >
+                  <Stack
+                    gap={6}
+                    style={{ maxWidth: 620, flex: 1, minWidth: 280 }}
+                  >
+                    <Text
+                      c="var(--marriplan-rose)"
+                      tt="uppercase"
+                      fw={700}
+                      size="xs"
+                      style={{ letterSpacing: 2 }}
+                    >
+                      {weddingSupplier?.status === "QUOTING"
+                        ? "Próximo Passo"
+                        : "Negociação Avançada"}
+                    </Text>
+
+                    <Title
+                      order={3}
+                      c="var(--marriplan-text)"
+                      style={{ fontSize: "1.35rem" }}
+                    >
+                      {weddingSupplier?.status === "QUOTING"
+                        ? "Pronto para fechar com este fornecedor?"
+                        : "Fechou o acordo ideal?"}
+                    </Title>
+
+                    <Text
+                      c="var(--marriplan-muted)"
+                      size="sm"
+                      style={{ lineHeight: 1.7 }}
+                    >
+                      {weddingSupplier?.status === "QUOTING"
+                        ? "Transforme esta cotação em um contrato oficial! Ao iniciar a contratação, você libera o cronograma financeiro, o controle de parcelas e os alertas de vencimento deste fornecedor."
+                        : "Tudo certo com os valores e condições? Mude o status para contratado para começar a planejar o fluxo de pagamentos, gerar as parcelas e manter o financeiro do seu casamento impecável."}
+                    </Text>
+                  </Stack>
+
+                  <Button
+                    size="md"
+                    radius="xl"
+                    leftSection={<IconSparkles size={18} />}
+                    onClick={handleIniciarContratacao} // Nova Ação vinculada aqui
+                    style={{
+                      background: "var(--marriplan-rose)",
+                      color: "#fff",
+                      border: "1px solid rgba(181, 139, 122, 0.2)",
+                    }}
+                  >
+                    {weddingSupplier?.status === "QUOTING"
+                      ? "Confirmar Contratação"
+                      : "Iniciar Contrato"}
+                  </Button>
+                </Group>
+              </Card>
+            )}
 
             <Card
               radius="xl"
@@ -1292,15 +1490,26 @@ export default function SupplierDetailPage() {
                 </Group>
 
                 <Group grow align="flex-start" wrap="wrap">
-                  <TextInput
-                    label="Valor combinado"
-                    value={form.valor_combinado}
-                    onChange={(event) => {
-                      const val = handleValueChange(event.currentTarget.value);
-                      setForm((prev) => ({ ...prev, valor_combinado: val }));
-                    }}
+                  <NumberInput
+                    value={Number(form.valor_combinado) || undefined}
                     placeholder="0.00"
+                    ref={valorInputRef}
+                    min={1}
                     rightSection={<span style={{ paddingRight: 8 }}>R$</span>}
+                    label="Valor combinado"
+                    onChange={(event) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        valor_combinado: Number(event) || null,
+                      }))
+                    }
+                    error={
+                      isHired &&
+                      !hasPaymentPlan &&
+                      Number(form.valor_combinado) <= 0
+                        ? "Informe um valor combinado maior que zero para criar ou adicionar o plano de pagamento."
+                        : false
+                    }
                     styles={inputStyles}
                   />
                 </Group>
@@ -1311,7 +1520,7 @@ export default function SupplierDetailPage() {
                       variant="default"
                       styles={softButtonStyles}
                       onClick={() => handleOpenPaymentModal("plan")}
-                      disabled={parseCombinedValue(form.valor_combinado) <= 0}
+                      disabled={Number(form.valor_combinado) <= 0}
                     >
                       Criar plano de pagamento
                     </Button>
@@ -1319,228 +1528,341 @@ export default function SupplierDetailPage() {
                       variant="light"
                       styles={primaryButtonStyles}
                       onClick={() => handleOpenPaymentModal("manual")}
-                      disabled={parseCombinedValue(form.valor_combinado) <= 0}
+                      disabled={Number(form.valor_combinado) <= 0}
                     >
                       Adicionar manualmente
                     </Button> */}
                   </Group>
                 ) : null}
 
-                {isHired && !hasPaymentPlan ? (
+                {isHired &&
+                !hasPaymentPlan &&
+                Number(form.valor_combinado) <= 0 ? (
                   <Text size="sm" c="red" mt="xs">
                     Para salvar como contratado é necessário criar ou associar
                     um plano de pagamento.
                   </Text>
                 ) : null}
+              </Stack>
+            </Card>
 
-                <Textarea
-                  label="Observações"
-                  minRows={4}
-                  value={form.notes}
-                  onChange={(event) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      notes: event.currentTarget.value,
-                    }))
-                  }
-                  styles={inputStyles}
-                />
-
-                {hasPaymentPlan ? (
-                  <Card radius="lg" withBorder p="md" mt="md">
-                    <Stack gap="sm">
-                      <Group justify="space-between" align="center">
-                        <Text fw={700}>Plano de pagamento associado</Text>
-                        <Badge
-                          color={
-                            weddingSupplier?.status_financeiro === "Quitado"
-                              ? "green"
-                              : weddingSupplier?.status_financeiro ===
-                                "Em atraso"
-                              ? "red"
-                              : "yellow"
-                          }
-                          variant="light"
-                        >
-                          {weddingSupplier?.status_financeiro || "Sem plano"}
-                        </Badge>
-                      </Group>
-                      <Text size="sm" c="dimmed">
-                        Este plano está vinculado ao fornecedor e mostra as
-                        parcelas previstas.
-                      </Text>
-                      <ScrollArea
-                        type="auto"
-                        styles={{ viewport: { paddingBottom: 12 } }}
-                      >
-                        <Stack gap="sm">
-                          {weddingSupplier?.parcelas?.map((parcela) => {
-                            const parcelaStatus = parcela.status || "a_vencer";
-                            return (
-                              <Card key={parcela.id} radius="md" withBorder>
-                                <Group noWrap align="center" position="apart">
-                                  <Stack
-                                    spacing={2}
-                                    style={{ minWidth: 0, flex: 1 }}
-                                  >
-                                    <Text fw={700} lineClamp={1}>
-                                      {parcela.descricao}
-                                    </Text>
-                                    <Group spacing={8} align="center">
-                                      <Text size="xs" c="dimmed">
-                                        Venc:
-                                      </Text>
-                                      <Text
-                                        size="sm"
-                                        c={
-                                          parcelaStatus === "em_atraso"
-                                            ? "red"
-                                            : dueColor(parcela)
-                                        }
-                                        fw={600}
-                                      >
-                                        {new Date(
-                                          `${parcela.data_vencimento}T00:00:00`,
-                                        ).toLocaleDateString("pt-BR")}
-                                      </Text>
-                                      <Text size="xs" c="dimmed">
-                                        •
-                                      </Text>
-                                      <Text size="sm" fw={600}>
-                                        {formatCurrency(parcela.valor)}
-                                      </Text>
-                                      <Text size="xs" c="dimmed">
-                                        •
-                                      </Text>
-                                      <Text size="xs">
-                                        {FORMA_OPTIONS.find(
-                                          (item) =>
-                                            item.value ===
-                                            parcela.forma_pagamento,
-                                        )?.label || parcela.forma_pagamento}
-                                      </Text>
-                                    </Group>
-                                  </Stack>
-
-                                  <Group spacing={8} noWrap>
-                                    <Badge color={statusColor(parcelaStatus)}>
-                                      {statusLabel(parcelaStatus)}
-                                    </Badge>
-                                    {parcelaStatus === "pago" ? (
-                                      <Button
-                                        variant="light"
-                                        color="orange"
-                                        size="xs"
-                                        onClick={() => {
-                                          setParcelaToRevert(parcela);
-                                          setConfirmRevertOpen(true);
-                                        }}
-                                      >
-                                        Reverter
-                                      </Button>
-                                    ) : (
-                                      <Button
-                                        variant="light"
-                                        color="green"
-                                        size="xs"
-                                        onClick={() =>
-                                          openParcelPayment(parcela)
-                                        }
-                                      >
-                                        Pagar
-                                      </Button>
-                                    )}
-                                    <Menu withinPortal position="bottom-end">
-                                      <Menu.Target>
-                                        <ActionIcon
-                                          variant="light"
-                                          aria-label="Mais opções"
-                                        >
-                                          <IconDotsVertical size={18} />
-                                        </ActionIcon>
-                                      </Menu.Target>
-                                      <Menu.Dropdown>
-                                        <Menu.Item
-                                          leftSection={<IconEdit size={14} />}
-                                          onClick={() =>
-                                            openParcelEdit(parcela)
-                                          }
-                                          disabled={parcelaStatus === "pago"}
-                                        >
-                                          Editar
-                                        </Menu.Item>
-                                        <Menu.Item
-                                          leftSection={<IconTrash size={14} />}
-                                          color="red"
-                                          onClick={() => {
-                                            setParcelaToDelete(parcela);
-                                            setConfirmDeleteOpen(true);
-                                          }}
-                                          disabled={parcelaStatus === "pago"}
-                                        >
-                                          Excluir
-                                        </Menu.Item>
-                                      </Menu.Dropdown>
-                                    </Menu>
-                                  </Group>
-                                </Group>
-                                {parcela.observacao ? (
-                                  <Text size="sm" c="dimmed" mt="xs">
-                                    {parcela.observacao}
-                                  </Text>
-                                ) : null}
-                              </Card>
-                            );
-                          })}
-                        </Stack>
-                      </ScrollArea>
-                    </Stack>
-                  </Card>
-                ) : null}
-
-                <Card
-                  radius="lg"
-                  withBorder
-                  p="md"
-                  style={{ background: "rgba(246,238,228,0.45)" }}
-                >
-                  <Stack gap="sm">
-                    <Group justify="space-between" align="center" wrap="wrap">
-                      <Group gap="xs">
-                        <IconPaperclip size={16} />
-                        <Text fw={600}>Contrato opcional</Text>
-                      </Group>
-                      <Button
-                        variant="default"
-                        onClick={() => fileInputRef.current?.click()}
-                      >
-                        Escolher arquivo
-                      </Button>
-                    </Group>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="application/pdf,image/*"
-                      style={{ display: "none" }}
-                      onChange={(event) =>
-                        setContractFile(event.currentTarget.files?.[0] || null)
+            {hasPaymentPlan ? (
+              <Card radius="lg" withBorder p="md" mt="md">
+                <Stack gap="sm">
+                  <Group justify="space-between" align="center">
+                    <Text fw={700}>Plano de pagamento associado</Text>
+                    <Badge
+                      style={
+                        weddingSupplier?.status_financeiro === "Quitado"
+                          ? badgeStyles.success.root
+                          : weddingSupplier?.status_financeiro === "Em atraso"
+                          ? badgeStyles.danger.root
+                          : badgeStyles.warning.root
                       }
-                    />
-                    <Text size="sm" c="dimmed">
-                      Envie PDF ou imagem. Se houver um contrato antigo, ele
-                      será substituído no próximo salvamento.
+                    >
+                      {weddingSupplier?.status_financeiro || "Sem plano"}
+                    </Badge>
+                  </Group>
+                  {/* Container principal que coloca os blocos lado a lado */}
+                  <Group
+                    justify="space-between"
+                    align="center"
+                    wrap="nowrap"
+                    gap="xl"
+                    w="100%"
+                  >
+                    {/* Coluna da Esquerda: Texto descritivo (ocupa o espaço flexível restante) */}
+                    <Text
+                      size="sm"
+                      c="dimmed"
+                      style={{ flex: 1, minWidth: 200 }}
+                    >
+                      Este plano está vinculado ao fornecedor e mostra as
+                      parcelas previstas.
                     </Text>
-                    {contractFile ? (
-                      <Badge color="blue" variant="light">
-                        {contractFile.name}
-                      </Badge>
-                    ) : weddingSupplier?.contract_file_url ? (
-                      <Badge color="green" variant="light">
-                        Contrato já anexado
-                      </Badge>
-                    ) : null}
-                  </Stack>
-                </Card>
+
+                    {/* Coluna da Direita: Container do Progresso (com largura fixa ou controlada) */}
+                    <Stack gap={6} style={{ width: "320px", flexShrink: 0 }}>
+                      {/* Linha de Textos do Progresso */}
+                      <Group
+                        justify="space-between"
+                        align="baseline"
+                        wrap="nowrap"
+                      >
+                        <Text
+                          size="xs"
+                          fw={600}
+                          c="dimmed"
+                          tt="uppercase"
+                          style={{ letterSpacing: 0.5 }}
+                        >
+                          Progresso das parcelas
+                        </Text>
+
+                        <Text
+                          size="sm"
+                          fw={700}
+                          style={{
+                            color: "var(--marriplan-text)",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {parcelasPagas} de {totalParcelas} pagas
+                        </Text>
+                      </Group>
+
+                      {/* Progress Bar do Mantine */}
+                      <Progress
+                        value={porcentagemProgresso}
+                        size="sm"
+                        radius="xl"
+                        animated={
+                          porcentagemProgresso > 0 && porcentagemProgresso < 100
+                        }
+                        styles={{
+                          root: {
+                            backgroundColor:
+                              "var(--marriplan-champagne, #F7F1E8)",
+                          },
+                          section: {
+                            backgroundColor: "var(--marriplan-rose, #E6B8A2)",
+                            transition: "width 400ms ease",
+                          },
+                        }}
+                      />
+                    </Stack>
+                  </Group>
+                  <ScrollArea
+                    type="auto"
+                    styles={{ viewport: { paddingBottom: 12 } }}
+                  >
+                    <Stack gap="sm">
+                      {weddingSupplier?.parcelas?.map((parcela) => {
+                        const parcelaStatus = parcela.status || "a_vencer";
+                        return (
+                          <Card key={parcela.id} radius="md" withBorder>
+                            <Group noWrap align="center" position="apart">
+                              <Stack
+                                spacing={2}
+                                style={{ minWidth: 0, flex: 1 }}
+                              >
+                                <Text
+                                  fw={700}
+                                  lineClamp={1}
+                                  style={
+                                    parcela.status === "pago"
+                                      ? {
+                                          textDecoration: "line-through",
+                                          color: "var(--marriplan-muted)",
+                                        }
+                                      : {}
+                                  }
+                                >
+                                  {parcela.descricao}
+                                </Text>
+                                <Group gap={8} align="center">
+                                  <Text
+                                    size="xs"
+                                    c="dimmed"
+                                    style={
+                                      parcela.status === "pago"
+                                        ? {
+                                            textDecoration: "line-through",
+                                            color: "var(--marriplan-muted)",
+                                          }
+                                        : {}
+                                    }
+                                  >
+                                    Venc:
+                                  </Text>
+                                  <Text
+                                    size="sm"
+                                    c={
+                                      parcelaStatus === "em_atraso"
+                                        ? "red"
+                                        : parcelaStatus === "pago"
+                                        ? "var(--marriplan-muted)"
+                                        : dueColor(parcela)
+                                    }
+                                    fw={600}
+                                    style={
+                                      parcela.status === "pago"
+                                        ? {
+                                            textDecoration: "line-through",
+                                            color: "var(--marriplan-muted)",
+                                          }
+                                        : {}
+                                    }
+                                  >
+                                    {new Date(
+                                      `${parcela.data_vencimento}T00:00:00`,
+                                    ).toLocaleDateString("pt-BR")}
+                                  </Text>
+                                  <Text size="xs" c="dimmed">
+                                    •
+                                  </Text>
+                                  <Text
+                                    size="sm"
+                                    fw={600}
+                                    style={
+                                      parcela.status === "pago"
+                                        ? {
+                                            textDecoration: "line-through",
+                                            color: "var(--marriplan-muted)",
+                                          }
+                                        : {}
+                                    }
+                                  >
+                                    {formatCurrency(parcela.valor)}
+                                  </Text>
+                                  <Text size="xs" c="dimmed">
+                                    •
+                                  </Text>
+                                  <Text size="xs">
+                                    {FORMA_OPTIONS.find(
+                                      (item) =>
+                                        item.value === parcela.forma_pagamento,
+                                    )?.label || parcela.forma_pagamento}
+                                  </Text>
+                                </Group>
+                              </Stack>
+
+                              <Group gap={8}>
+                                <Badge
+                                  style={
+                                    parcelaStatus === "pago"
+                                      ? badgeStyles.success.root
+                                      : parcelaStatus === "em_atraso"
+                                      ? badgeStyles.danger.root
+                                      : parcelaStatus === "a_vencer"
+                                      ? badgeStyles.warning.root
+                                      : badgeStyles.neutral.root
+                                  }
+                                >
+                                  {statusLabel(parcelaStatus)}
+                                </Badge>
+                                {parcelaStatus === "pago" ? (
+                                  <Button
+                                    styles={softButtonStyles}
+                                    size="xs"
+                                    leftSection={<IconRefresh size={12} />}
+                                    onClick={() => {
+                                      setParcelaToRevert(parcela);
+                                      setConfirmRevertOpen(true);
+                                    }}
+                                  >
+                                    Reverter
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    styles={primaryButtonStyles}
+                                    size="xs"
+                                    leftSection={<DollarSignIcon size={12} />}
+                                    onClick={() => openParcelPayment(parcela)}
+                                  >
+                                    Pagar Parcela
+                                  </Button>
+                                )}
+                                <Menu withinPortal position="bottom-end">
+                                  <Menu.Target>
+                                    <Button
+                                      styles={softButtonStyles}
+                                      px={8}
+                                      size="xs"
+                                    >
+                                      <IconDotsVertical size={14} />
+                                    </Button>
+                                  </Menu.Target>
+                                  <Menu.Dropdown>
+                                    <Menu.Item
+                                      leftSection={<IconEdit size={14} />}
+                                      onClick={() => openParcelEdit(parcela)}
+                                      disabled={parcelaStatus === "pago"}
+                                    >
+                                      Editar
+                                    </Menu.Item>
+                                    <Menu.Item
+                                      leftSection={<IconTrash size={14} />}
+                                      color="red"
+                                      onClick={() => {
+                                        setParcelaToDelete(parcela);
+                                        setConfirmDeleteOpen(true);
+                                      }}
+                                      disabled={parcelaStatus === "pago"}
+                                    >
+                                      Excluir
+                                    </Menu.Item>
+                                  </Menu.Dropdown>
+                                </Menu>
+                              </Group>
+                            </Group>
+                            {parcela.observacao ? (
+                              <Text size="sm" c="dimmed" mt="xs">
+                                {parcela.observacao}
+                              </Text>
+                            ) : null}
+                          </Card>
+                        );
+                      })}
+                    </Stack>
+                  </ScrollArea>
+                </Stack>
+              </Card>
+            ) : null}
+
+            <Card radius="xl" withBorder p="md">
+              <Textarea
+                label="Observações"
+                minRows={4}
+                value={form.notes}
+                onChange={(event) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    notes: event.currentTarget.value,
+                  }))
+                }
+                styles={inputStyles}
+              />
+              <Stack gap="md">
+                <Group
+                  justify="space-between"
+                  align="center"
+                  mt="md"
+                  wrap="wrap"
+                >
+                  <Group gap="xs">
+                    <IconPaperclip size={16} />
+                    <Text fw={600}>Contrato opcional</Text>
+                  </Group>
+                  <Button
+                    variant="default"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    Escolher arquivo
+                  </Button>
+                </Group>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/pdf,image/*"
+                  style={{ display: "none" }}
+                  onChange={(event) =>
+                    setContractFile(event.currentTarget.files?.[0] || null)
+                  }
+                />
+                <Text size="sm" c="dimmed">
+                  Envie PDF ou imagem. Se houver um contrato antigo, ele será
+                  substituído no próximo salvamento.
+                </Text>
+                {contractFile ? (
+                  <Badge color="blue" variant="light">
+                    {contractFile.name}
+                  </Badge>
+                ) : weddingSupplier?.contract_file_url ? (
+                  <Badge color="green" variant="light">
+                    Contrato já anexado
+                  </Badge>
+                ) : null}
               </Stack>
             </Card>
           </>

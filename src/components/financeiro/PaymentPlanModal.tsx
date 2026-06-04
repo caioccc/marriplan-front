@@ -1,4 +1,9 @@
-import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
+import {
+  badgeStyles,
+  inputStyles,
+  primaryButtonStyles,
+  softButtonStyles,
+} from "@/styles";
 import {
   criarParcelaPagamento,
   FormaPagamento,
@@ -38,7 +43,7 @@ type PaymentPlanModalProps = {
   opened: boolean;
   mode: "plan" | "manual";
   weddingSupplierId?: number | null;
-  valorCombinadoOverride?: string;
+  valorCombinadoOverride?: number | null;
   onClose: () => void;
   onSaved?: () => void;
 };
@@ -212,12 +217,12 @@ export function PaymentPlanModal({
     [planPreview],
   );
 
-  const displayedValorCombinado = valorCombinadoOverride?.trim()
+  const displayedValorCombinado = valorCombinadoOverride
     ? valorCombinadoOverride
     : weddingSupplier?.valor_combinado;
   const planTarget = toNumber(displayedValorCombinado);
   const valorPago = toNumber(weddingSupplier?.valor_pago);
-  const displayedSaldo = valorCombinadoOverride?.trim()
+  const displayedSaldo = valorCombinadoOverride
     ? planTarget - valorPago
     : toNumber(weddingSupplier?.saldo_devedor);
 
@@ -482,10 +487,7 @@ export function PaymentPlanModal({
 
   const renderStep1Preview = (isMobileView: boolean) => (
     <Stack gap="sm">
-      <ScrollArea
-        type="auto"
-        styles={{ viewport: { paddingBottom: 12 } }}
-      >
+      <ScrollArea type="auto" styles={{ viewport: { paddingBottom: 12 } }}>
         <Stack gap="sm">
           {planPreview.map((row, index) => (
             <Card
@@ -504,14 +506,13 @@ export function PaymentPlanModal({
                     variant="light"
                     color="red"
                     size="xs"
-                    leftSection={<IconTrash size={14} />}
                     onClick={() =>
                       setPlanPreview((current) =>
                         current.filter((_, itemIndex) => itemIndex !== index),
                       )
                     }
                   >
-                    Excluir
+                    <IconTrash size={14} />
                   </Button>
                 </Group>
 
@@ -672,7 +673,11 @@ export function PaymentPlanModal({
       <Divider />
       <Group justify="space-between" align="center">
         <Text fw={600}>Total do Plano: {formatCurrency(planTotal)}</Text>
-        <Badge color={planMatches ? "green" : "red"}>
+        <Badge
+          style={
+            planMatches ? badgeStyles.success.root : badgeStyles.danger.root
+          }
+        >
           {planMatches ? "Bate com o valor acordado" : "Soma divergente"}
         </Badge>
       </Group>
@@ -861,14 +866,12 @@ export function PaymentPlanModal({
             <Text c="dimmed">Carregando informações...</Text>
           ) : weddingSupplier ? (
             <>
-              {renderHeaderCards(false)}
-
               {mode === "plan" ? (
                 <Stepper
                   active={activeStep}
                   onStepClick={setActiveStep}
                   allowNextStepsSelect={false}
-                  size="sm"
+                  size="xs"
                 >
                   <Stepper.Step
                     label="Configuração"
@@ -955,8 +958,6 @@ export function PaymentPlanModal({
           <Text c="dimmed">Carregando informações...</Text>
         ) : weddingSupplier ? (
           <>
-            {renderHeaderCards(true)}
-
             {mode === "plan" ? (
               <Stepper
                 active={activeStep}

@@ -1,5 +1,5 @@
 import { Supplier, WeddingSupplier } from "@/services/suppliers";
-import { softButtonStyles } from "@/styles";
+import { badgeStyles, softButtonStyles } from "@/styles";
 import {
   ActionIcon,
   Badge,
@@ -426,12 +426,17 @@ export function SupplierCard({
     );
   }
 
+  const border =
+    weddingSupplier?.status_financeiro === "Sem plano"
+      ? { borderColor: "var(--marriplan-rose)", borderWidth: 2, borderStyle: "solid" }
+      : undefined;
+
   return (
     <Card
       radius="xl"
       withBorder
       shadow="sm"
-      style={{ overflow: "hidden", background: "rgba(255,255,255,0.92)" }}
+      style={{ overflow: "hidden", background: "rgba(255,255,255,0.92)", ...border }}
     >
       <Box style={{ position: "relative" }}>
         {imageUrl ? (
@@ -568,35 +573,15 @@ export function SupplierCard({
         >
           <Group gap="xs" wrap="wrap">
             <Badge
-              variant="light"
-              style={{
-                ...themeBadgeBaseStyle,
-                textTransform: "none",
-                backgroundColor:
-                  weddingSupplier?.status_financeiro === "Quitado"
-                    ? "rgba(72, 187, 120)"
-                    : weddingSupplier?.status_financeiro === "Em atraso"
-                    ? "rgba(255, 85, 85)"
-                    : weddingSupplier?.status_financeiro === "A vencer"
-                    ? "rgba(250, 204, 21)"
-                    : "rgba(181, 139, 122)",
-                color:
-                  weddingSupplier?.status_financeiro === "Quitado"
-                    ? "#000"
-                    : weddingSupplier?.status_financeiro === "Em atraso"
-                    ? "#000"
-                    : weddingSupplier?.status_financeiro === "A vencer"
-                    ? "#000"
-                    : "#000",
-                border:
-                  weddingSupplier?.status_financeiro === "Quitado"
-                    ? "1px solid rgba(72, 187, 120, 0.22)"
-                    : weddingSupplier?.status_financeiro === "Em atraso"
-                    ? "1px solid rgba(255,85,85,0.16)"
-                    : weddingSupplier?.status_financeiro === "A vencer"
-                    ? "1px solid rgba(250,204,21,0.18)"
-                    : "1px solid rgba(181, 139, 122, 0.24)",
-              }}
+              style={
+                weddingSupplier?.status_financeiro === "Quitado"
+                  ? badgeStyles.success.root
+                  : weddingSupplier?.status_financeiro === "Em atraso"
+                  ? badgeStyles.danger.root
+                  : weddingSupplier?.status_financeiro === "A vencer"
+                  ? badgeStyles.warning.root
+                  : badgeStyles.neutral.root
+              }
             >
               {weddingSupplier?.status_financeiro || cityLabel}
             </Badge>

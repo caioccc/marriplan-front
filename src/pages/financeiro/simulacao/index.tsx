@@ -1,50 +1,50 @@
 import BaseLayout from "@/components/Layout/_BaseLayout";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-    calculateWeddingSimulation,
-    SimulationInputs,
+  calculateWeddingSimulation,
+  SimulationInputs,
 } from "@/lib/simulationUtils";
 import { updateWeddingProfile } from "@/services/weddingProfile";
 import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
-    Box,
-    Button,
-    Card,
-    Center,
-    Container,
-    Group,
-    Loader,
-    Modal,
-    NumberInput,
-    Progress,
-    RingProgress,
-    Select,
-    SimpleGrid,
-    Stack,
-    Stepper,
-    Text,
-    TextInput,
-    ThemeIcon,
-    Title
+  Box,
+  Button,
+  Card,
+  Center,
+  Container,
+  Group,
+  Loader,
+  Modal,
+  NumberInput,
+  Progress,
+  RingProgress,
+  Select,
+  SimpleGrid,
+  Stack,
+  Stepper,
+  Text,
+  TextInput,
+  ThemeIcon,
+  Title,
 } from "@mantine/core";
 import { DatePickerInput, DatesProvider } from "@mantine/dates";
 import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
-    IconArrowLeft,
-    IconArrowRight,
-    IconCamera,
-    IconCheck,
-    IconCoin,
-    IconGlassFull,
-    IconHeart,
-    IconMapPin,
-    IconMusic,
-    IconRefresh,
-    IconSparkles,
-    IconTools,
-    IconTrendingUp,
-    IconUsers
+  IconArrowLeft,
+  IconArrowRight,
+  IconCamera,
+  IconCheck,
+  IconCoin,
+  IconGlassFull,
+  IconHeart,
+  IconMapPin,
+  IconMusic,
+  IconRefresh,
+  IconSparkles,
+  IconTools,
+  IconTrendingUp,
+  IconUsers,
 } from "@tabler/icons-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { NextPage } from "next";
@@ -141,7 +141,7 @@ const WeddingCostSimulationPage: NextPage = () => {
     if (isProcessing) {
       interval = setInterval(() => {
         setProcessingMsgIdx((prev) => (prev + 1) % PROCESSING_MESSAGES.length);
-      }, 900);
+      }, 1500);
     }
     return () => clearInterval(interval);
   }, [isProcessing]);
@@ -261,7 +261,7 @@ const WeddingCostSimulationPage: NextPage = () => {
         });
         setIsProcessing(false);
       }
-    }, 4000);
+    }, 8000);
   };
 
   const togglePriority = (id: string) => {

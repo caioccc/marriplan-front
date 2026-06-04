@@ -16,9 +16,16 @@ import {
   salvarPlanoPagamento,
 } from "@/services/financeiro";
 import { getWeddingSupplier, WeddingSupplier } from "@/services/suppliers";
-import { inputStyles, primaryButtonStyles, softButtonStyles } from "@/styles";
+import {
+  badgeStyles,
+  inputStyles,
+  primaryButtonStyles,
+  softButtonStyles,
+} from "@/styles";
+import { dueColor, statusLabel, SupplierParcelRow } from "@/utils/financeiro";
 import {
   ActionIcon,
+  Avatar,
   Badge,
   Button,
   Card,
@@ -62,18 +69,6 @@ type PlanEditorRow = {
   forma_pagamento: FormaPagamento;
   status?: ParcelaStatus;
   observacao?: string;
-};
-
-type SupplierParcelRow = {
-  id: number;
-  numero_parcela: number;
-  descricao: string;
-  valor: string | number;
-  data_vencimento: string;
-  forma_pagamento: FormaPagamento;
-  status?: ParcelaStatus;
-  status_calculado?: ParcelaStatus;
-  observacao?: string | null;
 };
 
 const WINDOW_OPTIONS: Array<{ value: WindowFilter; label: string }> = [
@@ -128,35 +123,6 @@ function toNumber(value?: string | number | null) {
 
 function todayInputValue() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function statusLabel(status?: ParcelaStatus) {
-  if (status === "pago") return "Pago";
-  if (status === "em_atraso") return "Em atraso";
-  return "A vencer";
-}
-
-function statusColor(status?: ParcelaStatus) {
-  if (status === "pago") return "green";
-  if (status === "em_atraso") return "red";
-  return "yellow";
-}
-
-function dueColor(
-  parcela: Pick<
-    SupplierParcelRow,
-    "status" | "status_calculado" | "data_vencimento"
-  >,
-) {
-  const calculated = parcela.status_calculado || parcela.status;
-  if (calculated === "pago") return "green";
-  if (calculated === "em_atraso") return "red";
-  const dueDate = new Date(`${parcela.data_vencimento}T00:00:00`);
-  const diffDays = Math.ceil(
-    (dueDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-  );
-  if (diffDays <= 7) return "yellow";
-  return "teal";
 }
 
 function toDateInputValue(value?: string | null) {
@@ -510,10 +476,9 @@ export default function FinanceiroPage() {
           actions={
             <Button
               leftSection={<BadgeDollarSignIcon size={18} />}
-              styles={softButtonStyles}
-              variant="default"
+              styles={primaryButtonStyles}
               onClick={() => {
-                 router.push("/financeiro/simulacao")
+                router.push("/financeiro/simulacao");
               }}
             >
               Simular Custos
@@ -660,6 +625,30 @@ export default function FinanceiroPage() {
           </Group>
         )}
 
+        <Stack gap={4} mx="md">
+          <Group justify="space-between" align="baseline">
+            <Title
+              order={2}
+              size="h3"
+              fw={700}
+              style={{ color: "var(--marriplan-text, #2D2622)" }} // Usando seu tom 'ink'
+            >
+              Parcelas
+            </Title>
+
+            {/* Opcional: Contador discreto na direita */}
+            <Text size="sm" c="dimmed" fw={500}>
+              {items.length} parcelas visíveis
+            </Text>
+          </Group>
+
+          {/* Opcional: Subtítulo descritivo */}
+          <Text size="sm" style={{ color: "#6F6660" }}>
+            Gerencie os pagamentos, prazos e status dos seus fornecedores
+            contratados.
+          </Text>
+        </Stack>
+
         <Card radius="xl" p="0" withBorder style={{ overflow: "hidden" }}>
           <ScrollArea type="auto" style={{ minHeight: 420 }}>
             <Stack gap="sm" p="md">
@@ -668,192 +657,202 @@ export default function FinanceiroPage() {
                   record.status_calculado || record.status || "a_vencer";
                 if (isMobile) {
                   return (
-                    <Card key={record.id} radius="md" withBorder p="md">
-                      {/* alignItems: 'stretch' força a coluna da direita a ter 100% da altura da coluna da esquerda */}
-                      <Group
-                        justify="space-between"
-                        align="stretch"
-                        wrap="nowrap"
-                        style={{ alignItems: "stretch" }}
-                      >
-                        {/* flex: 1 garante que o texto não empurre o menu meatball para fora da tela */}
-                        <Stack gap={6} style={{ minWidth: 0, flex: 1 }}>
-                          <Text fw={700} lineClamp={1} size="sm">
-                            {record.fornecedor_nome || "Fornecedor"}
-                          </Text>
-                          <Text size="sm" c="dimmed" lineClamp={2}>
+                    <Card key={record.id} radius="md" withBorder>
+                      <Group align="center">
+                        <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
+                          <Text
+                            fw={700}
+                            lineClamp={1}
+                            style={
+                              record.status === "pago"
+                                ? {
+                                    textDecoration: "line-through",
+                                    color: "var(--marriplan-muted)",
+                                  }
+                                : {}
+                            }
+                          >
                             {record.descricao}
                           </Text>
-
-                          <Stack gap={4}>
-                            <Group gap={8} align="center">
-                              <Text size="xs" c="dimmed">
-                                Venc:
-                              </Text>
-                              <Text
-                                size="sm"
-                                c={
-                                  parcelaStatus === "em_atraso"
-                                    ? "red"
-                                    : dueColor(record)
-                                }
-                                fw={600}
-                              >
-                                {new Date(
-                                  `${record.data_vencimento}T00:00:00`,
-                                ).toLocaleDateString("pt-BR")}
-                              </Text>
-                            </Group>
-
-                            <Group gap={8} align="center">
-                              <Text size="xs" c="dimmed">
-                                Valor:
-                              </Text>
-                              <Text size="sm" fw={600}>
-                                {formatCurrency(record.valor)}
-                              </Text>
-                            </Group>
-
-                            <Group gap={8} align="center">
-                              <Text size="xs">
-                                {FORMA_OPTIONS.find(
-                                  (item) =>
-                                    item.value === record.forma_pagamento,
-                                )?.label || record.forma_pagamento}
-                              </Text>
-                            </Group>
-                          </Stack>
-
-                          {!isMobile && (
-                            <Group justify="right" gap={8} mt="xs">
-                              {parcelaStatus === "pago" ? (
-                                <Button
-                                  variant="light"
-                                  color="orange"
-                                  size="xs"
-                                  onClick={() => {
-                                    setParcelaToRevert(record);
-                                    setConfirmRevertOpen(true);
-                                  }}
-                                >
-                                  Reverter
-                                </Button>
-                              ) : (
-                                <Button
-                                  variant="light"
-                                  color="green"
-                                  size="xs"
-                                  onClick={() => openPaymentModal(record)}
-                                >
-                                  Pagar
-                                </Button>
-                              )}
-
-                              <ActionIcon
-                                variant="light"
-                                aria-label="Abrir gerenciador"
-                                onClick={() =>
-                                  record.fornecedor
-                                    ? openManager(record.fornecedor)
-                                    : undefined
-                                }
-                                disabled={!record.fornecedor}
-                              >
-                                <IconArrowRight size={16} />
-                              </ActionIcon>
-                            </Group>
-                          )}
-
-                          {record.observacao ? (
-                            <Text size="sm" c="dimmed" mt="xs">
-                              {record.observacao}
+                          <Group gap={8} align="center">
+                            <Text
+                              size="xs"
+                              c="dimmed"
+                              style={
+                                record.status === "pago"
+                                  ? {
+                                      textDecoration: "line-through",
+                                      color: "var(--marriplan-muted)",
+                                    }
+                                  : {}
+                              }
+                            >
+                              Venc:
                             </Text>
-                          ) : null}
-                        </Stack>
-
-                        {/* Coluna da direita: perfeitamente esticada e alinhada à direita */}
-                        <Stack
-                          justify="space-between"
-                          gap={8}
-                          align="flex-end"
-                          style={{ shrink: 0 }}
-                        >
-                          <Menu
-                            shadow="md"
-                            width={220}
-                            position="bottom-end"
-                            withinPortal
+                            <Text
+                              size="sm"
+                              c={
+                                parcelaStatus === "em_atraso"
+                                  ? "red"
+                                  : parcelaStatus === "pago"
+                                  ? "var(--marriplan-muted)"
+                                  : dueColor(record)
+                              }
+                              fw={600}
+                              style={
+                                record.status === "pago"
+                                  ? {
+                                      textDecoration: "line-through",
+                                      color: "var(--marriplan-muted)",
+                                    }
+                                  : {}
+                              }
+                            >
+                              {new Date(
+                                `${record.data_vencimento}T00:00:00`,
+                              ).toLocaleDateString("pt-BR")}
+                            </Text>
+                          </Group>
+                          <Text
+                            size="sm"
+                            fw={600}
+                            style={
+                              record.status === "pago"
+                                ? {
+                                    textDecoration: "line-through",
+                                    color: "var(--marriplan-muted)",
+                                  }
+                                : {}
+                            }
                           >
-                            <Menu.Target>
-                              <Button
-                                variant="white"
-                                color="dark"
-                                radius="xl"
-                                size="xs"
-                                px={10}
-                                style={{
-                                  boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
-                                  backdropFilter: "blur(10px)",
-                                }}
-                              >
-                                <IconDotsVertical size={14} />
-                              </Button>
-                            </Menu.Target>
-                            <Menu.Dropdown>
-                              {parcelaStatus === "pago" ? (
-                                <Menu.Item
-                                  leftSection={<IconEdit size={14} />}
-                                  onClick={() => {
-                                    setParcelaToRevert(record);
-                                    setConfirmRevertOpen(true);
-                                  }}
-                                >
-                                  Reverter
-                                </Menu.Item>
-                              ) : (
-                                <Menu.Item
-                                  leftSection={<DollarSignIcon size={14} />}
-                                  onClick={() => openPaymentModal(record)}
-                                >
-                                  Pagar
-                                </Menu.Item>
-                              )}
-                              <Menu.Item
-                                leftSection={<IconArrowRight size={14} />}
-                                onClick={() =>
-                                  record.fornecedor
-                                    ? openManager(record.fornecedor)
-                                    : undefined
-                                }
-                                disabled={!record.fornecedor}
-                              >
-                                Visualizar Plano
-                              </Menu.Item>
-                            </Menu.Dropdown>
-                          </Menu>
-
-                          {/* mt="auto" agora funciona perfeitamente jogando o status para o rodapé */}
-                          <Badge color={statusColor(parcelaStatus)} mt="auto">
-                            {statusLabel(parcelaStatus)}
-                          </Badge>
+                            {formatCurrency(record.valor)}
+                          </Text>
+                          <Text size="xs">
+                            {FORMA_OPTIONS.find(
+                              (item) => item.value === record.forma_pagamento,
+                            )?.label || record.forma_pagamento}
+                          </Text>
                         </Stack>
+
+                        <Group gap={8}>
+                          {/* <Badge color={statusColor(record.status)}>
+                                        {statusLabel(record.status)}
+                                      </Badge> */}
+                          {record.status === "pago" ? (
+                            <Button
+                              styles={softButtonStyles}
+                              size="xs"
+                              leftSection={<IconRefresh size={12} />}
+                              onClick={() => {
+                                setParcelaToRevert(record);
+                                setConfirmRevertOpen(true);
+                              }}
+                            >
+                              Reverter
+                            </Button>
+                          ) : (
+                            <Button
+                              styles={primaryButtonStyles}
+                              size="xs"
+                              leftSection={<DollarSignIcon size={12} />}
+                              onClick={() => openPaymentModal(record)}
+                            >
+                              Pagar
+                            </Button>
+                          )}
+                          <Button
+                            styles={softButtonStyles}
+                            px={8}
+                            size="xs"
+                            onClick={() =>
+                              record.fornecedor
+                                ? openManager(record.fornecedor)
+                                : undefined
+                            }
+                          >
+                            <IconArrowRight size={16} />
+                          </Button>
+                        </Group>
                       </Group>
+                      {record.observacao ? (
+                        <Text size="sm" c="dimmed" mt="xs">
+                          {record.observacao}
+                        </Text>
+                      ) : null}
                     </Card>
                   );
                 }
 
                 return (
                   <Card key={record.id} radius="md" withBorder p="md">
-                    <Group noWrap align="center" position="apart">
-                      <Stack spacing={2} style={{ minWidth: 0, flex: 1 }}>
-                        <Text fw={700} lineClamp={1}>
+                    <Group
+                      align="center"
+                      justify="space-between"
+                      gap="md"
+                      style={{ width: "100%" }}
+                    >
+                      {/* Avatar alinhado ao topo */}
+                      <Avatar
+                        name={record.fornecedor_nome || "Fornecedor"}
+                        size="lg"
+                        radius="sm"
+                        src={
+                          record.fornecedor_resumo?.supplier_detail
+                            ?.cover_image_url || undefined
+                        }
+                      />
+
+                      {/* Stack de Textos do Meio */}
+                      <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
+                        <Text
+                          fw={600}
+                          lineClamp={1}
+                          style={
+                            record.status === "pago"
+                              ? {
+                                  textDecoration: "line-through",
+                                  color: "var(--marriplan-muted)",
+                                  lineHeight: 1.2,
+                                }
+                              : {
+                                  lineHeight: 1.2,
+                                }
+                          }
+                        >
                           {record.fornecedor_nome || "Fornecedor"}
                         </Text>
-                        <Text size="sm" c="dimmed" lineClamp={2}>
+
+                        <Text
+                          size="sm"
+                          c="dimmed"
+                          lineClamp={2}
+                          style={
+                            record.status === "pago"
+                              ? {
+                                  textDecoration: "line-through",
+                                  color: "var(--marriplan-muted)",
+                                  lineHeight: 1.3,
+                                  marginTop: 2,
+                                }
+                              : { lineHeight: 1.3, marginTop: 2 }
+                          }
+                        >
                           {record.descricao}
                         </Text>
-                        <Group spacing={8} align="center">
-                          <Text size="xs" c="dimmed">
+
+                        <Group gap={8} align="center">
+                          <Text
+                            size="xs"
+                            c="dimmed"
+                            style={
+                              record.status === "pago"
+                                ? {
+                                    textDecoration: "line-through",
+                                    color: "var(--marriplan-muted)",
+                                  }
+                                : undefined
+                            }
+                          >
                             Venc:
                           </Text>
                           <Text
@@ -861,9 +860,19 @@ export default function FinanceiroPage() {
                             c={
                               parcelaStatus === "em_atraso"
                                 ? "red"
+                                : parcelaStatus === "pago"
+                                ? "var(--marriplan-muted)"
                                 : dueColor(record)
                             }
                             fw={600}
+                            style={
+                              record.status === "pago"
+                                ? {
+                                    textDecoration: "line-through",
+                                    color: "var(--marriplan-muted)",
+                                  }
+                                : undefined
+                            }
                           >
                             {new Date(
                               `${record.data_vencimento}T00:00:00`,
@@ -872,7 +881,18 @@ export default function FinanceiroPage() {
                           <Text size="xs" c="dimmed">
                             •
                           </Text>
-                          <Text size="sm" fw={600}>
+                          <Text
+                            size="sm"
+                            fw={600}
+                            style={
+                              record.status === "pago"
+                                ? {
+                                    textDecoration: "line-through",
+                                    color: "var(--marriplan-muted)",
+                                  }
+                                : undefined
+                            }
+                          >
                             {formatCurrency(record.valor)}
                           </Text>
                           <Text size="xs" c="dimmed">
@@ -886,14 +906,27 @@ export default function FinanceiroPage() {
                         </Group>
                       </Stack>
 
-                      <Group spacing={8} noWrap>
-                        <Badge color={statusColor(parcelaStatus)}>
+                      <Group
+                        gap={8}
+                        align="center"
+                        wrap="nowrap"
+                        style={{ pt: 6, flexShrink: 0 }}
+                      >
+                        <Badge
+                          style={
+                            parcelaStatus === "pago"
+                              ? badgeStyles.success.root
+                              : parcelaStatus === "em_atraso"
+                              ? badgeStyles.danger.root
+                              : badgeStyles.warning.root
+                          }
+                        >
                           {statusLabel(parcelaStatus)}
                         </Badge>
+
                         {parcelaStatus === "pago" ? (
                           <Button
-                            variant="light"
-                            color="orange"
+                            styles={softButtonStyles}
                             size="xs"
                             leftSection={<IconRefresh size={12} />}
                             onClick={() => {
@@ -905,13 +938,12 @@ export default function FinanceiroPage() {
                           </Button>
                         ) : (
                           <Button
-                            variant="light"
-                            color="green"
+                            styles={primaryButtonStyles}
                             size="xs"
                             leftSection={<DollarSignIcon size={12} />}
                             onClick={() => openPaymentModal(record)}
                           >
-                            Pagar
+                            Pagar Parcela
                           </Button>
                         )}
 
@@ -919,9 +951,11 @@ export default function FinanceiroPage() {
                           label="Abrir gerenciador do fornecedor"
                           withArrow
                         >
-                          <ActionIcon
-                            variant="light"
-                            aria-label="Abrir gerenciador"
+                          <Button
+                            styles={softButtonStyles}
+                            px={8}
+                            size="xs"
+                            style={{ minWidth: 38 }}
                             onClick={() =>
                               record.fornecedor
                                 ? openManager(record.fornecedor)
@@ -929,16 +963,11 @@ export default function FinanceiroPage() {
                             }
                             disabled={!record.fornecedor}
                           >
-                            <IconArrowRight size={16} />
-                          </ActionIcon>
+                            <IconArrowRight size={12} />
+                          </Button>
                         </Tooltip>
                       </Group>
                     </Group>
-                    {record.observacao ? (
-                      <Text size="sm" c="dimmed" mt="xs">
-                        {record.observacao}
-                      </Text>
-                    ) : null}
                   </Card>
                 );
               })}
@@ -1004,24 +1033,16 @@ export default function FinanceiroPage() {
 
               <Group justify="space-between" align="center">
                 <Badge
-                  color={
+                  style={
                     managerSupplier.status_financeiro === "Quitado"
-                      ? "green"
+                      ? badgeStyles.success.root
                       : managerSupplier.status_financeiro === "Em atraso"
-                      ? "red"
-                      : "yellow"
+                      ? badgeStyles.danger.root
+                      : badgeStyles.warning.root
                   }
                 >
                   {managerSupplier.status_financeiro || "Sem plano"}
                 </Badge>
-                {managerSupplier.status === "HIRED" &&
-                managerParcelas.length > 0 ? (
-                  <Text size="sm" c="dimmed">
-                    Alteração de status bloqueada enquanto houver plano de
-                    pagamento. Exclua todas as parcelas/planos para liberar essa
-                    ação.
-                  </Text>
-                ) : null}
                 {!managerParcelas.length ? (
                   <Group>
                     <Button
@@ -1065,10 +1086,33 @@ export default function FinanceiroPage() {
                         <Card key={parcela.id} radius="md" withBorder>
                           <Group noWrap align="center" justify="space-between">
                             <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
-                              <Text fw={700} lineClamp={1}>
+                              <Text
+                                fw={700}
+                                lineClamp={1}
+                                style={
+                                  parcela.status === "pago"
+                                    ? {
+                                        textDecoration: "line-through",
+                                        color: "var(--marriplan-muted)",
+                                      }
+                                    : {}
+                                }
+                              >
                                 {parcela.descricao}
                               </Text>
-                              <Group gap={8} align="center" wrap="wrap">
+                              <Group
+                                gap={8}
+                                align="center"
+                                wrap="wrap"
+                                style={
+                                  parcela.status === "pago"
+                                    ? {
+                                        textDecoration: "line-through",
+                                        color: "var(--marriplan-muted)",
+                                      }
+                                    : {}
+                                }
+                              >
                                 <Text size="xs" c="dimmed">
                                   Venc:
                                 </Text>
@@ -1077,6 +1121,8 @@ export default function FinanceiroPage() {
                                   c={
                                     parcelaStatus === "em_atraso"
                                       ? "red"
+                                      : parcelaStatus === "pago"
+                                      ? "var(--marriplan-muted)"
                                       : dueColor(parcela)
                                   }
                                   fw={600}
@@ -1090,7 +1136,18 @@ export default function FinanceiroPage() {
                                     <Text size="xs" c="dimmed">
                                       •
                                     </Text>
-                                    <Text size="sm" fw={600}>
+                                    <Text
+                                      size="sm"
+                                      fw={600}
+                                      style={
+                                        parcela.status === "pago"
+                                          ? {
+                                              textDecoration: "line-through",
+                                              color: "var(--marriplan-muted)",
+                                            }
+                                          : {}
+                                      }
+                                    >
                                       {formatCurrency(parcela.valor)}
                                     </Text>
                                     <Text size="xs" c="dimmed">
@@ -1108,7 +1165,18 @@ export default function FinanceiroPage() {
                               </Group>
                               {isMobile && (
                                 <Group gap={8} align="center">
-                                  <Text size="sm" fw={600}>
+                                  <Text
+                                    size="sm"
+                                    fw={600}
+                                    style={
+                                      parcela.status === "pago"
+                                        ? {
+                                            textDecoration: "line-through",
+                                            color: "var(--marriplan-muted)",
+                                          }
+                                        : {}
+                                    }
+                                  >
                                     {formatCurrency(parcela.valor)}
                                   </Text>
                                   <Text size="xs" c="dimmed">
@@ -1126,15 +1194,23 @@ export default function FinanceiroPage() {
 
                             <Group gap={8} noWrap>
                               {!isMobile && (
-                                <Badge color={statusColor(parcelaStatus)}>
+                                <Badge
+                                  style={
+                                    parcelaStatus === "pago"
+                                      ? badgeStyles.success.root
+                                      : parcelaStatus === "em_atraso"
+                                      ? badgeStyles.danger.root
+                                      : badgeStyles.warning.root
+                                  }
+                                >
                                   {statusLabel(parcelaStatus)}
                                 </Badge>
                               )}
                               {parcelaStatus === "pago" ? (
                                 <Button
-                                  variant="light"
-                                  color="orange"
+                                  styles={softButtonStyles}
                                   size="xs"
+                                  leftSection={<IconRefresh size={12} />}
                                   onClick={() => {
                                     setParcelaToRevert(parcela);
                                     setConfirmRevertOpen(true);
@@ -1144,23 +1220,24 @@ export default function FinanceiroPage() {
                                 </Button>
                               ) : (
                                 <Button
-                                  variant="light"
-                                  color="green"
+                                  styles={primaryButtonStyles}
                                   size="xs"
+                                  leftSection={<DollarSignIcon size={12} />}
                                   onClick={() => openPaymentModal(parcela)}
                                 >
-                                  Pagar
+                                  Pagar Parcela
                                 </Button>
                               )}
 
                               <Menu withinPortal position="bottom-end">
                                 <Menu.Target>
-                                  <ActionIcon
-                                    variant="light"
-                                    aria-label="Mais opções"
+                                  <Button
+                                    styles={softButtonStyles}
+                                    px={8}
+                                    size="xs"
                                   >
-                                    <IconDotsVertical size={18} />
-                                  </ActionIcon>
+                                    <IconDotsVertical size={14} />
+                                  </Button>
                                 </Menu.Target>
                                 <Menu.Dropdown>
                                   <Menu.Item
@@ -1394,7 +1471,13 @@ export default function FinanceiroPage() {
               <Divider />
               <Group justify="space-between" align="center">
                 <Text fw={600}>Total: {formatCurrency(planTotal)}</Text>
-                <Badge color={planMatches ? "green" : "red"}>
+                <Badge
+                  style={
+                    planMatches
+                      ? badgeStyles.success.root
+                      : badgeStyles.danger.root
+                  }
+                >
                   {planMatches
                     ? "Bate com o valor acordado"
                     : "Soma divergente"}
@@ -1766,7 +1849,10 @@ export default function FinanceiroPage() {
             >
               Cancelar
             </Button>
-            <Button color="yellow" onClick={() => void confirmRevertParcela()}>
+            <Button
+              styles={primaryButtonStyles}
+              onClick={() => void confirmRevertParcela()}
+            >
               Reverter
             </Button>
           </Group>

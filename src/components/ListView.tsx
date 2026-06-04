@@ -9,7 +9,7 @@ interface ListViewProps<T> {
   renderStatus?: (item: T) => React.ReactNode;
   getImageUrl: (item: T) => string | undefined;
   getItemId: (item: T) => string | number;
-  fallbackIcon?: React.ReactNode;
+  fallbackIcon: (item: T) => React.ReactNode;
   renderSoloActions?: (item: T) => React.ReactNode;
 }
 

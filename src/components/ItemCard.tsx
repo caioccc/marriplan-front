@@ -1,5 +1,11 @@
-import { ActionIcon, Box, Card, Flex, Image, Menu } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
+import {
+  Box,
+  Button,
+  Card,
+  Flex,
+  Image,
+  Menu
+} from "@mantine/core";
 import { IconDotsVertical, IconPhoto } from "@tabler/icons-react";
 import React, { useState } from "react";
 
@@ -10,7 +16,7 @@ interface ItemCardProps<T> {
   renderActions: (item: T) => React.ReactNode;
   renderStatus?: (item: T) => React.ReactNode;
   renderSoloActions?: (item: T) => React.ReactNode;
-  fallbackIcon?: React.ReactNode;
+  fallbackIcon: (item: T) => React.ReactNode;
   layout?: "horizontal" | "vertical";
 }
 
@@ -19,7 +25,6 @@ export function ItemCard<T>({
   imageUrl,
   renderContent,
   renderActions,
-  renderStatus,
   renderSoloActions,
   fallbackIcon,
   layout = "horizontal",
@@ -39,7 +44,9 @@ export function ItemCard<T>({
       bg="gray.1"
       style={{ borderRadius: "var(--mantine-radius-md)" }}
     >
-      {fallbackIcon || (
+      {fallbackIcon ? (
+        fallbackIcon(item)
+      ) : (
         <IconPhoto size={64} color="var(--mantine-color-gray-5)" />
       )}
     </Flex>
@@ -54,7 +61,9 @@ export function ItemCard<T>({
       bg="gray.1"
       style={{ borderRadius: "var(--mantine-radius-md)" }}
     >
-      {fallbackIcon || (
+      {fallbackIcon ? (
+        fallbackIcon(item)
+      ) : (
         <IconPhoto size={64} color="var(--mantine-color-gray-5)" />
       )}
     </Flex>
@@ -81,9 +90,19 @@ export function ItemCard<T>({
   const menu = (
     <Menu withinPortal position="bottom-end" shadow="sm">
       <Menu.Target>
-        <ActionIcon variant="subtle" color="gray">
-          <IconDotsVertical size={18} />
-        </ActionIcon>
+        <Button
+          variant="white"
+          color="dark"
+          radius="xl"
+          size="xs"
+          px={10}
+          style={{
+            boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          <IconDotsVertical size={14} />
+        </Button>
       </Menu.Target>
       <Menu.Dropdown>{renderActions(item)}</Menu.Dropdown>
     </Menu>

@@ -23,6 +23,7 @@ export const PALETTE = {
   line: "#EEE3D8",
   softWhite: "#FFFCF8",
   marriplanRose: "var(--marriplan-rose)",
+  imageOverlay: "var(--marriplan-image-overlay)",
 };
 
 export const primaryButtonStylesWithDisabled = {
@@ -178,5 +179,106 @@ export const segmentedTabsStyles = {
       backgroundColor: 'rgba(242, 230, 216, 0.6)',
       color: 'var(--marriplan-text)',
     },
+  },
+} as const;
+
+
+// Adicione à sua PALETTE
+export const STATUS_COLORS = {
+  success: {
+    soft: 'var(--marriplan-success-soft)',
+    text: 'var(--marriplan-success-text)',
+  },
+  warning: {
+    soft: 'var(--marriplan-warning-soft)',
+    text: 'var(--marriplan-warning-text)',
+  },
+  danger: {
+    soft: 'var(--marriplan-danger-soft)',
+    text: 'var(--marriplan-danger-text)',
+  },
+  neutral: {
+    soft: 'var(--marriplan-neutral-soft)',
+    text: 'var(--marriplan-neutral-text)',
+  },
+};
+
+// Estilos Base para Badges
+const badgeBaseStyles = {
+  borderRadius: 12, // Mantendo a consistência suave
+  padding: '6px 12px',
+  fontWeight: 600,
+  fontSize: '0.75rem', // Um pouco menor que o texto principal
+  textTransform: 'uppercase', // Como os exemplos fornecidos
+  transition: 'all 160ms ease',
+};
+
+// Estilos de Badge Padronizados
+export const badgeStyles = {
+  success: {
+    root: {
+      ...badgeBaseStyles,
+      backgroundColor: STATUS_COLORS.success.soft,
+      color: STATUS_COLORS.success.text,
+    },
+  },
+  warning: {
+    root: {
+      ...badgeBaseStyles,
+      backgroundColor: STATUS_COLORS.warning.soft,
+      color: STATUS_COLORS.warning.text,
+    },
+  },
+  danger: {
+    root: {
+      ...badgeBaseStyles,
+      backgroundColor: STATUS_COLORS.danger.soft,
+      color: STATUS_COLORS.danger.text,
+    },
+  },
+  neutral: {
+    root: {
+      ...badgeBaseStyles,
+      backgroundColor: STATUS_COLORS.neutral.soft,
+      color: STATUS_COLORS.neutral.text,
+    },
+  },
+} as const;
+
+// Estilos de Ações de Modal Padronizados (usando os botões existentes)
+export const modalActionStyles = {
+  // CONFIRMAR, SALVAR (Ação Principal)
+  primary: {
+    ...primaryButtonStyles.root,
+  },
+  // CANCELAR, RECUSAR (Ação Secundária)
+  secondary: {
+    ...softButtonStyles.root,
+  },
+} as const;
+
+
+export const supplierCardStyles = {
+  card: {
+    padding: 0, // Remova o padding padrão do card para a imagem ocupar tudo
+    overflow: 'hidden', // Importante para as bordas arredondadas da imagem
+  },
+  imageContainer: {
+    position: 'relative',
+    width: 140, // Largura fixa da imagem lateral (ajuste se necessário)
+    height: '100%', // Ocupa toda a altura do card
+    backgroundColor: '#eee', // Cor de fundo temporária (skeleton)
+  },
+  image: {
+    objectFit: 'cover', // Preenche o contêiner mantendo a proporção
+    width: '100%',
+    height: '100%',
+  },
+  textContainer: {
+    padding: '16px 20px', // O padding que o card costumava ter
+    flex: 1, // Ocupa o restante do espaço
+  },
+  actionsContainer: {
+    padding: '16px 20px',
   },
 } as const;

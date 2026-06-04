@@ -31,6 +31,7 @@ import {
 } from "@tabler/icons-react";
 import React, { useEffect, useRef, useState } from "react";
 import { useSubscription } from "@/hooks/useSubscription";
+import { softButtonStyles } from "@/styles";
 
 interface WeddingInspirationsPageProps {
   selectedStyle: string;
@@ -69,15 +70,18 @@ export const WeddingInspirationsPage: React.FC<
   const initialLoading = loading && images.length === 0;
   const loadingMore = loading && images.length > 0;
   const inspirationLimit = getFeatureLimit("inspirations");
-  const selectedUniqueCount = selectedImages.reduce((acc, item) => {
-    if (acc.seen.has(item.image_url)) {
-      return acc;
-    }
+  const selectedUniqueCount = selectedImages.reduce(
+    (acc, item) => {
+      if (acc.seen.has(item.image_url)) {
+        return acc;
+      }
 
-    acc.seen.add(item.image_url);
-    acc.count += 1;
-    return acc;
-  }, { seen: new Set<string>(), count: 0 }).count;
+      acc.seen.add(item.image_url);
+      acc.count += 1;
+      return acc;
+    },
+    { seen: new Set<string>(), count: 0 },
+  ).count;
   const inspirationLimitReached = isFeatureLimitReached(
     "inspirations",
     selectedUniqueCount,
@@ -211,7 +215,13 @@ export const WeddingInspirationsPage: React.FC<
               style={{ flex: 1 }}
               leftSection={<IconSearch size={16} />}
             />
-            <Button type="submit" variant="light" loading={loading && page === 1}>
+            <Button
+              styles={softButtonStyles}
+              type="submit"
+              variant="light"
+              loading={loading && page === 1}
+              leftSection={<IconSearch size={16} />}
+            >
               Buscar
             </Button>
           </Group>

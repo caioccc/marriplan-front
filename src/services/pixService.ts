@@ -7,7 +7,6 @@ export type PixSettingsPayload = {
   pix_key_type: PixKeyType;
   pix_key: string;
   recipient_name: string;
-  city: string;
 };
 
 export type PixSettingsRecord = PixSettingsPayload & {
@@ -30,7 +29,7 @@ export type PublicPixSettingsRecord = {
   share_url: string;
 };
 
-type PixDraft = Pick<PixSettingsPayload, 'pix_key_type' | 'pix_key' | 'recipient_name' | 'city'> & {
+type PixDraft = Pick<PixSettingsPayload, 'pix_key_type' | 'pix_key' | 'recipient_name'> & {
   share_hash?: string;
 };
 
@@ -114,7 +113,6 @@ function crc16(payload: string) {
 export function buildPixPayload(draft: PixDraft) {
   const pixKey = normalizePixKeyValue(draft.pix_key_type, draft.pix_key);
   const recipientName = normalizePixText(draft.recipient_name, 25);
-  const city = normalizePixText(draft.city, 15);
   const txid = '***';
 
   const merchantAccountInfo = [
@@ -130,7 +128,6 @@ export function buildPixPayload(draft: PixDraft) {
     emv('53', '986'),
     emv('58', 'BR'),
     emv('59', recipientName),
-    emv('60', city),
     emv('62', emv('05', txid)),
     '6304',
   ].join('');
@@ -155,10 +152,6 @@ export function validatePixDraft(draft: PixDraft & { enabled?: boolean }) {
 
   if (!draft.recipient_name.trim()) {
     errors.recipient_name = 'Nome exibido é obrigatório.';
-  }
-
-  if (!draft.city.trim()) {
-    errors.city = 'Cidade é obrigatória.';
   }
 
   if (!draft.pix_key_type) {
@@ -200,13 +193,12 @@ export async function getMyPixSettings() {
 }
 
 export async function savePixSettings(payload: PixSettingsPayload) {
-  const { enabled, pix_key_type, pix_key, recipient_name, city } = payload;
+  const { enabled, pix_key_type, pix_key, recipient_name } = payload;
   const response = await api.patch('/api/pix-settings/', {
     enabled,
     pix_key_type,
     pix_key,
     recipient_name,
-    city,
   });
   return response.data as PixSettingsRecord;
 }

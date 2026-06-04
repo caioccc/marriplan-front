@@ -314,6 +314,26 @@ export default function MySuppliersPage() {
           }
         />
 
+        {items.some((item) => item.status_financeiro === "Sem plano") && (
+          <Card
+            withBorder
+            radius="lg"
+            p="md"
+            style={{ background: "var(--marriplan-surface-muted)" }}
+          >
+            <Group gap={8}>
+              <Badge color="yellow" variant="light">
+                Atenção
+              </Badge>
+              <Text size="sm">
+                Você tem fornecedores sem plano de pagamento. Clique em
+                &quot;Gerenciar&quot; para criar um plano e acompanhar os
+                pagamentos.
+              </Text>
+            </Group>
+          </Card>
+        )}
+
         {initialLoading ? (
           <Card radius="xl" p="xl" withBorder>
             <Group justify="center" py="xl">
