@@ -15,7 +15,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useWeddingIdentityState } from "@/hooks/useWeddingIdentityState";
-import { fetchChecklistTasks } from "@/services/checklist";
+import { fetchChecklistTasks, updateChecklistTask } from "@/services/checklist";
 import { giftsService } from "@/services/giftsService";
 import {
   guests_generate_confirmation_link,
@@ -32,6 +32,7 @@ import {
   Button,
   Card,
   Center,
+  Checkbox,
   Container,
   Divider,
   Flex,
@@ -467,6 +468,18 @@ const MarriplanDashboard: React.FC = () => {
         user.wedding_profile.nome_noiva || "Noiva"
       }`
     : "Seu casamento";
+
+  const [loadingTaskId, setLoadingTaskId] = useState<number | null>(null);
+
+  async function handleToggleDone(task: ChecklistTask) {
+    setLoadingTaskId(task.id);
+    await updateChecklistTask(task.id, {
+      status: task.status === "done" ? "pending" : "done",
+    });
+    fetchChecklistTasks()
+      .then((data) => setChecklistTasks(Array.isArray(data) ? data : []))
+      .finally(() => setLoadingTaskId(null));
+  }
 
   return (
     <BaseLayout>
@@ -925,34 +938,88 @@ const MarriplanDashboard: React.FC = () => {
                     Nenhuma tarefa pendente no momento.
                   </Text>
                 )}
-                {nextTasks.map((task) => (
-                  <Paper
-                    key={task.id}
-                    className="marriplan-card"
-                    radius="lg"
-                    p="sm"
-                    style={{ border: `1px solid ${palette.line}` }}
-                  >
-                    <Group justify="space-between" align="center" wrap="nowrap">
-                      <Box>
-                        <Text size="sm" fw={600} c={palette.ink}>
-                          {task.description}
-                        </Text>
-                        <Text size="xs" c={palette.warmGray}>
-                          {task.due_date
-                            ? `Entrega: ${new Date(
-                                task.due_date,
-                              ).toLocaleDateString("pt-BR")}`
-                            : "Sem data definida"}
-                        </Text>
-                      </Box>
-                      <MarriplanStatusBadge
-                        kind="checklist"
-                        status={String(task.status).toLowerCase()}
-                      />
-                    </Group>
-                  </Paper>
-                ))}
+                {nextTasks.map((task) => {
+                  const isDone = task.status === "done";
+                  const isLoading = loadingTaskId === task.id;
+
+                  return (
+                    <Paper
+                      key={task.id}
+                      className="marriplan-card"
+                      radius="lg"
+                      p="sm"
+                      style={{
+                        border: `1px solid ${palette.line}`,
+                        cursor: isLoading ? "not-allowed" : "pointer", // Feedback visual de clique
+                        transition: "all 160ms ease",
+                        opacity: isLoading ? 0.6 : 1,
+                        "&:hover": {
+                          backgroundColor: "rgba(247, 241, 232, 0.3)", // Leve realce no hover usando o champagne
+                        },
+                      }}
+                    >
+                      <Group
+                        justify="space-between"
+                        align="center"
+                        wrap="nowrap"
+                      >
+                        {/* Agrupamento da Esquerda: Checkbox + Textos alinhados horizontalmente ao centro */}
+                        <Group
+                          align="center"
+                          gap="md"
+                          style={{ flex: 1, minWidth: 0 }}
+                        >
+                          <Checkbox
+                            checked={isDone}
+                            readOnly // O clique é gerenciado pelo Paper pai, evitando duplo clique acidental
+                            disabled={isLoading}
+                            color="var(--marriplan-rose)" // Mantendo sua identidade rose
+                            radius="sm"
+                            size="sm"
+                            styles={{
+                              input: { cursor: "pointer" },
+                            }}
+                          />
+
+                          <Box
+                            style={{ flex: 1, minWidth: 0 }}
+                            onClick={() => !isLoading && handleToggleDone(task)} // Dispara a ação ao clicar em qualquer lugar do card
+                          >
+                            <Text
+                              size="sm"
+                              fw={600}
+                              c={palette.ink}
+                              style={{
+                                textDecoration: isDone
+                                  ? "line-through"
+                                  : "none",
+                                opacity: isDone ? 0.5 : 1,
+                                transition: "all 160ms ease",
+                              }}
+                            >
+                              {task.description}
+                            </Text>
+                            <Text size="xs" c={palette.warmGray}>
+                              {task.due_date
+                                ? `Entrega: ${new Date(
+                                    task.due_date,
+                                  ).toLocaleDateString("pt-BR")}`
+                                : "Sem data definida"}
+                            </Text>
+                          </Box>
+                        </Group>
+
+                        {/* Canto Direito: Badge de Status permanece estático */}
+                        <Box style={{ flexShrink: 0 }}>
+                          <MarriplanStatusBadge
+                            kind="checklist"
+                            status={String(task.status).toLowerCase()}
+                          />
+                        </Box>
+                      </Group>
+                    </Paper>
+                  );
+                })}
               </Stack>
             </Card>
 
