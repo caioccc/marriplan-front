@@ -1,13 +1,23 @@
-import { inputStyles, primaryButtonStylesWithDisabled, softButtonStyles } from '@/styles';
-import { TimelineMoment, TimelineMomentPayload } from '@/types/timeline';
-import { Button, Group, Modal, Textarea, TextInput } from '@mantine/core';
-import { useMediaQuery } from '@mantine/hooks';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { ptBR } from 'date-fns/locale/pt-BR';
-import { useEffect, useMemo, useState } from 'react';
-import { MobileFullscreenModal } from '@/components/MobileFullscreenModal';
+import { MobileFullscreenModal } from "@/components/MobileFullscreenModal";
+import { toSentenceCase, toUpperCamelWords } from "@/lib/text";
+import {
+  inputStyles,
+  primaryButtonStylesWithDisabled,
+  softButtonStyles,
+} from "@/styles";
+import { TimelineMoment, TimelineMomentPayload } from "@/types/timeline";
+import {
+  ActionIcon,
+  Button,
+  Group,
+  Modal,
+  Textarea,
+  TextInput,
+} from "@mantine/core";
+import { DatesProvider, TimePicker } from "@mantine/dates";
+import { useMediaQuery } from "@mantine/hooks";
+import { IconCalendarClock } from "@tabler/icons-react";
+import { useEffect, useMemo, useState } from "react";
 
 type TimelineMomentModalProps = {
   opened: boolean;
@@ -20,7 +30,7 @@ const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 function parseTimeToDate(value?: string | null) {
   if (!value) return null;
-  const parts = String(value).split(':');
+  const parts = String(value).split(":");
   const hours = Number(parts[0]);
   const minutes = Number(parts[1] ?? 0);
   if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
@@ -35,20 +45,22 @@ export function TimelineMomentModal({
   onSave,
   initialMoment,
 }: TimelineMomentModalProps) {
-  const isMobile = useMediaQuery('(max-width: 768px)');
-  const [time, setTime] = useState<Date | null>(null);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [time, setTime] = useState<string | null>(null);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<{ time?: string; title?: string }>({});
   const [saving, setSaving] = useState(false);
+
+  const [dropdownOpened, setDropdownOpened] = useState(false);
 
   useEffect(() => {
     if (!opened) {
       return;
     }
-    setTime(parseTimeToDate(initialMoment?.time ?? null));
-    setTitle(initialMoment?.title ?? '');
-    setDescription(initialMoment?.description ?? '');
+    setTime(parseTimeToDate(initialMoment?.time ?? "")?.toTimeString().slice(0, 5) ?? null);
+    setTitle(initialMoment?.title ?? "");
+    setDescription(initialMoment?.description ?? "");
     setErrors({});
   }, [opened, initialMoment]);
 
@@ -59,10 +71,10 @@ export function TimelineMomentModal({
   const handleSave = async () => {
     const nextErrors: { time?: string; title?: string } = {};
     if (!time) {
-      nextErrors.time = 'Informe um horário válido no formato 24h.';
+      nextErrors.time = "Informe um horário válido no formato 24h.";
     }
     if (!title.trim()) {
-      nextErrors.title = 'O título é obrigatório.';
+      nextErrors.title = "O título é obrigatório.";
     }
 
     setErrors(nextErrors);
@@ -73,9 +85,9 @@ export function TimelineMomentModal({
     setSaving(true);
     try {
       await onSave({
-        time: time.toTimeString().slice(0, 5),
-        title: title.trim(),
-        description: description.trim(),
+        time: time!,
+        title: toUpperCamelWords(title.trim()),
+        description: toSentenceCase(description.trim()),
       });
     } finally {
       setSaving(false);
@@ -84,23 +96,32 @@ export function TimelineMomentModal({
 
   const content = (
     <>
-      <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
+      <DatesProvider settings={{ locale: "pt-br" }}>
         <TimePicker
           label="Horário"
-          value={time}
-          onChange={(value) => setTime(value)}
-          ampm={false}
+          value={time ? String(new Date(time).toTimeString().slice(0, 5)) : ""}
           minutesStep={1}
-          slotProps={{
-            textField: {
-              fullWidth: true,
-              placeholder: '00:00',
-              error: Boolean(errors.time),
-              helperText: errors.time,
-            },
+          withDropdown
+          rightSection={
+            <ActionIcon
+              onClick={() => setDropdownOpened((prev) => !prev)}
+              variant="default"
+            >
+              <IconCalendarClock size={18} />
+            </ActionIcon>
+          }
+          onChange={(value) => {
+            setTime(value);
+            if (value === "") {
+              setDropdownOpened(false);
+            }
+          }}
+          popoverProps={{
+            opened: dropdownOpened,
+            onChange: (_opened) => !_opened && setDropdownOpened(false),
           }}
         />
-      </LocalizationProvider>
+      </DatesProvider>
       <TextInput
         label="Título"
         placeholder="Entrada da noiva"
@@ -128,7 +149,12 @@ export function TimelineMomentModal({
       <Button variant="default" onClick={onClose} styles={softButtonStyles}>
         Cancelar
       </Button>
-      <Button onClick={handleSave} disabled={!isValid} loading={saving} styles={primaryButtonStylesWithDisabled}>
+      <Button
+        onClick={handleSave}
+        disabled={!isValid}
+        loading={saving}
+        styles={primaryButtonStylesWithDisabled}
+      >
         Salvar
       </Button>
     </Group>
@@ -139,7 +165,7 @@ export function TimelineMomentModal({
       <MobileFullscreenModal
         opened={opened}
         onClose={onClose}
-        title={initialMoment ? 'Editar momento' : 'Novo momento'}
+        title={initialMoment ? "Editar momento" : "Novo momento"}
         footer={footer}
       >
         {content}
@@ -151,7 +177,7 @@ export function TimelineMomentModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={initialMoment ? 'Editar momento' : 'Novo momento'}
+      title={initialMoment ? "Editar momento" : "Novo momento"}
       centered
       radius="lg"
       size="lg"
@@ -161,7 +187,12 @@ export function TimelineMomentModal({
         <Button variant="default" onClick={onClose} styles={softButtonStyles}>
           Cancelar
         </Button>
-        <Button onClick={handleSave} disabled={!isValid} loading={saving} styles={primaryButtonStylesWithDisabled}>
+        <Button
+          onClick={handleSave}
+          disabled={!isValid}
+          loading={saving}
+          styles={primaryButtonStylesWithDisabled}
+        >
           Salvar
         </Button>
       </Group>
