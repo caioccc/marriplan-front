@@ -47,6 +47,7 @@ import {
   RingProgress,
   ScrollArea,
   SimpleGrid,
+  Skeleton,
   Stack,
   Text,
   Title,
@@ -469,118 +470,124 @@ const MarriplanDashboard: React.FC = () => {
               border: `1px solid ${palette.line}`,
             }}
           >
-            <Stack gap="lg">
-              <Group
-                justify="space-between"
-                align="flex-start"
-                gap="xl"
-                wrap="wrap"
-              >
-                <Stack gap={8} style={{ maxWidth: 520 }}>
-                  <Text
-                    size="xs"
-                    c={palette.warmGray}
-                    fw={600}
-                    tt="uppercase"
-                    style={{ letterSpacing: 1.2 }}
-                  >
-                    Seu momento especial
-                  </Text>
-                  <Title order={2} c={palette.ink} style={{ fontWeight: 600 }}>
-                    {coupleName}
-                  </Title>
-                  {(hasWeddingDate || hasWeddingVenue) && (
-                    <Group gap="md" wrap="wrap">
-                      {hasWeddingDate && (
-                        <Group gap="xs">
-                          <IconCalendar size={16} color={palette.roseGold} />
-                          <Text size="sm" c={palette.ink}>
-                            {weddingOverview.date}
-                          </Text>
-                        </Group>
-                      )}
-                      {hasWeddingVenue && (
-                        <Group gap="xs">
-                          <IconMapPin size={16} color={palette.warmGray} />
-                          <Text size="sm" c={palette.ink}>
-                            {weddingOverview.venue}
-                          </Text>
-                        </Group>
-                      )}
-                    </Group>
-                  )}
-                  <Text size="sm" c={palette.warmGray}>
-                    Cada detalhe conta. Veja o progresso e os proximos passos
-                    mais importantes da sua jornada.
-                  </Text>
-                </Stack>
-              </Group>
-              {weddingDateTime && (
-                <Card
-                  radius="xl"
-                  p="lg"
-                  style={{
-                    background: palette.softWhite,
-                    border: `1px solid ${palette.line}`,
-                  }}
+            <Skeleton visible={loadingChecklist} radius="xl">
+              <Stack gap="lg">
+                <Group
+                  justify="space-between"
+                  align="flex-start"
+                  gap="xl"
+                  wrap="wrap"
                 >
-                  <Stack gap={8} align="center">
-                    <Group gap="xs">
-                      <IconClock size={16} color={palette.roseGold} />
-                      <Text
-                        size="xs"
-                        c={palette.warmGray}
-                        fw={600}
-                        tt="uppercase"
-                        style={{ letterSpacing: 1 }}
-                      >
-                        Contador regressivo
-                      </Text>
-                    </Group>
-                    {countdown.isComplete ? (
-                      <Text size="lg" fw={700} c={palette.ink}>
-                        Chegou o grande dia! Felicidades aos noivos.
-                      </Text>
-                    ) : (
-                      <Group gap="md" wrap="wrap" justify="center">
-                        <Stack gap={2} align="center">
-                          <Text size="xl" fw={700} c={palette.ink}>
-                            {countdown.days}
-                          </Text>
-                          <Text size="xs" c={palette.warmGray}>
-                            Dias
-                          </Text>
-                        </Stack>
-                        <Stack gap={2} align="center">
-                          <Text size="xl" fw={700} c={palette.ink}>
-                            {countdown.hours}
-                          </Text>
-                          <Text size="xs" c={palette.warmGray}>
-                            Horas
-                          </Text>
-                        </Stack>
-                        <Stack gap={2} align="center">
-                          <Text size="xl" fw={700} c={palette.ink}>
-                            {countdown.minutes}
-                          </Text>
-                          <Text size="xs" c={palette.warmGray}>
-                            Minutos
-                          </Text>
-                        </Stack>
-                        <Stack gap={2} align="center">
-                          <Text size="xl" fw={700} c={palette.ink}>
-                            {countdown.seconds}
-                          </Text>
-                          <Text size="xs" c={palette.warmGray}>
-                            Segundos
-                          </Text>
-                        </Stack>
+                  <Stack gap={8} style={{ maxWidth: 520 }}>
+                    <Text
+                      size="xs"
+                      c={palette.warmGray}
+                      fw={600}
+                      tt="uppercase"
+                      style={{ letterSpacing: 1.2 }}
+                    >
+                      Seu momento especial
+                    </Text>
+                    <Title
+                      order={2}
+                      c={palette.ink}
+                      style={{ fontWeight: 600 }}
+                    >
+                      {coupleName}
+                    </Title>
+                    {(hasWeddingDate || hasWeddingVenue) && (
+                      <Group gap="md" wrap="wrap">
+                        {hasWeddingDate && (
+                          <Group gap="xs">
+                            <IconCalendar size={16} color={palette.roseGold} />
+                            <Text size="sm" c={palette.ink}>
+                              {weddingOverview.date}
+                            </Text>
+                          </Group>
+                        )}
+                        {hasWeddingVenue && (
+                          <Group gap="xs">
+                            <IconMapPin size={16} color={palette.warmGray} />
+                            <Text size="sm" c={palette.ink}>
+                              {weddingOverview.venue}
+                            </Text>
+                          </Group>
+                        )}
                       </Group>
                     )}
+                    <Text size="sm" c={palette.warmGray}>
+                      Cada detalhe conta. Veja o progresso e os proximos passos
+                      mais importantes da sua jornada.
+                    </Text>
                   </Stack>
-                </Card>
-              )}
-            </Stack>
+                </Group>
+                {weddingDateTime && (
+                  <Card
+                    radius="xl"
+                    p="lg"
+                    style={{
+                      background: palette.softWhite,
+                      border: `1px solid ${palette.line}`,
+                    }}
+                  >
+                    <Stack gap={8} align="center">
+                      <Group gap="xs">
+                        <IconClock size={16} color={palette.roseGold} />
+                        <Text
+                          size="xs"
+                          c={palette.warmGray}
+                          fw={600}
+                          tt="uppercase"
+                          style={{ letterSpacing: 1 }}
+                        >
+                          Contador regressivo
+                        </Text>
+                      </Group>
+                      {countdown.isComplete ? (
+                        <Text size="lg" fw={700} c={palette.ink}>
+                          Chegou o grande dia! Felicidades aos noivos.
+                        </Text>
+                      ) : (
+                        <Group gap="md" wrap="wrap" justify="center">
+                          <Stack gap={2} align="center">
+                            <Text size="xl" fw={700} c={palette.ink}>
+                              {countdown.days}
+                            </Text>
+                            <Text size="xs" c={palette.warmGray}>
+                              Dias
+                            </Text>
+                          </Stack>
+                          <Stack gap={2} align="center">
+                            <Text size="xl" fw={700} c={palette.ink}>
+                              {countdown.hours}
+                            </Text>
+                            <Text size="xs" c={palette.warmGray}>
+                              Horas
+                            </Text>
+                          </Stack>
+                          <Stack gap={2} align="center">
+                            <Text size="xl" fw={700} c={palette.ink}>
+                              {countdown.minutes}
+                            </Text>
+                            <Text size="xs" c={palette.warmGray}>
+                              Minutos
+                            </Text>
+                          </Stack>
+                          <Stack gap={2} align="center">
+                            <Text size="xl" fw={700} c={palette.ink}>
+                              {countdown.seconds}
+                            </Text>
+                            <Text size="xs" c={palette.warmGray}>
+                              Segundos
+                            </Text>
+                          </Stack>
+                        </Group>
+                      )}
+                    </Stack>
+                  </Card>
+                )}
+              </Stack>
+            </Skeleton>
           </Card>
 
           {(hasWeddingDate || hasWeddingVenue || hasIdentityHighlights) && (
@@ -743,91 +750,94 @@ const MarriplanDashboard: React.FC = () => {
               </Text>
 
               {/* Linha Principal: Ring + Texto de Resumo */}
-              <Group
-                justify="space-between"
-                align="center"
-                wrap="nowrap"
-                mb="md"
-              >
-                <RingProgress
-                  size={64}
-                  thickness={6}
-                  roundCaps
-                  sections={[
-                    {
-                      value: checklistStats.progress,
-                      color: PALETTE.roseGold || "var(--marriplan-rose)",
-                    },
-                  ]}
-                  label={
-                    <Text size="xs" fw={700} c={PALETTE.ink} ta="center">
-                      {checklistStats.progress}%
-                    </Text>
-                  }
-                />
+              <Skeleton visible={loadingChecklist} radius="xl">
+                <Group
+                  justify="space-between"
+                  align="center"
+                  wrap="nowrap"
+                  mb="md"
+                >
+                  <RingProgress
+                    size={64}
+                    thickness={6}
+                    roundCaps
+                    sections={[
+                      {
+                        value: checklistStats.progress,
+                        color: PALETTE.roseGold || "var(--marriplan-rose)",
+                      },
+                    ]}
+                    label={
+                      <Text size="xs" fw={700} c={PALETTE.ink} ta="center">
+                        {checklistStats.progress}%
+                      </Text>
+                    }
+                  />
 
-                <Stack gap={1} style={{ flex: 1, minWidth: 0 }}>
-                  <Text
-                    size="md"
-                    fw={600}
-                    c={PALETTE.ink}
-                    style={{ lineHeight: 1.2 }}
-                  >
-                    {checklistStats.progress}% Concluído
-                  </Text>
-                  <Text size="xs" c={PALETTE.warmGray}>
-                    {checklistStats.done} de {checklistStats.total} tarefas
-                  </Text>
+                  <Stack gap={1} style={{ flex: 1, minWidth: 0 }}>
+                    <Text
+                      size="md"
+                      fw={600}
+                      c={PALETTE.ink}
+                      style={{ lineHeight: 1.2 }}
+                    >
+                      {checklistStats.progress}% Concluído
+                    </Text>
+                    <Text size="xs" c={PALETTE.warmGray}>
+                      {checklistStats.done} de {checklistStats.total} tarefas
+                    </Text>
+                  </Stack>
+                </Group>
+
+                {/* Distribuição simplificada: Apenas o que falta resolver */}
+                <Stack gap="xs">
+                  {/* Barra Em Andamento */}
+                  <Box>
+                    <Group justify="space-between" mb={2}>
+                      <Text size="11px" fw={500} c={PALETTE.ink}>
+                        Em andamento
+                      </Text>
+                      <Text size="11px" fw={600} c={PALETTE.ink}>
+                        {checklistStats.inProgress}
+                      </Text>
+                    </Group>
+                    <Progress
+                      radius="xl"
+                      size="4px" // Barra bem fina e elegante
+                      value={
+                        checklistStats.total > 0
+                          ? (checklistStats.inProgress / checklistStats.total) *
+                            100
+                          : 0
+                      }
+                      color="orange"
+                    />
+                  </Box>
+
+                  {/* Barra Pendente */}
+                  <Box>
+                    <Group justify="space-between" mb={2}>
+                      <Text size="11px" fw={500} c={PALETTE.ink}>
+                        Pendente
+                      </Text>
+                      <Text size="11px" fw={600} c={PALETTE.ink}>
+                        {checklistStats.pending}
+                      </Text>
+                    </Group>
+                    <Progress
+                      radius="xl"
+                      size="4px"
+                      value={
+                        checklistStats.total > 0
+                          ? (checklistStats.pending / checklistStats.total) *
+                            100
+                          : 0
+                      }
+                      color="var(--mantine-color-gray-3)"
+                    />
+                  </Box>
                 </Stack>
-              </Group>
-
-              {/* Distribuição simplificada: Apenas o que falta resolver */}
-              <Stack gap="xs">
-                {/* Barra Em Andamento */}
-                <Box>
-                  <Group justify="space-between" mb={2}>
-                    <Text size="11px" fw={500} c={PALETTE.ink}>
-                      Em andamento
-                    </Text>
-                    <Text size="11px" fw={600} c={PALETTE.ink}>
-                      {checklistStats.inProgress}
-                    </Text>
-                  </Group>
-                  <Progress
-                    radius="xl"
-                    size="4px" // Barra bem fina e elegante
-                    value={
-                      checklistStats.total > 0
-                        ? (checklistStats.inProgress / checklistStats.total) *
-                          100
-                        : 0
-                    }
-                    color="orange"
-                  />
-                </Box>
-
-                {/* Barra Pendente */}
-                <Box>
-                  <Group justify="space-between" mb={2}>
-                    <Text size="11px" fw={500} c={PALETTE.ink}>
-                      Pendente
-                    </Text>
-                    <Text size="11px" fw={600} c={PALETTE.ink}>
-                      {checklistStats.pending}
-                    </Text>
-                  </Group>
-                  <Progress
-                    radius="xl"
-                    size="4px"
-                    value={
-                      checklistStats.total > 0
-                        ? (checklistStats.pending / checklistStats.total) * 100
-                        : 0
-                    }
-                    color="var(--mantine-color-gray-3)"
-                  />
-                </Box>
-              </Stack>
+              </Skeleton>
             </Card>
 
             <Card
@@ -850,21 +860,25 @@ const MarriplanDashboard: React.FC = () => {
                   >
                     Convidados confirmados
                   </Text>
-                  <Text size="lg" fw={600} c={palette.ink}>
-                    {weddingOverview.confirmedGuests} confirmados
-                  </Text>
-                  <Text size="xs" c={palette.warmGray}>
-                    {weddingOverview.totalGuests} convidados totais
-                  </Text>
+                  <Skeleton visible={loadingGuests} radius="xl">
+                    <Text size="lg" fw={600} c={palette.ink}>
+                      {weddingOverview.confirmedGuests} confirmados
+                    </Text>
+                    <Text size="xs" c={palette.warmGray}>
+                      {weddingOverview.totalGuests} convidados totais
+                    </Text>
+                  </Skeleton>
                 </Stack>
                 <IconUsers size={24} color={palette.roseGold} />
               </Group>
-              <Progress
-                value={guestsProgress}
-                color={palette.roseGold}
-                mt="sm"
-                radius="xl"
-              />
+              <Skeleton visible={loadingGuests} radius="xl" mt="sm">
+                <Progress
+                  value={guestsProgress}
+                  color={palette.roseGold}
+                  mt="sm"
+                  radius="xl"
+                />
+              </Skeleton>
             </Card>
 
             <Card
@@ -887,24 +901,28 @@ const MarriplanDashboard: React.FC = () => {
                   >
                     Lista de presentes
                   </Text>
-                  <Text size="lg" fw={600} c={palette.ink}>
-                    {giftsPurchased} comprados
-                  </Text>
-                  <Text size="xs" c={palette.warmGray}>
-                    {giftsReserved} reservados
-                  </Text>
-                  <Text size="xs" c={palette.warmGray}>
-                    {gifts.count} itens cadastrados
-                  </Text>
+                  <Skeleton visible={loadingGifts} radius="xl">
+                    <Text size="lg" fw={600} c={palette.ink}>
+                      {giftsPurchased} comprados
+                    </Text>
+                    <Text size="xs" c={palette.warmGray}>
+                      {giftsReserved} reservados
+                    </Text>
+                    <Text size="xs" c={palette.warmGray}>
+                      {gifts.count} itens cadastrados
+                    </Text>
+                  </Skeleton>
                 </Stack>
                 <IconGift size={24} color={palette.roseGold} />
               </Group>
-              <Progress
-                value={giftsProgress}
-                color={palette.roseGold}
-                mt="sm"
-                radius="xl"
-              />
+              <Skeleton visible={loadingGifts} radius="xl" mt="sm">
+                <Progress
+                  value={giftsProgress}
+                  color={palette.roseGold}
+                  mt="sm"
+                  radius="xl"
+                />
+              </Skeleton>
             </Card>
 
             <Card
@@ -971,12 +989,14 @@ const MarriplanDashboard: React.FC = () => {
               </Group>
               <Divider mb="md" color={palette.line} />
               <Stack gap="sm">
-                <ChecklistWidget
-                  checklistTasks={checklistTasks}
-                  loadingChecklist={loadingChecklist}
-                  loadingTaskId={loadingTaskId}
-                  handleToggleDone={handleToggleDone}
-                />
+                <Skeleton visible={loadingChecklist} radius="xl">
+                  <ChecklistWidget
+                    checklistTasks={checklistTasks}
+                    loadingChecklist={loadingChecklist}
+                    loadingTaskId={loadingTaskId}
+                    handleToggleDone={handleToggleDone}
+                  />
+                </Skeleton>
               </Stack>
             </Card>
 

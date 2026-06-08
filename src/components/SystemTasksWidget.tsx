@@ -18,7 +18,6 @@ import {
   IconArrowUpRight,
   IconAutomation,
   IconCheck,
-  IconCircleDot,
   IconSquare
 } from "@tabler/icons-react";
 import { useRouter } from "next/navigation"; // Ou 'next/router' dependendo da versão do seu Next.js
@@ -237,7 +236,9 @@ export default function SystemTasksWidget() {
                         size={16}
                         radius="xl"
                         variant="light"
-                        color={PALETTE.marriplanRose || "var(--marriplan-beige)"}
+                        color={
+                          PALETTE.marriplanRose || "var(--marriplan-beige)"
+                        }
                       >
                         <IconSquare size={18} stroke={2.5} />
                       </ThemeIcon>

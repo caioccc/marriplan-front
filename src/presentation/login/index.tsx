@@ -1,28 +1,47 @@
-import type {NextPage} from 'next'
-import {useEffect, useState} from 'react'
-import {Anchor, Button, Divider, Group, PasswordInput, Stack, Text, TextInput} from '@mantine/core';
-import {IconLogin, IconUserPlus} from '@tabler/icons-react';
+import type { NextPage } from 'next'
+import { useEffect, useState } from 'react'
+import { Anchor, Button, Divider, Group, PasswordInput, Stack, Text, TextInput, LoadingOverlay, Box } from '@mantine/core';
+import { IconLogin, IconUserPlus } from '@tabler/icons-react';
 import HomeBaseLayout from '@/components/Layout/_HomeBaseLayout'
-import {useAuth} from '@/contexts/AuthContext'
-import {useToast} from "@/hooks/use-toast"
-import {useRouter} from 'next/router'
-import {useForm, zodResolver} from '@mantine/form';
-import {z} from 'zod';
-import {useTranslation} from 'react-i18next';
-import {GoogleLoginButton} from '@/components/GoogleLoginButton';
-import {authInputStyles, primaryButtonStyles, softButtonStyles} from '@/styles/marriplanStyles';
+import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from "@/hooks/use-toast"
+import { useRouter } from 'next/router'
+import { useForm, zodResolver } from '@mantine/form';
+import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
+import { GoogleLoginButton } from '@/components/GoogleLoginButton';
+import { authInputStyles, primaryButtonStyles, softButtonStyles } from '@/styles/marriplanStyles';
 
 const LoginContent: NextPage = () => {
     const [isLoading, setIsLoading] = useState(false)
+    const [isRedirecting, setIsRedirecting] = useState(false) // <-- Novo estado para o Overlay
     const router = useRouter()
-    const {login} = useAuth()
-    const {toast} = useToast()
-    const {t} = useTranslation();
+    const { login } = useAuth()
+    const { toast } = useToast()
+    const { t } = useTranslation();
+
+    // Intercepta qualquer mudança de rota do Next.js para manter o Loading ativo até a Dashboard montar
+    useEffect(() => {
+        const handleStart = (url: string) => {
+            if (url.includes('/dashboard') || url.includes('/2fa')) {
+                setIsRedirecting(true);
+            }
+        };
+        const handleComplete = () => setIsRedirecting(false);
+
+        router.events.on('routeChangeStart', handleStart);
+        router.events.on('routeChangeComplete', handleComplete);
+        router.events.on('routeChangeError', handleComplete);
+
+        return () => {
+            router.events.off('routeChangeStart', handleStart);
+            router.events.off('routeChangeComplete', handleComplete);
+            router.events.off('routeChangeError', handleComplete);
+        };
+    }, [router]);
 
     useEffect(() => {
-        if (!router.isReady) {
-            return
-        }
+        if (!router.isReady) return;
 
         if (router.query.reason === 'session_expired') {
             toast({
@@ -33,10 +52,7 @@ const LoginContent: NextPage = () => {
             const query = { ...router.query }
             delete query.reason
             router.replace(
-                {
-                    pathname: '/login',
-                    query,
-                },
+                { pathname: '/login', query },
                 undefined,
                 { shallow: true }
             )
@@ -44,34 +60,30 @@ const LoginContent: NextPage = () => {
     }, [router, toast])
 
     const schema = z.object({
-        email: z.string().email({message: t('login.email_invalid')}),
-        password: z.string().min(6, {message: t('login.password_min')}),
+        email: z.string().email({ message: t('login.email_invalid') }),
+        password: z.string().min(6, { message: t('login.password_min') }),
     });
 
     type FormValues = z.infer<typeof schema>;
 
     const form = useForm<FormValues>({
         validate: zodResolver(schema),
-        initialValues: {
-            email: '',
-            password: '',
-        },
+        initialValues: { email: '', password: '' },
     });
 
     const handleLogin = (values: FormValues) => {
         setIsLoading(true);
-        // clean all localStorage
         localStorage.clear();
+        
         login(values)
             .then((data) => {
-                setIsLoading(false);
                 if (data.require_2fa) {
                     localStorage.setItem('2fa_email', values.email);
                     localStorage.setItem('2fa_password', values.password);
-                    router.push({pathname: '/2fa'});
+                    router.push({ pathname: '/2fa' });
                     return;
                 }
-                toast({title: t('login.login_success')});
+                toast({ title: t('login.login_success') });
                 if (typeof window !== 'undefined') {
                     window.sessionStorage.removeItem('marriplan:trial-modal-seen');
                 }
@@ -79,8 +91,8 @@ const LoginContent: NextPage = () => {
                 router.push(redirect || '/dashboard');
             })
             .catch(() => {
-                setIsLoading(false);
-                toast({title: t('login.login_error_title'), description: <p>Usuário ou senha incorretos!</p>});
+                setIsLoading(false); // Só desliga se der erro, se der sucesso o Router Events assume
+                toast({ title: t('login.login_error_title'), description: <p>Usuário ou senha incorretos!</p> });
             });
     };
 
@@ -93,71 +105,81 @@ const LoginContent: NextPage = () => {
             title={t('login.page_title')}
             description="Entre com sua conta para continuar com a experiência Marriplan."
         >
-            <form onSubmit={form.onSubmit(handleLogin)}>
-                <Stack gap="md">
-                    <TextInput
-                        label={t('login.email')}
-                        placeholder={t('login.email_placeholder')}
-                        {...form.getInputProps('email')}
-                        styles={authInputStyles}
-                        required
-                    />
+            <Box style={{ position: 'relative' }}>
+                {/* Overlay ativo tanto no loading da API quanto no delay de renderização da rota */}
+                <LoadingOverlay 
+                    visible={isLoading || isRedirecting} 
+                    overlayProps={{ radius: 'md', blur: 2 }}
+                    loaderProps={{ color: 'var(--marriplan-rose)', type: 'bars' }}
+                />
 
-                    <PasswordInput
-                        label={t('login.password')}
-                        placeholder={t('login.password_placeholder')}
-                        {...form.getInputProps('password')}
-                        styles={authInputStyles}
-                        required
-                    />
-                </Stack>
+                <form onSubmit={form.onSubmit(handleLogin)}>
+                    <Stack gap="md">
+                        <TextInput
+                            label={t('login.email')}
+                            placeholder={t('login.email_placeholder')}
+                            {...form.getInputProps('email')}
+                            styles={authInputStyles}
+                            required
+                        />
 
-                <Group justify="center" mt="xl" grow>
-                    <Button
-                        leftSection={<IconUserPlus size={18}/>} 
-                        variant="default"
-                        onClick={goToRegister}
-                        styles={softButtonStyles}
-                    >
-                        {t('login.register')}
-                    </Button>
-                    <Button
-                        rightSection={<IconLogin size={18}/>} 
-                        variant="filled"
-                        type="submit"
-                        loading={isLoading}
-                        styles={primaryButtonStyles}
-                    >
-                        {t('login.login')}
-                    </Button>
+                        <PasswordInput
+                            label={t('login.password')}
+                            placeholder={t('login.password_placeholder')}
+                            {...form.getInputProps('password')}
+                            styles={authInputStyles}
+                            required
+                        />
+                    </Stack>
+
+                    <Group justify="center" mt="xl" grow>
+                        <Button
+                            leftSection={<IconUserPlus size={18} />}
+                            variant="default"
+                            onClick={goToRegister}
+                            styles={softButtonStyles}
+                        >
+                            {t('login.register')}
+                        </Button>
+                        <Button
+                            rightSection={<IconLogin size={18} />}
+                            variant="filled"
+                            type="submit"
+                            loading={isLoading}
+                            styles={primaryButtonStyles}
+                        >
+                            {t('login.login')}
+                        </Button>
+                    </Group>
+                </form>
+
+                <Divider label={t('login.or_social')} my="lg" labelPosition="center" styles={{ label: { color: 'var(--marriplan-muted)' } }} />
+
+                <Group justify="center">
+                    {/* Passamos o setExternalLoading para o botão do Google conseguir ativar o overlay do pai */}
+                    <GoogleLoginButton onLoadingChange={setIsLoading} />
                 </Group>
-            </form>
 
-            <Divider label={t('login.or_social')} my="lg" labelPosition="center" styles={{ label: { color: 'var(--marriplan-muted)' } }} />
-
-            <Group justify="center">
-                <GoogleLoginButton/>
-            </Group>
-
-            <Text size="sm" mt="md" ta="center" style={{ color: 'var(--marriplan-muted)' }}>
-                {t('login.or_create_account')}
-            </Text>
-            <Anchor
-                component="button"
-                type="button"
-                onClick={() => router.push('/reset-password')}
-                mt="md"
-                style={{
-                    display: 'block',
-                    textAlign: 'center',
-                    margin: '16px auto 0 auto',
-                    width: 'fit-content',
-                    color: 'var(--marriplan-rose)',
-                    fontWeight: 600,
-                }}
-            >
-                Esqueci minha senha
-            </Anchor>
+                <Text size="sm" mt="md" ta="center" style={{ color: 'var(--marriplan-muted)' }}>
+                    {t('login.or_create_account')}
+                </Text>
+                <Anchor
+                    component="button"
+                    type="button"
+                    onClick={() => router.push('/reset-password')}
+                    mt="md"
+                    style={{
+                        display: 'block',
+                        textAlign: 'center',
+                        margin: '16px auto 0 auto',
+                        width: 'fit-content',
+                        color: 'var(--marriplan-rose)',
+                        fontWeight: 600,
+                    }}
+                >
+                    Esqueci minha senha
+                </Anchor>
+            </Box>
         </HomeBaseLayout>
     )
 }
