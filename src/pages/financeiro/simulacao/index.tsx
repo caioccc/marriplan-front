@@ -129,7 +129,7 @@ const WeddingCostSimulationPage: NextPage = () => {
       }));
 
       // Se já existe uma simulação gravada no backend
-      if (profile.simulation) {
+      if (profile.simulation.scenarios) {
         setHasExistingSimulation(true);
       }
     }
