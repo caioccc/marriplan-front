@@ -40,6 +40,7 @@ import {
   Modal,
   ScrollArea,
   SimpleGrid,
+  Skeleton,
   Stack,
   Stepper,
   Text,
@@ -82,6 +83,7 @@ export default function OverviewPage() {
     setDressCode,
     hasIdentity,
     saveWeddingIdentity,
+    isLoading,
   } = useWeddingIdentityState();
 
   const [isIdentityModalOpen, setIsIdentityModalOpen] = useState(false);
@@ -177,11 +179,14 @@ export default function OverviewPage() {
   }, [activeStep, isIdentityModalOpen]);
 
   // Busca inicial das inspirações já salvas no banco para exibir no Dashboard
+  const [loadingInspirations, setLoadingInspirations] = useState(false);
   useEffect(() => {
     if (hasIdentity) {
+      setLoadingInspirations(true);
       listWeddingInspirations()
         .then((data) => setSavedInspirations(data))
-        .catch((err) => console.error("Erro ao listar inspirações", err));
+        .catch((err) => console.error("Erro ao listar inspirações", err))
+        .finally(() => setLoadingInspirations(false));
     }
   }, [hasIdentity]);
 
@@ -520,7 +525,7 @@ export default function OverviewPage() {
             </Group>
           }
         />
-        {!hasIdentity ? (
+        {!hasIdentity && !isLoading ? (
           <EmptyState
             icon="✦"
             title="Seu moodboard esta em branco"
@@ -553,23 +558,25 @@ export default function OverviewPage() {
                 >
                   Paleta Definida
                 </Text>
-                <Text fw={700} size="xl" mt={8}>
-                  {palette.length}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  cores selecionadas
-                </Text>
-                <Group gap={4} wrap="nowrap" mt={10}>
-                  {palette.map((c) => (
-                    <Card
-                      key={c.id}
-                      p={0}
-                      radius="md"
-                      withBorder
-                      style={{ flex: 1, height: 18, background: c.hex }}
-                    />
-                  ))}
-                </Group>
+                <Skeleton visible={isLoading} radius="xl">
+                  <Text fw={700} size="xl" mt={8}>
+                    {palette.length}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    cores selecionadas
+                  </Text>
+                  <Group gap={4} wrap="nowrap" mt={10}>
+                    {palette.map((c) => (
+                      <Card
+                        key={c.id}
+                        p={0}
+                        radius="md"
+                        withBorder
+                        style={{ flex: 1, height: 18, background: c.hex }}
+                      />
+                    ))}
+                  </Group>
+                </Skeleton>
               </Card>
               <Card
                 withBorder
@@ -586,12 +593,14 @@ export default function OverviewPage() {
                 >
                   Tamanho do Casamento
                 </Text>
-                <Text fw={700} size="md" mt={8}>
-                  {weddingSize ? sizeData?.label : "-"}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  {sizeData?.guestRange || "Selecione o porte do evento"}
-                </Text>
+                <Skeleton visible={isLoading} radius="xl">
+                  <Text fw={700} size="md" mt={8}>
+                    {weddingSize ? sizeData?.label : "-"}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    {sizeData?.guestRange || "Selecione o porte do evento"}
+                  </Text>
+                </Skeleton>
               </Card>
               <Card
                 withBorder
@@ -608,25 +617,28 @@ export default function OverviewPage() {
                 >
                   Estilo Selecionado
                 </Text>
-                <Text fw={700} size="md" mt={8}>
-                  {selectedStyle
-                    ? WEDDING_STYLES.find((s) => s.id === selectedStyle)?.label
-                    : "-"}
-                </Text>
-
-                <Tooltip
-                  label={dressData?.desc || "Descricao nao disponivel"}
-                  position="bottom"
-                  color="dark"
-                  withArrow
-                  style={{ fontSize: 11 }}
-                >
-                  <Text size="sm" c="dimmed">
-                    {isMobile
-                      ? dressData?.desc
-                      : dressData?.desc?.slice(0, 30) + "..." || ""}
+                <Skeleton visible={isLoading} radius="xl">
+                  <Text fw={700} size="md" mt={8}>
+                    {selectedStyle
+                      ? WEDDING_STYLES.find((s) => s.id === selectedStyle)
+                          ?.label
+                      : "-"}
                   </Text>
-                </Tooltip>
+
+                  <Tooltip
+                    label={dressData?.desc || "Descricao nao disponivel"}
+                    position="bottom"
+                    color="dark"
+                    withArrow
+                    style={{ fontSize: 11 }}
+                  >
+                    <Text size="sm" c="dimmed">
+                      {isMobile
+                        ? dressData?.desc
+                        : dressData?.desc?.slice(0, 30) + "..." || ""}
+                    </Text>
+                  </Tooltip>
+                </Skeleton>
               </Card>
               <Card
                 withBorder
@@ -643,14 +655,17 @@ export default function OverviewPage() {
                 >
                   Dress Code
                 </Text>
-                <Text fw={700} size="md" mt={8}>
-                  {dressCode
-                    ? DRESS_CODE_OPTIONS.find((d) => d.id === dressCode)?.label
-                    : "-"}
-                </Text>
-                <Text size="sm" c="dimmed">
-                  {styleData?.subtitle || ""}
-                </Text>
+                <Skeleton visible={isLoading} radius="xl">
+                  <Text fw={700} size="md" mt={8}>
+                    {dressCode
+                      ? DRESS_CODE_OPTIONS.find((d) => d.id === dressCode)
+                          ?.label
+                      : "-"}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    {styleData?.subtitle || ""}
+                  </Text>
+                </Skeleton>
               </Card>
             </SimpleGrid>
 
@@ -666,200 +681,204 @@ export default function OverviewPage() {
               </Text>
               <Grid gutter="md" mb={28} align="stretch">
                 <Grid.Col span={{ base: 12, md: 6 }}>
-                  <Card
-                    className="marriplan-card"
-                    withBorder
-                    radius="lg"
-                    p={0}
-                    style={{
-                      overflow: "hidden",
-                      height: "100%",
-                      minHeight: 420,
-                    }}
-                  >
-                    <Box
+                  <Skeleton visible={isLoading} radius="lg">
+                    <Card
+                      className="marriplan-card"
+                      withBorder
+                      radius="lg"
+                      p={0}
                       style={{
-                        position: "relative",
-                        width: "100%",
+                        overflow: "hidden",
                         height: "100%",
                         minHeight: 420,
                       }}
                     >
-                      {styleImage ? (
-                        <Image
-                          src={styleImage}
-                          alt={styleData?.label || "Estilo Nao Definido"}
-                          w="100%"
-                          h="100%"
-                          fit="cover"
-                          style={{ position: "absolute", inset: 0 }}
-                        />
-                      ) : (
-                        renderFallbackVisual(
-                          styleData?.label || "Estilo Nao Definido",
-                          styleData?.emoji || "✦",
-                          "linear-gradient(135deg,#1a1a1a,#3a3a3a)",
-                        )
-                      )}
                       <Box
                         style={{
-                          position: "absolute",
-                          inset: 0,
-                          background:
-                            "linear-gradient(180deg, rgba(20,14,10,0.02) 0%, rgba(20,14,10,0.18) 40%, rgba(20,14,10,0.86) 100%)",
-                        }}
-                      />
-                      <Stack
-                        justify="flex-end"
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          padding: 20,
-                          zIndex: 2,
+                          position: "relative",
+                          width: "100%",
+                          height: "100%",
+                          minHeight: 420,
                         }}
                       >
-                        <Text
-                          c="white"
-                          fw={700}
-                          size="xl"
-                          style={{ lineHeight: 1.1 }}
-                        >
-                          {styleData?.label || "Estilo Nao Definido"}
-                        </Text>
-                        <Text c="rgba(255,255,255,0.8)" size="sm">
-                          {styleData?.subtitle || ""}
-                        </Text>
-                      </Stack>
-                      <ActionIcon
-                        variant="filled"
-                        color="dark"
-                        radius="xl"
-                        size="md"
-                        aria-label="Abrir imagem em fullscreen"
-                        onClick={() =>
-                          openFullscreenImage(
-                            styleImage,
-                            styleData?.label || "Estilo Não Definido",
+                        {styleImage ? (
+                          <Image
+                            src={styleImage}
+                            alt={styleData?.label || "Estilo Nao Definido"}
+                            w="100%"
+                            h="100%"
+                            fit="cover"
+                            style={{ position: "absolute", inset: 0 }}
+                          />
+                        ) : (
+                          renderFallbackVisual(
+                            styleData?.label || "Estilo Nao Definido",
+                            styleData?.emoji || "✦",
+                            "linear-gradient(135deg,#1a1a1a,#3a3a3a)",
                           )
-                        }
-                        style={{
-                          position: "absolute",
-                          top: 12,
-                          right: 12,
-                          zIndex: 3,
-                          boxShadow: "0 2px 10px rgba(0,0,0,0.22)",
-                        }}
-                      >
-                        <IconMaximize size={14} />
-                      </ActionIcon>
-                    </Box>
-                  </Card>
+                        )}
+                        <Box
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            background:
+                              "linear-gradient(180deg, rgba(20,14,10,0.02) 0%, rgba(20,14,10,0.18) 40%, rgba(20,14,10,0.86) 100%)",
+                          }}
+                        />
+                        <Stack
+                          justify="flex-end"
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            padding: 20,
+                            zIndex: 2,
+                          }}
+                        >
+                          <Text
+                            c="white"
+                            fw={700}
+                            size="xl"
+                            style={{ lineHeight: 1.1 }}
+                          >
+                            {styleData?.label || "Estilo Nao Definido"}
+                          </Text>
+                          <Text c="rgba(255,255,255,0.8)" size="sm">
+                            {styleData?.subtitle || ""}
+                          </Text>
+                        </Stack>
+                        <ActionIcon
+                          variant="filled"
+                          color="dark"
+                          radius="xl"
+                          size="md"
+                          aria-label="Abrir imagem em fullscreen"
+                          onClick={() =>
+                            openFullscreenImage(
+                              styleImage,
+                              styleData?.label || "Estilo Não Definido",
+                            )
+                          }
+                          style={{
+                            position: "absolute",
+                            top: 12,
+                            right: 12,
+                            zIndex: 3,
+                            boxShadow: "0 2px 10px rgba(0,0,0,0.22)",
+                          }}
+                        >
+                          <IconMaximize size={14} />
+                        </ActionIcon>
+                      </Box>
+                    </Card>
+                  </Skeleton>
                 </Grid.Col>
 
                 <Grid.Col span={{ base: 12, md: 6 }}>
-                  <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-                    {dressesImage &&
-                      Object.entries(dressesImage).map(([key, imageUrl]) => {
-                        const label =
-                          key.charAt(0).toUpperCase() + key.slice(1);
-                        const emoji =
-                          key === "noivo"
-                            ? "🤵"
-                            : key === "noiva"
-                            ? "👰"
-                            : "👥";
+                  <Skeleton visible={isLoading} radius="lg">
+                    <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
+                      {dressesImage &&
+                        Object.entries(dressesImage).map(([key, imageUrl]) => {
+                          const label =
+                            key.charAt(0).toUpperCase() + key.slice(1);
+                          const emoji =
+                            key === "noivo"
+                              ? "🤵"
+                              : key === "noiva"
+                              ? "👰"
+                              : "👥";
 
-                        return (
-                          <Card
-                            className="marriplan-card"
-                            key={key}
-                            withBorder
-                            radius="lg"
-                            p={0}
-                            style={{ overflow: "hidden", minHeight: 200 }}
-                          >
-                            <Box
-                              style={{
-                                position: "relative",
-                                width: "100%",
-                                aspectRatio: "4 / 5",
-                              }}
+                          return (
+                            <Card
+                              className="marriplan-card"
+                              key={key}
+                              withBorder
+                              radius="lg"
+                              p={0}
+                              style={{ overflow: "hidden", minHeight: 200 }}
                             >
-                              {imageUrl ? (
-                                <Image
-                                  src={imageUrl}
-                                  alt={label}
-                                  w="100%"
-                                  h="100%"
-                                  fit="cover"
-                                  style={{ position: "absolute", inset: 0 }}
-                                />
-                              ) : (
-                                renderFallbackVisual(
-                                  label,
-                                  emoji,
-                                  key === "noivo"
-                                    ? "linear-gradient(135deg,#1a1a1a,#3a3a3a)"
-                                    : key === "noiva"
-                                    ? `linear-gradient(135deg,${
-                                        dressCode
-                                          ? DRESS_CODE_OPTIONS.find(
-                                              (d) => d.id === dressCode,
-                                            )?.color ?? "#C9A96E"
-                                          : "#C9A96E"
-                                      }88,${
-                                        dressCode
-                                          ? DRESS_CODE_OPTIONS.find(
-                                              (d) => d.id === dressCode,
-                                            )?.color ?? "#C9A96E"
-                                          : "#C9A96E"
-                                      }44)`
-                                    : "linear-gradient(135deg,#2a2a3a,#3a3a5a)",
-                                )
-                              )}
                               <Box
                                 style={{
-                                  position: "absolute",
-                                  inset: 0,
-                                  background:
-                                    "linear-gradient(180deg, rgba(20,14,10,0.04) 0%, rgba(20,14,10,0.1) 100%)",
-                                }}
-                              />
-                              <Text
-                                pos="absolute"
-                                bottom={10}
-                                left={12}
-                                c="white"
-                                fw={700}
-                                size="sm"
-                                style={{ zIndex: 2 }}
-                              >
-                                {label}
-                              </Text>
-                              <ActionIcon
-                                variant="filled"
-                                color="dark"
-                                radius="xl"
-                                size="sm"
-                                aria-label="Abrir imagem em fullscreen"
-                                onClick={() =>
-                                  openFullscreenImage(imageUrl, label)
-                                }
-                                style={{
-                                  position: "absolute",
-                                  top: 10,
-                                  right: 10,
-                                  zIndex: 3,
-                                  boxShadow: "0 2px 10px rgba(0,0,0,0.22)",
+                                  position: "relative",
+                                  width: "100%",
+                                  aspectRatio: "4 / 5",
                                 }}
                               >
-                                <IconMaximize size={13} />
-                              </ActionIcon>
-                            </Box>
-                          </Card>
-                        );
-                      })}
-                  </SimpleGrid>
+                                {imageUrl ? (
+                                  <Image
+                                    src={imageUrl}
+                                    alt={label}
+                                    w="100%"
+                                    h="100%"
+                                    fit="cover"
+                                    style={{ position: "absolute", inset: 0 }}
+                                  />
+                                ) : (
+                                  renderFallbackVisual(
+                                    label,
+                                    emoji,
+                                    key === "noivo"
+                                      ? "linear-gradient(135deg,#1a1a1a,#3a3a3a)"
+                                      : key === "noiva"
+                                      ? `linear-gradient(135deg,${
+                                          dressCode
+                                            ? DRESS_CODE_OPTIONS.find(
+                                                (d) => d.id === dressCode,
+                                              )?.color ?? "#C9A96E"
+                                            : "#C9A96E"
+                                        }88,${
+                                          dressCode
+                                            ? DRESS_CODE_OPTIONS.find(
+                                                (d) => d.id === dressCode,
+                                              )?.color ?? "#C9A96E"
+                                            : "#C9A96E"
+                                        }44)`
+                                      : "linear-gradient(135deg,#2a2a3a,#3a3a5a)",
+                                  )
+                                )}
+                                <Box
+                                  style={{
+                                    position: "absolute",
+                                    inset: 0,
+                                    background:
+                                      "linear-gradient(180deg, rgba(20,14,10,0.04) 0%, rgba(20,14,10,0.1) 100%)",
+                                  }}
+                                />
+                                <Text
+                                  pos="absolute"
+                                  bottom={10}
+                                  left={12}
+                                  c="white"
+                                  fw={700}
+                                  size="sm"
+                                  style={{ zIndex: 2 }}
+                                >
+                                  {label}
+                                </Text>
+                                <ActionIcon
+                                  variant="filled"
+                                  color="dark"
+                                  radius="xl"
+                                  size="sm"
+                                  aria-label="Abrir imagem em fullscreen"
+                                  onClick={() =>
+                                    openFullscreenImage(imageUrl, label)
+                                  }
+                                  style={{
+                                    position: "absolute",
+                                    top: 10,
+                                    right: 10,
+                                    zIndex: 3,
+                                    boxShadow: "0 2px 10px rgba(0,0,0,0.22)",
+                                  }}
+                                >
+                                  <IconMaximize size={13} />
+                                </ActionIcon>
+                              </Box>
+                            </Card>
+                          );
+                        })}
+                    </SimpleGrid>
+                  </Skeleton>
                 </Grid.Col>
               </Grid>
             </Stack>
@@ -876,69 +895,71 @@ export default function OverviewPage() {
                 >
                   Mural de Inspirações Favoritadas
                 </Text>
-                <SimpleGrid cols={{ base: 1, sm: 3, md: 4 }} spacing="sm">
-                  {savedInspirations.map((item) => (
-                    <Card
-                      className="marriplan-card"
-                      key={item.id}
-                      withBorder
-                      radius="md"
-                      p={0}
-                      style={{ overflow: "hidden", position: "relative" }}
-                    >
-                      <Box style={{ position: "relative" }}>
-                        <Image
-                          src={item.image_url}
-                          fit="cover"
-                          style={{ height: "300px" }}
-                          alt="Inspiração salva"
-                        />
+                <Skeleton visible={loadingInspirations} radius="lg">
+                  <SimpleGrid cols={{ base: 1, sm: 3, md: 4 }} spacing="sm">
+                    {savedInspirations.map((item) => (
+                      <Card
+                        className="marriplan-card"
+                        key={item.id}
+                        withBorder
+                        radius="md"
+                        p={0}
+                        style={{ overflow: "hidden", position: "relative" }}
+                      >
+                        <Box style={{ position: "relative" }}>
+                          <Image
+                            src={item.image_url}
+                            fit="cover"
+                            style={{ height: "300px" }}
+                            alt="Inspiração salva"
+                          />
 
-                        <ActionIcon
-                          variant="filled"
-                          color="dark"
-                          radius="xl"
-                          size="sm"
-                          aria-label="Abrir imagem em fullscreen"
-                          onClick={() =>
-                            openFullscreenImage(
-                              item.image_url,
-                              "Inspiração salva",
-                            )
-                          }
-                          style={{
-                            position: "absolute",
-                            top: 10,
-                            right: 10,
-                            zIndex: 3,
-                            boxShadow: "0 2px 10px rgba(0,0,0,0.22)",
-                          }}
-                        >
-                          <IconMaximize size={13} />
-                        </ActionIcon>
+                          <ActionIcon
+                            variant="filled"
+                            color="dark"
+                            radius="xl"
+                            size="sm"
+                            aria-label="Abrir imagem em fullscreen"
+                            onClick={() =>
+                              openFullscreenImage(
+                                item.image_url,
+                                "Inspiração salva",
+                              )
+                            }
+                            style={{
+                              position: "absolute",
+                              top: 10,
+                              right: 10,
+                              zIndex: 3,
+                              boxShadow: "0 2px 10px rgba(0,0,0,0.22)",
+                            }}
+                          >
+                            <IconMaximize size={13} />
+                          </ActionIcon>
 
-                        {/* Botão flutuante de exclusão por item */}
-                        <ActionIcon
-                          variant="filled"
-                          color="red"
-                          radius="xl"
-                          size="md"
-                          loading={deletingId === item.id}
-                          onClick={() => handleRemoveOpenModal(item.id)}
-                          style={{
-                            position: "absolute",
-                            bottom: "10px",
-                            right: "10px",
-                            zIndex: 2,
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
-                          }}
-                        >
-                          <IconTrash size={14} />
-                        </ActionIcon>
-                      </Box>
-                    </Card>
-                  ))}
-                </SimpleGrid>
+                          {/* Botão flutuante de exclusão por item */}
+                          <ActionIcon
+                            variant="filled"
+                            color="red"
+                            radius="xl"
+                            size="md"
+                            loading={deletingId === item.id}
+                            onClick={() => handleRemoveOpenModal(item.id)}
+                            style={{
+                              position: "absolute",
+                              bottom: "10px",
+                              right: "10px",
+                              zIndex: 2,
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+                            }}
+                          >
+                            <IconTrash size={14} />
+                          </ActionIcon>
+                        </Box>
+                      </Card>
+                    ))}
+                  </SimpleGrid>
+                </Skeleton>
               </Stack>
             )}
 
@@ -970,10 +991,7 @@ export default function OverviewPage() {
                   >
                     Envie para seus Fornecedores
                   </Text>
-                  <Text
-                    size="md"
-                    style={{ maxWidth: 420, color: "white" }}
-                  >
+                  <Text size="md" style={{ maxWidth: 420, color: "white" }}>
                     Gere um link exclusivo ou PDF com toda a identidade visual
                     do casamento para compartilhar com fornecedores.
                   </Text>
