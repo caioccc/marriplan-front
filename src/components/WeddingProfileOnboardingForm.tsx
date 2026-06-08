@@ -8,19 +8,16 @@ import {
   Button,
   Group,
   Loader,
+  NumberInput,
   Stepper,
-  TextInput
+  TextInput,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useMediaQuery } from "@mantine/hooks";
 import { useState } from "react";
 
 import { Box, ScrollArea, Stack, Text } from "@mantine/core";
-import {
-  DatePickerInput,
-  DatesProvider,
-  TimePicker
-} from "@mantine/dates";
+import { DatePickerInput, DatesProvider, TimePicker } from "@mantine/dates";
 import { IconCalendarClock } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import "dayjs/locale/pt-br";
@@ -39,9 +36,6 @@ dayjs.locale("pt-br");
 // const LeafletMap = dynamic(() => import("./LeafletMap"), {
 //   ssr: false,
 // });
-
-
-
 
 type WeddingProfileOnboardingFormProps = {
   onComplete: () => void;
@@ -92,6 +86,7 @@ export default function WeddingProfileOnboardingForm({
       .toLowerCase(),
     data_casamento: values.data_casamento,
     hora_casamento: values.hora_casamento,
+    budget_limit: values.budget_limit ? Number(values.budget_limit) : undefined,
   });
 
   const form = useForm({
@@ -104,6 +99,7 @@ export default function WeddingProfileOnboardingForm({
       email_noiva: initial.email_noiva ?? "",
       data_casamento: initial.data_casamento ?? "",
       hora_casamento: parseTimeToDate(initial.hora_casamento),
+      budget_limit: initial.budget_limit ?? "",
       local: initial.local ?? "",
     },
     validate: {
@@ -289,6 +285,7 @@ export default function WeddingProfileOnboardingForm({
     if (step === 2) {
       form.clearFieldError("data_casamento");
       form.clearFieldError("hora_casamento");
+      form.clearFieldError("budget_limit");
 
       let hasError = false;
       if (!form.values.data_casamento) {
@@ -299,6 +296,7 @@ export default function WeddingProfileOnboardingForm({
         form.setFieldError("hora_casamento", "Obrigatorio");
         hasError = true;
       }
+
       return !hasError;
     }
 
@@ -410,6 +408,20 @@ export default function WeddingProfileOnboardingForm({
             }}
           />
         </DatesProvider>
+        <NumberInput
+          label="Qual é o orçamento total estimado para o casamento?"
+          description="Não se preocupe, vocês podem ajustar esse valor a qualquer momento. Usaremos isso para ajudar a controlar os gastos com fornecedores."
+          placeholder="Ex: 50000"
+          hideControls // Remove as setinhas de incrementar/decrementar, já que é um valor alto
+          thousandSeparator="."
+          decimalSeparator=","
+          decimalScale={2}
+          key={form.key("budget_limit")} // Força o remount do componente quando o campo é limpo, para resetar a formatação do input
+          {...form.getInputProps("budget_limit")}
+          leftSection={
+            <span style={{ color: "var(--marriplan-rose)" }}>R$</span>
+          }
+        />
       </>
     );
   };
@@ -575,6 +587,21 @@ export default function WeddingProfileOnboardingForm({
           <TextInput
             label="Local onde sera realizado"
             {...form.getInputProps("local")}
+            mt="md"
+          />
+          <NumberInput
+            label="Qual é o orçamento total estimado para o casamento?"
+            description="Não se preocupe, vocês podem ajustar esse valor a qualquer momento. Usaremos isso para ajudar a controlar os gastos com fornecedores."
+            placeholder="Ex: 50000"
+            hideControls // Remove as setinhas de incrementar/decrementar, já que é um valor alto
+            thousandSeparator="."
+            decimalSeparator=","
+            decimalScale={2}
+            key={form.key("budget_limit")} // Força o remount do componente quando o campo é limpo, para resetar a formatação do input
+            {...form.getInputProps("budget_limit")}
+            leftSection={
+              <span style={{ color: "var(--marriplan-rose)" }}>R$</span>
+            }
             mt="md"
           />
           {/* {mapPosition && (

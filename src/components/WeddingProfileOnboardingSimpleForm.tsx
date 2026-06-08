@@ -3,7 +3,17 @@ import { useToast } from "@/hooks/use-toast";
 import { toUpperCamelWords } from "@/lib/text";
 import api from "@/services/api";
 import { primaryButtonStyles, softButtonStyles } from "@/styles";
-import { Box, Button, Group, ScrollArea, Stack, Stepper, Text, TextInput } from "@mantine/core";
+import {
+  Box,
+  Button,
+  Group,
+  NumberInput,
+  ScrollArea,
+  Stack,
+  Stepper,
+  Text,
+  TextInput,
+} from "@mantine/core";
 import { useForm } from "@mantine/form";
 import { useMediaQuery } from "@mantine/hooks";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
@@ -48,6 +58,7 @@ export default function WeddingProfileOnboardingSimpleForm({
       local: initial.local ?? "",
       data_casamento: initial.data_casamento ?? "",
       hora_casamento: parseTimeToDate(initial.hora_casamento),
+      budget_limit: initial.budget_limit ?? undefined,
     },
     validate: {
       nome_noivo: (value) => (!value ? "Obrigatorio" : null),
@@ -72,6 +83,7 @@ export default function WeddingProfileOnboardingSimpleForm({
       form.clearFieldError("local");
       form.clearFieldError("data_casamento");
       form.clearFieldError("hora_casamento");
+      form.clearFieldError("budget_limit");
     }
   }, [active]);
 
@@ -149,6 +161,7 @@ export default function WeddingProfileOnboardingSimpleForm({
         telefone_noivo: String(form.values.telefone_noivo ?? "").trim(),
         nome_noiva: toUpperCamelWords(String(form.values.nome_noiva ?? "")),
         telefone_noiva: String(form.values.telefone_noiva ?? "").trim(),
+        budget_limit: form.values.budget_limit ? Number(form.values.budget_limit) : null,
         local: toUpperCamelWords(String(form.values.local ?? "")),
         data_casamento: form.values.data_casamento
           ? form.values.data_casamento instanceof Date
@@ -172,7 +185,8 @@ export default function WeddingProfileOnboardingSimpleForm({
     } catch {
       toast({
         title: "Erro",
-        description: "Nao foi possivel salvar as informacoes. Verifique os campos.",
+        description:
+          "Nao foi possivel salvar as informacoes. Verifique os campos.",
       });
     } finally {
       setLoading(false);
@@ -230,6 +244,21 @@ export default function WeddingProfileOnboardingSimpleForm({
           label="Local onde será realizado o casamento"
           {...form.getInputProps("local")}
           placeholder="Nome do local ou endereço"
+        />
+        <NumberInput
+          label="Qual é o orçamento total estimado para o casamento?"
+          description="Não se preocupe, vocês podem ajustar esse valor a qualquer momento. Usaremos isso para ajudar a controlar os gastos com fornecedores."
+          placeholder="Ex: 50000"
+          hideControls // Remove as setinhas de incrementar/decrementar, já que é um valor alto
+          thousandSeparator="."
+          decimalSeparator=","
+          decimalScale={2}
+          key={form.key("budget_limit")} // Força o remount do componente quando o campo é limpo, para resetar a formatação do input
+          {...form.getInputProps("budget_limit")}
+          leftSection={
+            <span style={{ color: "var(--marriplan-rose)" }}>R$</span>
+          }
+          mt="md"
         />
         <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
           <Stack gap="md" pt="sm" style={{ width: "100%" }}>
@@ -321,8 +350,11 @@ export default function WeddingProfileOnboardingSimpleForm({
           overflow: "hidden",
         }}
       >
-
-        <ScrollArea style={{ flex: 1, width: "100%", minHeight: 0 }} type="auto" offsetScrollbars>
+        <ScrollArea
+          style={{ flex: 1, width: "100%", minHeight: 0 }}
+          type="auto"
+          offsetScrollbars
+        >
           <Group justify="center" gap={6} mt="sm">
             {Array.from({ length: 3 }).map((_, index) => (
               <Box
@@ -362,9 +394,15 @@ export default function WeddingProfileOnboardingSimpleForm({
   return (
     <form onSubmit={form.onSubmit(handleSave)}>
       <Stepper active={active} onStepClick={setActive}>
-        <Stepper.Step label="Dados do noivo">{renderStepContent(0)}</Stepper.Step>
-        <Stepper.Step label="Dados da noiva">{renderStepContent(1)}</Stepper.Step>
-        <Stepper.Step label="Evento (opcional)">{renderStepContent(2)}</Stepper.Step>
+        <Stepper.Step label="Dados do noivo">
+          {renderStepContent(0)}
+        </Stepper.Step>
+        <Stepper.Step label="Dados da noiva">
+          {renderStepContent(1)}
+        </Stepper.Step>
+        <Stepper.Step label="Evento (opcional)">
+          {renderStepContent(2)}
+        </Stepper.Step>
       </Stepper>
       <Group justify="space-between" mt="xl">
         <Button

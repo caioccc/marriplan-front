@@ -164,7 +164,7 @@ export function FirstStepsFloatingMenu() {
           "Escolha estilo, dress code, paleta, tamanho e inspirações visuais.",
         href: "/identity/overview",
         icon: <IconSparkles size={18} />,
-        done: progress.identity,
+        done: progress?.identity,
       },
       {
         key: "wedding_details",
@@ -172,7 +172,7 @@ export function FirstStepsFloatingMenu() {
         description: "Preencha local e data do casamento no seu perfil.",
         action: "openProfile",
         icon: <IconUserCheck size={18} />,
-        done: progress.wedding_details,
+        done: progress?.wedding_details,
       },
       {
         key: "checklist",
@@ -180,7 +180,7 @@ export function FirstStepsFloatingMenu() {
         description: "Comece a avançar no planejamento com o checklist.",
         href: "/checklist",
         icon: <IconChecklist size={18} />,
-        done: progress.checklist,
+        done: progress?.checklist,
       },
       {
         key: "guests",
@@ -188,7 +188,7 @@ export function FirstStepsFloatingMenu() {
         description: "Cadastre pelo menos um convidado na sua lista.",
         href: "/guests",
         icon: <IconUsers size={18} />,
-        done: progress.guests,
+        done: progress?.guests,
       },
       {
         key: "suppliers",
@@ -196,7 +196,7 @@ export function FirstStepsFloatingMenu() {
         description: "Inclua ao menos um fornecedor no seu casamento.",
         href: "/meus-fornecedores/fornecedores",
         icon: <IconBriefcase size={18} />,
-        done: progress.suppliers,
+        done: progress?.suppliers,
       },
       {
         key: "gifts",
@@ -204,7 +204,7 @@ export function FirstStepsFloatingMenu() {
         description: "Monte sua lista de presentes para compartilhar.",
         href: "/gifts",
         icon: <IconGift size={18} />,
-        done: progress.gifts,
+        done: progress?.gifts,
       },
       {
         key: "pix_settings",
@@ -212,7 +212,7 @@ export function FirstStepsFloatingMenu() {
         description: "Ative o recebimento via PIX para presentes em dinheiro.",
         href: "/gifts?openPixSettings=1",
         icon: <IconCards size={18} />,
-        done: progress.pix_settings,
+        done: progress?.pix_settings,
       },
       {
         key: "timeline",
@@ -220,7 +220,7 @@ export function FirstStepsFloatingMenu() {
         description: "Crie a timeline do casamento com os momentos do evento.",
         href: "/timeline",
         icon: <IconCalendarTime size={18} />,
-        done: progress.timeline,
+        done: progress?.timeline,
       },
     ],
     [progress],

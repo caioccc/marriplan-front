@@ -1,5 +1,6 @@
 import BaseLayout from "@/components/Layout/_BaseLayout";
 import PageSectionHeader from "@/components/PageSectionHeader";
+import { ResumoProgressoFinanceiro } from "@/components/ResumoProgressoFinanceiro";
 import {
   atualizarParcelaPagamento,
   criarParcelaPagamento,
@@ -27,6 +28,7 @@ import {
   ActionIcon,
   Avatar,
   Badge,
+  Box,
   Button,
   Card,
   Divider,
@@ -52,6 +54,7 @@ import {
   IconEdit,
   IconPlus,
   IconRefresh,
+  IconReportAnalytics,
   IconTrash,
 } from "@tabler/icons-react";
 import { BadgeDollarSignIcon, DollarSignIcon } from "lucide-react";
@@ -466,6 +469,8 @@ export default function FinanceiroPage() {
     }
   };
 
+  const [openModalReports, setOpenModalReports] = useState(false);
+
   return (
     <BaseLayout>
       <Stack gap="lg" py="md">
@@ -474,15 +479,26 @@ export default function FinanceiroPage() {
           title="Painel Financeiro"
           description="Centralize vencimentos, saldos devedores e ações de pagamento dos fornecedores contratados."
           actions={
-            <Button
-              leftSection={<BadgeDollarSignIcon size={18} />}
-              styles={primaryButtonStyles}
-              onClick={() => {
-                router.push("/financeiro/simulacao");
-              }}
-            >
-              Simular Custos
-            </Button>
+            <Box style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <Button
+                leftSection={<BadgeDollarSignIcon size={18} />}
+                styles={primaryButtonStyles}
+                onClick={() => {
+                  router.push("/financeiro/simulacao");
+                }}
+              >
+                Simular Custos
+              </Button>
+              <Button
+                leftSection={<IconReportAnalytics size={18} />}
+                styles={softButtonStyles}
+                onClick={() => {
+                  setOpenModalReports(true);
+                }}
+              >
+                Relatórios
+              </Button>
+            </Box>
           }
           filters={
             <Group grow align="flex-end" wrap="wrap">
@@ -1858,6 +1874,19 @@ export default function FinanceiroPage() {
           </Group>
         </Stack>
       </Modal>
+
+      {openModalReports && (
+        <Modal
+          opened={openModalReports}
+          onClose={() => setOpenModalReports(false)}
+          title="Relatórios"
+          centered
+          size="xl"
+          fullScreen={isMobile}
+        >
+          <ResumoProgressoFinanceiro />
+        </Modal>
+      )}
     </BaseLayout>
   );
 }

@@ -3,9 +3,9 @@ import "@/translate/i18n";
 import "@mantine/core/styles.css";
 import "@mantine/carousel/styles.css";
 import "mantine-datatable/styles.layer.css";
-import '@mantine/notifications/styles.css';
-import '@mantine/dates/styles.css';
-import '@mantine/charts/styles.css';
+import "@mantine/notifications/styles.css";
+import "@mantine/dates/styles.css";
+import "@mantine/charts/styles.css";
 
 import { appWithTranslation } from "next-i18next";
 import type { AppProps } from "next/app";
@@ -18,10 +18,66 @@ import { FirstStepsFloatingMenu } from "@/components/FirstStepsFloatingMenu";
 import { AuthProvider, ProtectedRoute } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
-import { MantineProvider } from "@mantine/core";
 import { Notifications } from "@mantine/notifications";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { SpeedInsights } from "@vercel/speed-insights/next"
+import { SpeedInsights } from "@vercel/speed-insights/next";
+
+import { createTheme, MantineProvider } from "@mantine/core";
+
+const theme = createTheme({
+  colors: {
+    // Exemplo de escala de cores personalizadas para o Marriplan
+    terracota: [
+      "#fdf4f2",
+      "#fbe8e4",
+      "#f7d2ca",
+      "#f1b3a5",
+      "#ea8e7a",
+      "#e0674f",
+      "#c74d37",
+      "#a43c29",
+      "#883324",
+      "#712d21", // [6] é o Terracota padrão
+    ],
+    champanhe: [
+      "#faf7f2",
+      "#f3edd9",
+      "#ebdfbe",
+      "#e1cea1",
+      "#d5b981",
+      "#caa869",
+      "#bf9757",
+      "#aa8146",
+      "#8d6a3a",
+      "#755831",
+    ],
+    beige: [
+      "#fbfaf7",
+      "#f6f3eb",
+      "#ede7d8",
+      "#e1d8bf",
+      "#d3c5a3",
+      "#c6b48a",
+      "#baaa80",
+      "#a4936b",
+      "#897a58",
+      "#726649",
+    ],
+    rose: [
+      "#fef5f6",
+      "#fcebee",
+      "#f9d8dd",
+      "#f4b8c1",
+      "#ed929e",
+      "#e16778",
+      "#cb4658",
+      "#ab3344",
+      "#8e2c39",
+      "#762732",
+    ],
+  },
+  primaryColor: "terracota",
+});
 
 const MyApp = (props: AppProps) => {
   return (
@@ -54,7 +110,7 @@ const MyApp = (props: AppProps) => {
         }}
       />
       <main>
-        <MantineProvider>
+        <MantineProvider theme={theme} withGlobalStyles withNormalizeCSS>
           <Notifications position="top-right" zIndex={10000} />
           <ThemeProvider theme={{ mode: "light" }}>
             <AuthProvider>

@@ -4,9 +4,11 @@
 //eslint no-explicit-any: "off"
 
 import { UpgradeCta } from "@/components/billing/UpgradeCta";
+import ChecklistWidget from "@/components/ChecklistNextSteps";
 import BaseLayout from "@/components/Layout/_BaseLayout";
 import { MarriplanStatusBadge } from "@/components/MarriplanStatusBadge";
 import { SuppliersCarouselRow } from "@/components/SuppliersCarouselRow";
+import SystemTasksWidget from "@/components/SystemTasksWidget";
 import {
   DRESS_CODE_OPTIONS,
   WEDDING_SIZES,
@@ -22,7 +24,7 @@ import {
   guests_list_all,
   guests_partial_update,
 } from "@/services/guests";
-import { primaryButtonStyles, softButtonStyles } from "@/styles";
+import { PALETTE, primaryButtonStyles, softButtonStyles } from "@/styles";
 import { ChecklistTask } from "@/types/checklist";
 import {
   ActionIcon,
@@ -32,7 +34,6 @@ import {
   Button,
   Card,
   Center,
-  Checkbox,
   Container,
   Divider,
   Flex,
@@ -438,31 +439,6 @@ const MarriplanDashboard: React.FC = () => {
       ? Math.round((giftsPurchased / allGifts.count) * 100)
       : 0;
 
-  const nextTasks = useMemo(() => {
-    const priorityWeight: Record<string, number> = {
-      high: 0,
-      medium: 1,
-      low: 2,
-    };
-    return checklistTasks
-      .filter((task) => task.status !== "done")
-      .sort((a, b) => {
-        const dateA = a.due_date || a.start_date || a.created_at;
-        const dateB = b.due_date || b.start_date || b.created_at;
-        const timeA = dateA
-          ? new Date(dateA).getTime()
-          : Number.MAX_SAFE_INTEGER;
-        const timeB = dateB
-          ? new Date(dateB).getTime()
-          : Number.MAX_SAFE_INTEGER;
-        if (timeA !== timeB) return timeA - timeB;
-        return (
-          (priorityWeight[a.priority] ?? 3) - (priorityWeight[b.priority] ?? 3)
-        );
-      })
-      .slice(0, 4);
-  }, [checklistTasks]);
-
   const coupleName = user?.wedding_profile
     ? `${user.wedding_profile.nome_noivo || "Noivo"} & ${
         user.wedding_profile.nome_noiva || "Noiva"
@@ -746,45 +722,112 @@ const MarriplanDashboard: React.FC = () => {
 
           <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }} spacing="lg">
             <Card
-              className="marriplan-card"
               radius="xl"
-              p="lg"
+              p="md"
               style={{
-                background: palette.softWhite,
-                border: `1px solid ${palette.line}`,
+                background: PALETTE.softWhite || "#ffffff",
+                border: `1px solid ${PALETTE.line}`,
+                height: "100%",
               }}
             >
-              <Group justify="space-between" align="flex-start">
-                <Stack gap={6}>
-                  <Text
-                    size="xs"
-                    c={palette.warmGray}
-                    fw={600}
-                    tt="uppercase"
-                    style={{ letterSpacing: 1 }}
-                  >
-                    Progresso do casamento
-                  </Text>
-                  <Text size="lg" fw={600} c={palette.ink}>
-                    {checklistStats.progress}% concluido
-                  </Text>
-                  <Text size="xs" c={palette.warmGray}>
-                    {checklistStats.done} de {checklistStats.total} tarefas
-                  </Text>
-                </Stack>
+              {/* Título Micro */}
+              <Text
+                size="xs"
+                c={PALETTE.warmGray}
+                fw={600}
+                tt="uppercase"
+                mb="xs"
+                style={{ letterSpacing: 0.5 }}
+              >
+                Progresso do Checklist
+              </Text>
+
+              {/* Linha Principal: Ring + Texto de Resumo */}
+              <Group
+                justify="space-between"
+                align="center"
+                wrap="nowrap"
+                mb="md"
+              >
                 <RingProgress
-                  size={72}
+                  size={64}
                   thickness={6}
+                  roundCaps
                   sections={[
-                    { value: checklistStats.progress, color: palette.roseGold },
+                    {
+                      value: checklistStats.progress,
+                      color: PALETTE.roseGold || "var(--marriplan-rose)",
+                    },
                   ]}
                   label={
-                    <Text size="xs" fw={600} c={palette.ink} ta="center">
+                    <Text size="xs" fw={700} c={PALETTE.ink} ta="center">
                       {checklistStats.progress}%
                     </Text>
                   }
                 />
+
+                <Stack gap={1} style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    size="md"
+                    fw={600}
+                    c={PALETTE.ink}
+                    style={{ lineHeight: 1.2 }}
+                  >
+                    {checklistStats.progress}% Concluído
+                  </Text>
+                  <Text size="xs" c={PALETTE.warmGray}>
+                    {checklistStats.done} de {checklistStats.total} tarefas
+                  </Text>
+                </Stack>
               </Group>
+
+              {/* Distribuição simplificada: Apenas o que falta resolver */}
+              <Stack gap="xs">
+                {/* Barra Em Andamento */}
+                <Box>
+                  <Group justify="space-between" mb={2}>
+                    <Text size="11px" fw={500} c={PALETTE.ink}>
+                      Em andamento
+                    </Text>
+                    <Text size="11px" fw={600} c={PALETTE.ink}>
+                      {checklistStats.inProgress}
+                    </Text>
+                  </Group>
+                  <Progress
+                    radius="xl"
+                    size="4px" // Barra bem fina e elegante
+                    value={
+                      checklistStats.total > 0
+                        ? (checklistStats.inProgress / checklistStats.total) *
+                          100
+                        : 0
+                    }
+                    color="orange"
+                  />
+                </Box>
+
+                {/* Barra Pendente */}
+                <Box>
+                  <Group justify="space-between" mb={2}>
+                    <Text size="11px" fw={500} c={PALETTE.ink}>
+                      Pendente
+                    </Text>
+                    <Text size="11px" fw={600} c={PALETTE.ink}>
+                      {checklistStats.pending}
+                    </Text>
+                  </Group>
+                  <Progress
+                    radius="xl"
+                    size="4px"
+                    value={
+                      checklistStats.total > 0
+                        ? (checklistStats.pending / checklistStats.total) * 100
+                        : 0
+                    }
+                    color="var(--mantine-color-gray-3)"
+                  />
+                </Box>
+              </Stack>
             </Card>
 
             <Card
@@ -928,164 +971,16 @@ const MarriplanDashboard: React.FC = () => {
               </Group>
               <Divider mb="md" color={palette.line} />
               <Stack gap="sm">
-                {loadingChecklist && (
-                  <Center py="md">
-                    <Loader size="sm" />
-                  </Center>
-                )}
-                {!loadingChecklist && nextTasks.length === 0 && (
-                  <Text size="sm" c={palette.warmGray}>
-                    Nenhuma tarefa pendente no momento.
-                  </Text>
-                )}
-                {nextTasks.map((task) => {
-                  const isDone = task.status === "done";
-                  const isLoading = loadingTaskId === task.id;
-
-                  return (
-                    <Paper
-                      key={task.id}
-                      className="marriplan-card"
-                      radius="lg"
-                      p="sm"
-                      style={{
-                        border: `1px solid ${palette.line}`,
-                        cursor: isLoading ? "not-allowed" : "pointer", // Feedback visual de clique
-                        transition: "all 160ms ease",
-                        opacity: isLoading ? 0.6 : 1,
-                        "&:hover": {
-                          backgroundColor: "rgba(247, 241, 232, 0.3)", // Leve realce no hover usando o champagne
-                        },
-                      }}
-                    >
-                      <Group
-                        justify="space-between"
-                        align="center"
-                        wrap="nowrap"
-                      >
-                        {/* Agrupamento da Esquerda: Checkbox + Textos alinhados horizontalmente ao centro */}
-                        <Group
-                          align="center"
-                          gap="md"
-                          style={{ flex: 1, minWidth: 0 }}
-                        >
-                          <Checkbox
-                            checked={isDone}
-                            readOnly // O clique é gerenciado pelo Paper pai, evitando duplo clique acidental
-                            disabled={isLoading}
-                            color="var(--marriplan-rose)" // Mantendo sua identidade rose
-                            radius="sm"
-                            size="sm"
-                            styles={{
-                              input: { cursor: "pointer" },
-                            }}
-                          />
-
-                          <Box
-                            style={{ flex: 1, minWidth: 0 }}
-                            onClick={() => !isLoading && handleToggleDone(task)} // Dispara a ação ao clicar em qualquer lugar do card
-                          >
-                            <Text
-                              size="sm"
-                              fw={600}
-                              c={palette.ink}
-                              style={{
-                                textDecoration: isDone
-                                  ? "line-through"
-                                  : "none",
-                                opacity: isDone ? 0.5 : 1,
-                                transition: "all 160ms ease",
-                              }}
-                            >
-                              {task.description}
-                            </Text>
-                            <Text size="xs" c={palette.warmGray}>
-                              {task.due_date
-                                ? `Entrega: ${new Date(
-                                    task.due_date,
-                                  ).toLocaleDateString("pt-BR")}`
-                                : "Sem data definida"}
-                            </Text>
-                          </Box>
-                        </Group>
-
-                        {/* Canto Direito: Badge de Status permanece estático */}
-                        <Box style={{ flexShrink: 0 }}>
-                          <MarriplanStatusBadge
-                            kind="checklist"
-                            status={String(task.status).toLowerCase()}
-                          />
-                        </Box>
-                      </Group>
-                    </Paper>
-                  );
-                })}
-              </Stack>
-            </Card>
-
-            <Card
-              radius="xl"
-              p="lg"
-              style={{
-                background: palette.softWhite,
-                border: `1px solid ${palette.line}`,
-              }}
-            >
-              <Group justify="space-between" align="center" mb="md">
-                <Stack gap={2}>
-                  <Title order={4} c={palette.ink}>
-                    Resumo do checklist
-                  </Title>
-                  <Text size="xs" c={palette.warmGray}>
-                    Distribuicao por status
-                  </Text>
-                </Stack>
-                <Badge
-                  variant="light"
-                  color="gray"
-                  style={{
-                    border: "1px solid var(--marriplan-border)",
-                    backgroundColor: "var(--marriplan-surface-muted)",
-                    color: "var(--marriplan-text)",
-                    fontWeight: 600,
-                  }}
-                >
-                  {checklistStats.total} tarefas
-                </Badge>
-              </Group>
-              <Stack gap="sm">
-                <Progress
-                  radius="xl"
-                  size="lg"
-                  value={checklistStats.progress}
-                  color={palette.roseGold}
+                <ChecklistWidget
+                  checklistTasks={checklistTasks}
+                  loadingChecklist={loadingChecklist}
+                  loadingTaskId={loadingTaskId}
+                  handleToggleDone={handleToggleDone}
                 />
-                <Group justify="space-between">
-                  <Text size="sm" c={palette.warmGray}>
-                    Concluido
-                  </Text>
-                  <Text size="sm" fw={600} c={palette.ink}>
-                    {checklistStats.done}
-                  </Text>
-                </Group>
-                <Group justify="space-between">
-                  <Text size="sm" c={palette.warmGray}>
-                    Em andamento
-                  </Text>
-                  <Text size="sm" fw={600} c={palette.ink}>
-                    {checklistStats.inProgress}
-                  </Text>
-                </Group>
-                <Group justify="space-between">
-                  <Text size="sm" c={palette.warmGray}>
-                    Pendente
-                  </Text>
-                  <Text size="sm" fw={600} c={palette.ink}>
-                    {checklistStats.pending}
-                  </Text>
-                </Group>
               </Stack>
             </Card>
+
+            <SystemTasksWidget />
           </SimpleGrid>
 
           <SuppliersCarouselRow />

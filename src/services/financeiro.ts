@@ -1,16 +1,56 @@
-import api from './api';
+import api from "./api";
 
 export type FormaPagamento =
-  | 'pix'
-  | 'boleto'
-  | 'cartao_credito'
-  | 'cartao_debito'
-  | 'transferencia'
-  | 'dinheiro'
-  | 'cheque'
-  | 'outro';
+  | "pix"
+  | "boleto"
+  | "cartao_credito"
+  | "cartao_debito"
+  | "transferencia"
+  | "dinheiro"
+  | "cheque"
+  | "outro";
 
-export type ParcelaStatus = 'a_vencer' | 'em_atraso' | 'pago';
+export type ParcelaStatus = "a_vencer" | "em_atraso" | "pago";
+
+export interface ProgressoTotal {
+  budget_planejado: number;
+  valor_contratado: number;
+  pago: number;
+  a_vencer: number;
+  sobras: number;
+}
+
+export interface GastoVsPerfil {
+  titulo: string;
+  texto_exemplo: string;
+  percentual_consumido: number;
+  status_limite: "estourado" | "dentro_do_limite";
+}
+
+export interface FluxoMensal {
+  mes: number;
+  ano: number;
+  total_a_pagar: number;
+}
+
+export interface PrevisaoCaixa {
+  titulo: string;
+  fluxo_futuro: FluxoMensal[];
+}
+
+export interface CategoriaDistribuicao {
+  categoria: string;
+  total: number;
+  percentual: number;
+  color: string;
+}
+
+export interface DashboardFinanceiroData {
+  progresso_total: ProgressoTotal;
+  gasto_vs_perfil: GastoVsPerfil;
+  previsao_caixa: PrevisaoCaixa;
+  distribuicao_categorias: CategoriaDistribuicao[];
+}
 
 export type WeddingSupplierFinanceSummary = {
   id: number;
@@ -32,7 +72,7 @@ export type WeddingSupplierFinanceSummary = {
   valor_combinado?: string | number | null;
   valor_pago?: string | number | null;
   saldo_devedor?: string | number | null;
-  status_financeiro?: 'Sem plano' | 'A vencer' | 'Em atraso' | 'Quitado';
+  status_financeiro?: "Sem plano" | "A vencer" | "Em atraso" | "Quitado";
   proxima_parcela?: ParcelaPagamento | null;
 };
 
@@ -103,8 +143,10 @@ export type RegistrarPagamentoPayload = {
   forma_pagamento?: FormaPagamento;
 };
 
-export async function listParcelasPagamento(params: Record<string, string | number> = {}) {
-  const { data } = await api.get('/api/parcelas-pagamento/', { params });
+export async function listParcelasPagamento(
+  params: Record<string, string | number> = {},
+) {
+  const { data } = await api.get("/api/parcelas-pagamento/", { params });
   return data as FinanceListResponse;
 }
 
@@ -113,13 +155,26 @@ export async function getParcelaPagamento(id: number) {
   return data as ParcelaPagamento;
 }
 
-export async function criarParcelaPagamento(payload: Omit<ParcelaPagamento, 'id' | 'fornecedor_resumo' | 'created_at' | 'updated_at' | 'status_calculado' | 'is_overdue'>) {
-  const { data } = await api.post('/api/parcelas-pagamento/', payload);
+export async function criarParcelaPagamento(
+  payload: Omit<
+    ParcelaPagamento,
+    | "id"
+    | "fornecedor_resumo"
+    | "created_at"
+    | "updated_at"
+    | "status_calculado"
+    | "is_overdue"
+  >,
+) {
+  const { data } = await api.post("/api/parcelas-pagamento/", payload);
   return data as ParcelaPagamento;
 }
 
 export async function gerarPreviaPlano(payload: PlanoPagamentoPreviewPayload) {
-  const { data } = await api.post('/api/parcelas-pagamento/previsao-plano/', payload);
+  const { data } = await api.post(
+    "/api/parcelas-pagamento/previsao-plano/",
+    payload,
+  );
   return data as {
     fornecedor: WeddingSupplierFinanceSummary;
     valor_combinado: string | number | null;
@@ -130,25 +185,41 @@ export async function gerarPreviaPlano(payload: PlanoPagamentoPreviewPayload) {
   };
 }
 
-export async function salvarPlanoPagamento(payload: PlanoPagamentoSalvarPayload) {
-  const { data } = await api.post('/api/parcelas-pagamento/salvar-plano/', payload);
+export async function salvarPlanoPagamento(
+  payload: PlanoPagamentoSalvarPayload,
+) {
+  const { data } = await api.post(
+    "/api/parcelas-pagamento/salvar-plano/",
+    payload,
+  );
   return data as {
     resumo_fornecedor: WeddingSupplierFinanceSummary;
     parcelas: ParcelaPagamento[];
   };
 }
 
-export async function registrarPagamento(id: number, payload: RegistrarPagamentoPayload) {
-  const { data } = await api.post(`/api/parcelas-pagamento/${id}/pagar/`, payload);
+export async function registrarPagamento(
+  id: number,
+  payload: RegistrarPagamentoPayload,
+) {
+  const { data } = await api.post(
+    `/api/parcelas-pagamento/${id}/pagar/`,
+    payload,
+  );
   return data as ParcelaPagamento;
 }
 
 export async function reverterPagamento(id: number) {
-  const { data } = await api.post(`/api/parcelas-pagamento/${id}/reverter-pagamento/`);
+  const { data } = await api.post(
+    `/api/parcelas-pagamento/${id}/reverter-pagamento/`,
+  );
   return data as ParcelaPagamento;
 }
 
-export async function atualizarParcelaPagamento(id: number, payload: Partial<PlanoPagamentoParcelaInput>) {
+export async function atualizarParcelaPagamento(
+  id: number,
+  payload: Partial<PlanoPagamentoParcelaInput>,
+) {
   const { data } = await api.patch(`/api/parcelas-pagamento/${id}/`, payload);
   return data as ParcelaPagamento;
 }
@@ -156,3 +227,12 @@ export async function atualizarParcelaPagamento(id: number, payload: Partial<Pla
 export async function removerParcelaPagamento(id: number) {
   await api.delete(`/api/parcelas-pagamento/${id}/`);
 }
+
+export const getProgressoOrcamento =
+  async (): Promise<DashboardFinanceiroData> => {
+    // Caso sua rota no base_router use hífen ou underline, adeque aqui:
+    const response = await api.get<DashboardFinanceiroData>(
+      "/api/parcelas-pagamento/progresso-orcamento/",
+    );
+    return response.data;
+  };
