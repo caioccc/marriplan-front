@@ -525,7 +525,7 @@ export default function OverviewPage() {
             </Group>
           }
         />
-        {!hasIdentity && !isLoading ? (
+        {!isLoading && !hasIdentity && !loadingInspirations ? (
           <EmptyState
             icon="✦"
             title="Seu moodboard esta em branco"
