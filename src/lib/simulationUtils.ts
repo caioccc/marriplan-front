@@ -10,7 +10,7 @@ export interface SimulationInputs {
   structure: string[];
   foodType: "coquetel" | "jantar" | "churrasco" | "buffet" | "ilhas";
   entertainment: "playlist" | "dj" | "banda" | "banda_dj";
-  media: "photo" | "photo_video" | "photo_video_drone";
+  media: "photo" | "photo_storymaker" | "photo_video" | "photo_video_drone";
   priorities: string[];
   budgetTier: string;
   monthlySaving: number;
@@ -56,7 +56,7 @@ const MULTIPLIERS = {
   locationType: { capital: 1.3, interior: 0.9, praia: 1.4, campo: 1.2, serra: 1.25 },
   foodType: { coquetel: 0.8, jantar: 1.1, churrasco: 0.9, buffet: 1.3, ilhas: 1.6 },
   entertainment: { playlist: 500, dj: 3500, banda: 8000, banda_dj: 11000 },
-  media: { photo: 4000, photo_video: 7500, photo_video_drone: 11000 }
+  media: { photo: 4000, photo_storymaker: 6000, photo_video: 7500, photo_video_drone: 11000 }
 };
 
 export function calculateWeddingSimulation(inputs: SimulationInputs): SimulationResult {

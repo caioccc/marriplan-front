@@ -118,14 +118,15 @@ const WeddingCostSimulationPage: NextPage = () => {
   useEffect(() => {
     if (user?.wedding_profile) {
       const profile = user.wedding_profile;
+      const identity = profile.wedding_identity;
 
       // Mapeia dados básicos se já existirem no perfil para poupar digitação
       setFormInputs((prev) => ({
         ...prev,
         guestsCount: profile.quantidade_convidados || prev.guestsCount || 100,
         weddingDate: profile.data_casamento || prev.weddingDate || "",
-        style: profile.estilo || prev.style || "",
-        dressCode: profile.dress_code || prev.dressCode || "",
+        style: identity.selected_style || prev.style || "",
+        dressCode: identity.dress_code || prev.dressCode || "",
       }));
 
       // Se já existe uma simulação gravada no backend
@@ -1017,13 +1018,18 @@ const WeddingCostSimulationPage: NextPage = () => {
                         badge: "Econômico",
                       },
                       {
+                        id: "photo_storymaker",
+                        label: "Foto + Storymaker",
+                        badge: "Econômico Premium",
+                      },
+                      {
                         id: "photo_video",
                         label: "Foto + Filme Cinematográfico",
                         badge: "Popular",
                       },
                       {
                         id: "photo_video_drone",
-                        label: "Foto + Filme + Cobertura Drone",
+                        label: "Foto + Filme + Storymaker + Cobertura Drone",
                         badge: "Mais Completo",
                       },
                     ].map((item) => (
