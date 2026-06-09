@@ -371,7 +371,7 @@ export default function WeddingProfileOnboardingForm({
             label="Data do casamento"
             value={
               form.values.data_casamento
-                ? new Date(form.values.data_casamento)
+                ? form.values.data_casamento
                 : null
             }
             onChange={(date) => form.setFieldValue("data_casamento", date)}
@@ -654,7 +654,7 @@ export default function WeddingProfileOnboardingForm({
                 label="Data do casamento"
                 value={
                   form.values.data_casamento
-                    ? new Date(form.values.data_casamento)
+                    ? form.values.data_casamento
                     : null
                 }
                 onChange={(date) => form.setFieldValue("data_casamento", date)}

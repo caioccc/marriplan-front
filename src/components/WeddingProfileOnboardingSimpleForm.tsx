@@ -4,6 +4,7 @@ import { toUpperCamelWords } from "@/lib/text";
 import api from "@/services/api";
 import { primaryButtonStyles, softButtonStyles } from "@/styles";
 import {
+  ActionIcon,
   Box,
   Button,
   Group,
@@ -11,16 +12,12 @@ import {
   ScrollArea,
   Stack,
   Stepper,
-  Text,
   TextInput,
 } from "@mantine/core";
+import { DatePickerInput, DatesProvider, TimePicker } from "@mantine/dates";
 import { useForm } from "@mantine/form";
 import { useMediaQuery } from "@mantine/hooks";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { TimePicker } from "@mui/x-date-pickers/TimePicker";
-import { ptBR } from "date-fns/locale/pt-BR";
+import { IconCalendarClock } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 import { IMaskInput } from "react-imask";
 
@@ -37,6 +34,8 @@ export default function WeddingProfileOnboardingSimpleForm({
   const [active, setActive] = useState(0);
   const [loading, setLoading] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
+
+  const [dropdownOpened, setDropdownOpened] = useState(false);
 
   const parseTimeToDate = (value?: string | null) => {
     if (!value) return null;
@@ -161,7 +160,9 @@ export default function WeddingProfileOnboardingSimpleForm({
         telefone_noivo: String(form.values.telefone_noivo ?? "").trim(),
         nome_noiva: toUpperCamelWords(String(form.values.nome_noiva ?? "")),
         telefone_noiva: String(form.values.telefone_noiva ?? "").trim(),
-        budget_limit: form.values.budget_limit ? Number(form.values.budget_limit) : null,
+        budget_limit: form.values.budget_limit
+          ? Number(form.values.budget_limit)
+          : null,
         local: toUpperCamelWords(String(form.values.local ?? "")),
         data_casamento: form.values.data_casamento
           ? form.values.data_casamento instanceof Date
@@ -260,39 +261,49 @@ export default function WeddingProfileOnboardingSimpleForm({
           }
           mt="md"
         />
-        <LocalizationProvider dateAdapter={AdapterDateFns} adapterLocale={ptBR}>
-          <Stack gap="md" pt="sm" style={{ width: "100%" }}>
-            <DatePicker
-              label="Data do casamento"
-              value={
-                form.values.data_casamento
-                  ? new Date(form.values.data_casamento)
-                  : null
+        <DatesProvider settings={{ locale: "pt-br" }}>
+          <DatePickerInput
+            label="Data do casamento"
+            value={
+              form.values.data_casamento
+                ? new Date(form.values.data_casamento)
+                : null
+            }
+            valueFormat="DD/MM/YYYY"
+            onChange={(date) => form.setFieldValue("data_casamento", date)}
+          />
+          <TimePicker
+            label="Hora do casamento"
+            withDropdown
+            rightSection={
+              <ActionIcon
+                onClick={() => setDropdownOpened((prev) => !prev)}
+                variant="default"
+              >
+                <IconCalendarClock size={18} />
+              </ActionIcon>
+            }
+            value={
+              form.values.hora_casamento
+                ? String(
+                    new Date(form.values.hora_casamento)
+                      .toTimeString()
+                      .slice(0, 5),
+                  )
+                : ""
+            }
+            onChange={(value) => {
+              form.setFieldValue("hora_casamento", value);
+              if (value === "") {
+                setDropdownOpened(false);
               }
-              onChange={(date) => form.setFieldValue("data_casamento", date)}
-              format="dd/MM/yyyy"
-              slotProps={{
-                textField: {
-                  fullWidth: true,
-                  placeholder: "Selecione a data",
-                },
-              }}
-            />
-            <TimePicker
-              label="Hora do casamento"
-              value={form.values.hora_casamento}
-              onChange={(value) => form.setFieldValue("hora_casamento", value)}
-              ampm={false}
-              minutesStep={1}
-              slotProps={{
-                textField: {
-                  fullWidth: true,
-                  placeholder: "00:00",
-                },
-              }}
-            />
-          </Stack>
-        </LocalizationProvider>
+            }}
+            popoverProps={{
+              opened: dropdownOpened,
+              onChange: (_opened) => !_opened && setDropdownOpened(false),
+            }}
+          />
+        </DatesProvider>
       </Stack>
     );
   };
