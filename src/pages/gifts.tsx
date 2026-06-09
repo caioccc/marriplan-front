@@ -41,6 +41,7 @@ import {
   Pagination,
   SegmentedControl,
   Select,
+  Skeleton,
   Stack,
   Text,
   TextInput,
@@ -934,7 +935,7 @@ const GiftsPage: NextPage = () => {
         )}
         {viewMode === "cards" && (
           <>
-            {gifts.length === 0 && (
+            {gifts.length === 0 && !loading && (
               <Card
                 radius="xl"
                 withBorder
@@ -997,134 +998,138 @@ const GiftsPage: NextPage = () => {
                 </Stack>
               </Card>
             )}
-            <ListView
-              items={gifts}
-              getItemId={(g) => g.id}
-              getImageUrl={(g) => g.image}
-              fallbackIcon={(g) => (
-                <IconGift size={48} color="var(--mantine-color-gray-5)" />
-              )}
-              renderSoloActions={(g) => (
-                <Group gap={4}>
-                  {g.status !== "purchased" && (
-                    <Tooltip label="Marcar como comprado">
-                      <Button
-                        styles={softButtonStyles}
-                        px={4}
-                        style={{ minWidth: 38 }}
-                        onClick={() => handleMarkAsPurchased(g)}
-                      >
-                        <IconCheck size={18} />
-                      </Button>
-                    </Tooltip>
-                  )}
-                  {(g.status === "purchased" || g.status === "reserved") && (
-                    <Tooltip label="Marcar como disponível">
-                      <Button
-                        styles={softButtonStyles}
-                        px={4}
-                        style={{ minWidth: 38 }}
-                        onClick={() => handleMarkAsAvailable(g)}
-                      >
-                        <IconStatusChange size={18} />
-                      </Button>
-                    </Tooltip>
-                  )}
-                </Group>
-              )}
-              renderContent={(g) => {
-                const isLocked = g.status !== "available";
-                return (
-                  <>
-                    <Text
-                      fw={500}
-                      lineClamp={2}
-                      style={{
-                        ...(isLocked
-                          ? { textDecoration: "line-through", color: "#888" }
-                          : {}),
-                      }}
-                    >
-                      {g.name}
-                    </Text>
-                    <Text
-                      size="sm"
-                      c="dimmed"
-                      style={{
-                        ...(isLocked ? { textDecoration: "line-through" } : {}),
-                      }}
-                    >
-                      Categoria:{" "}
-                      {categoryOptions.find((c) => c.value === g.category)
-                        ?.label || g.category}
-                    </Text>
-                    <Stack gap={4} my={4}>
+            <Skeleton visible={loading} radius="xl">
+              <ListView
+                items={gifts}
+                getItemId={(g) => g.id}
+                getImageUrl={(g) => g.image}
+                fallbackIcon={(g) => (
+                  <IconGift size={48} color="var(--mantine-color-gray-5)" />
+                )}
+                renderSoloActions={(g) => (
+                  <Group gap={4}>
+                    {g.status !== "purchased" && (
+                      <Tooltip label="Marcar como comprado">
+                        <Button
+                          styles={softButtonStyles}
+                          px={4}
+                          style={{ minWidth: 38 }}
+                          onClick={() => handleMarkAsPurchased(g)}
+                        >
+                          <IconCheck size={18} />
+                        </Button>
+                      </Tooltip>
+                    )}
+                    {(g.status === "purchased" || g.status === "reserved") && (
+                      <Tooltip label="Marcar como disponível">
+                        <Button
+                          styles={softButtonStyles}
+                          px={4}
+                          style={{ minWidth: 38 }}
+                          onClick={() => handleMarkAsAvailable(g)}
+                        >
+                          <IconStatusChange size={18} />
+                        </Button>
+                      </Tooltip>
+                    )}
+                  </Group>
+                )}
+                renderContent={(g) => {
+                  const isLocked = g.status !== "available";
+                  return (
+                    <>
                       <Text
-                        size="md"
+                        fw={500}
                         lineClamp={2}
+                        style={{
+                          ...(isLocked
+                            ? { textDecoration: "line-through", color: "#888" }
+                            : {}),
+                        }}
+                      >
+                        {g.name}
+                      </Text>
+                      <Text
+                        size="sm"
+                        c="dimmed"
                         style={{
                           ...(isLocked
                             ? { textDecoration: "line-through" }
                             : {}),
                         }}
                       >
-                        R$ {g.value}
+                        Categoria:{" "}
+                        {categoryOptions.find((c) => c.value === g.category)
+                          ?.label || g.category}
                       </Text>
-                      <MarriplanStatusBadge kind="gift" status={g.status} />
-                    </Stack>
+                      <Stack gap={4} my={4}>
+                        <Text
+                          size="md"
+                          lineClamp={2}
+                          style={{
+                            ...(isLocked
+                              ? { textDecoration: "line-through" }
+                              : {}),
+                          }}
+                        >
+                          R$ {g.value}
+                        </Text>
+                        <MarriplanStatusBadge kind="gift" status={g.status} />
+                      </Stack>
+                    </>
+                  );
+                }}
+                renderActions={(g) => (
+                  <>
+                    {g.status === "available" && (
+                      <Menu.Item
+                        leftSection={<IconCheck size={14} />}
+                        onClick={() => handleMarkAsPurchased(g)}
+                      >
+                        Marcar como comprado
+                      </Menu.Item>
+                    )}
+                    {(g.status === "purchased" || g.status === "reserved") && (
+                      <Menu.Item
+                        leftSection={<IconStatusChange size={14} />}
+                        onClick={() => handleMarkAsAvailable(g)}
+                      >
+                        Marcar como disponível
+                      </Menu.Item>
+                    )}
+                    {g.link && (
+                      <Menu.Item
+                        leftSection={<IconEye size={14} />}
+                        onClick={() => window.open(g.link, "_blank")}
+                      >
+                        Ver presente
+                      </Menu.Item>
+                    )}
+                    <Menu.Item
+                      leftSection={<IconEdit size={14} />}
+                      onClick={() => {
+                        setEditingGift(g);
+                        setModalOpen(true);
+                      }}
+                    >
+                      Editar
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconTrash size={14} />}
+                      color="red"
+                      onClick={() => setDeleteModal({ open: true, gift: g })}
+                    >
+                      Excluir
+                    </Menu.Item>
                   </>
-                );
-              }}
-              renderActions={(g) => (
-                <>
-                  {g.status === "available" && (
-                    <Menu.Item
-                      leftSection={<IconCheck size={14} />}
-                      onClick={() => handleMarkAsPurchased(g)}
-                    >
-                      Marcar como comprado
-                    </Menu.Item>
-                  )}
-                  {(g.status === "purchased" || g.status === "reserved") && (
-                    <Menu.Item
-                      leftSection={<IconStatusChange size={14} />}
-                      onClick={() => handleMarkAsAvailable(g)}
-                    >
-                      Marcar como disponível
-                    </Menu.Item>
-                  )}
-                  {g.link && (
-                    <Menu.Item
-                      leftSection={<IconEye size={14} />}
-                      onClick={() => window.open(g.link, "_blank")}
-                    >
-                      Ver presente
-                    </Menu.Item>
-                  )}
-                  <Menu.Item
-                    leftSection={<IconEdit size={14} />}
-                    onClick={() => {
-                      setEditingGift(g);
-                      setModalOpen(true);
-                    }}
-                  >
-                    Editar
-                  </Menu.Item>
-                  <Menu.Item
-                    leftSection={<IconTrash size={14} />}
-                    color="red"
-                    onClick={() => setDeleteModal({ open: true, gift: g })}
-                  >
-                    Excluir
-                  </Menu.Item>
-                </>
-              )}
-            />
+                )}
+              />
+            </Skeleton>
           </>
         )}
         {viewMode === "gallery" && (
           <>
-            {gifts.length === 0 && (
+            {gifts.length === 0 && !loading && (
               <Card
                 radius="xl"
                 withBorder
@@ -1187,153 +1192,162 @@ const GiftsPage: NextPage = () => {
                 </Stack>
               </Card>
             )}
-            <GalleryView
-              items={gifts}
-              getItemId={(g) => g.id}
-              getImageUrl={(g) => g.image}
-              cols={
-                isCompactLayout ? { base: 1, sm: 1, md: 1, lg: 1 } : undefined
-              }
-              fallbackIcon={(g) => (
-                <IconGift size={48} color="var(--mantine-color-gray-5)" />
-              )}
-              renderContent={(gift) => {
-                const isLocked = gift.status !== "available";
-                return (
-                  <Flex direction="column" gap="xs">
-                    <Tooltip
-                      label={
-                        gift.name +
-                        (gift.description ? ": " + gift.description : "")
-                      }
-                      withArrow
-                      position="top"
-                    >
-                      <Title
-                        order={4}
-                        mt="sm"
+            <Skeleton visible={loading} radius="xl">
+              <GalleryView
+                items={gifts}
+                getItemId={(g) => g.id}
+                getImageUrl={(g) => g.image}
+                cols={
+                  isCompactLayout ? { base: 1, sm: 1, md: 1, lg: 1 } : undefined
+                }
+                fallbackIcon={(g) => (
+                  <IconGift size={48} color="var(--mantine-color-gray-5)" />
+                )}
+                renderContent={(gift) => {
+                  const isLocked = gift.status !== "available";
+                  return (
+                    <Flex direction="column" gap="xs">
+                      <Tooltip
+                        label={
+                          gift.name +
+                          (gift.description ? ": " + gift.description : "")
+                        }
+                        withArrow
+                        position="top"
+                      >
+                        <Title
+                          order={4}
+                          mt="sm"
+                          style={{
+                            ...(isLocked
+                              ? {
+                                  textDecoration: "line-through",
+                                  color: "#888",
+                                }
+                              : {}),
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "clip",
+                          }}
+                        >
+                          {gift.name}
+                        </Title>
+                      </Tooltip>
+                      <Text
+                        size="sm"
+                        color="dimmed"
                         style={{
                           ...(isLocked
-                            ? { textDecoration: "line-through", color: "#888" }
+                            ? { textDecoration: "line-through" }
                             : {}),
                           whiteSpace: "nowrap",
                           overflow: "hidden",
                           textOverflow: "clip",
                         }}
                       >
-                        {gift.name}
-                      </Title>
-                    </Tooltip>
-                    <Text
-                      size="sm"
-                      color="dimmed"
-                      style={{
-                        ...(isLocked ? { textDecoration: "line-through" } : {}),
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "clip",
+                        {gift.description}
+                      </Text>
+                      <Text
+                        mt="xs"
+                        style={
+                          isLocked ? { textDecoration: "line-through" } : {}
+                        }
+                      >
+                        <b>Valor:</b>{" "}
+                        {gift.value
+                          ? formatCurrency(gift.value)
+                          : "não informado"}
+                      </Text>
+                      {gift.category ? (
+                        <Text
+                          style={
+                            isLocked ? { textDecoration: "line-through" } : {}
+                          }
+                        >
+                          <b>Categoria:</b> {getCategoryLabel(gift.category)}
+                        </Text>
+                      ) : (
+                        <Text
+                          style={
+                            isLocked ? { textDecoration: "line-through" } : {}
+                          }
+                        >
+                          <b>Categoria:</b> não informado
+                        </Text>
+                      )}
+                      <Group mt="xs" justify="space-between" align="center">
+                        <Badge style={getStatusBadgeStyle(gift.status)}>
+                          {STATUS_LABELS[gift.status] || gift.status}
+                        </Badge>
+                        {gift.link && (
+                          <Tooltip
+                            label="Abrir link do produto"
+                            withArrow
+                            position="top"
+                          >
+                            <Button
+                              component="a"
+                              href={gift.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              leftSection={<IconExternalLink size={16} />}
+                              size="xs"
+                              styles={softButtonStyles}
+                            >
+                              Ver Produto
+                            </Button>
+                          </Tooltip>
+                        )}
+                      </Group>
+                    </Flex>
+                  );
+                }}
+                renderActions={(g) => (
+                  <>
+                    {g.status === "available" && (
+                      <Menu.Item
+                        leftSection={<IconCheck size={14} />}
+                        onClick={() => handleMarkAsPurchased(g)}
+                      >
+                        Marcar como comprado
+                      </Menu.Item>
+                    )}
+                    {(g.status === "purchased" || g.status === "reserved") && (
+                      <Menu.Item
+                        leftSection={<IconStatusChange size={14} />}
+                        onClick={() => handleMarkAsAvailable(g)}
+                      >
+                        Marcar como disponível
+                      </Menu.Item>
+                    )}
+                    {g.link && (
+                      <Menu.Item
+                        leftSection={<IconEye size={14} />}
+                        onClick={() => window.open(g.link, "_blank")}
+                      >
+                        Ver presente
+                      </Menu.Item>
+                    )}
+                    <Menu.Item
+                      leftSection={<IconEdit size={14} />}
+                      onClick={() => {
+                        setEditingGift(g);
+                        setModalOpen(true);
                       }}
                     >
-                      {gift.description}
-                    </Text>
-                    <Text
-                      mt="xs"
-                      style={isLocked ? { textDecoration: "line-through" } : {}}
-                    >
-                      <b>Valor:</b>{" "}
-                      {gift.value
-                        ? formatCurrency(gift.value)
-                        : "não informado"}
-                    </Text>
-                    {gift.category ? (
-                      <Text
-                        style={
-                          isLocked ? { textDecoration: "line-through" } : {}
-                        }
-                      >
-                        <b>Categoria:</b> {getCategoryLabel(gift.category)}
-                      </Text>
-                    ) : (
-                      <Text
-                        style={
-                          isLocked ? { textDecoration: "line-through" } : {}
-                        }
-                      >
-                        <b>Categoria:</b> não informado
-                      </Text>
-                    )}
-                    <Group mt="xs" justify="space-between" align="center">
-                      <Badge style={getStatusBadgeStyle(gift.status)}>
-                        {STATUS_LABELS[gift.status] || gift.status}
-                      </Badge>
-                      {gift.link && (
-                        <Tooltip
-                          label="Abrir link do produto"
-                          withArrow
-                          position="top"
-                        >
-                          <Button
-                            component="a"
-                            href={gift.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            leftSection={<IconExternalLink size={16} />}
-                            size="xs"
-                            styles={softButtonStyles}
-                          >
-                            Ver Produto
-                          </Button>
-                        </Tooltip>
-                      )}
-                    </Group>
-                  </Flex>
-                );
-              }}
-              renderActions={(g) => (
-                <>
-                  {g.status === "available" && (
-                    <Menu.Item
-                      leftSection={<IconCheck size={14} />}
-                      onClick={() => handleMarkAsPurchased(g)}
-                    >
-                      Marcar como comprado
+                      Editar
                     </Menu.Item>
-                  )}
-                  {(g.status === "purchased" || g.status === "reserved") && (
                     <Menu.Item
-                      leftSection={<IconStatusChange size={14} />}
-                      onClick={() => handleMarkAsAvailable(g)}
+                      leftSection={<IconTrash size={14} />}
+                      color="red"
+                      onClick={() => setDeleteModal({ open: true, gift: g })}
                     >
-                      Marcar como disponível
+                      Excluir
                     </Menu.Item>
-                  )}
-                  {g.link && (
-                    <Menu.Item
-                      leftSection={<IconEye size={14} />}
-                      onClick={() => window.open(g.link, "_blank")}
-                    >
-                      Ver presente
-                    </Menu.Item>
-                  )}
-                  <Menu.Item
-                    leftSection={<IconEdit size={14} />}
-                    onClick={() => {
-                      setEditingGift(g);
-                      setModalOpen(true);
-                    }}
-                  >
-                    Editar
-                  </Menu.Item>
-                  <Menu.Item
-                    leftSection={<IconTrash size={14} />}
-                    color="red"
-                    onClick={() => setDeleteModal({ open: true, gift: g })}
-                  >
-                    Excluir
-                  </Menu.Item>
-                </>
-              )}
-            />
+                  </>
+                )}
+              />
+            </Skeleton>
           </>
         )}
         {(viewMode === "cards" || viewMode === "gallery") && (

@@ -37,6 +37,7 @@ import {
   Modal,
   ScrollArea,
   Select,
+  Skeleton,
   Stack,
   Table,
   Text,
@@ -528,115 +529,131 @@ export default function FinanceiroPage() {
         {isMobile ? (
           <Stack gap="sm" p="md">
             <Card radius="xl" p="lg" withBorder>
-              <Stack gap={6}>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  A vencer (7 dias)
-                </Text>
-                <Title order={3}>
-                  {formatCurrency(summary?.upcoming_7_days.total)}
-                </Title>
-                <Text size="sm" c="dimmed">
-                  {summary?.upcoming_7_days.count || 0} parcelas
-                </Text>
-              </Stack>
+              <Skeleton visible={loading} radius="lg">
+                <Stack gap={6}>
+                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
+                    A vencer (7 dias)
+                  </Text>
+                  <Title order={3}>
+                    {formatCurrency(summary?.upcoming_7_days.total)}
+                  </Title>
+                  <Text size="sm" c="dimmed">
+                    {summary?.upcoming_7_days.count || 0} parcelas
+                  </Text>
+                </Stack>
+              </Skeleton>
             </Card>
             <Card radius="xl" p="lg" withBorder>
-              <Stack gap={6}>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Em atraso
-                </Text>
-                <Title order={3}>
-                  {formatCurrency(summary?.overdue.total)}
-                </Title>
-                <Text size="sm" c="dimmed">
-                  {summary?.overdue.count || 0} parcelas
-                </Text>
-              </Stack>
+              <Skeleton visible={loading} radius="lg">
+                <Stack gap={6}>
+                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
+                    Em atraso
+                  </Text>
+                  <Title order={3}>
+                    {formatCurrency(summary?.overdue.total)}
+                  </Title>
+                  <Text size="sm" c="dimmed">
+                    {summary?.overdue.count || 0} parcelas
+                  </Text>
+                </Stack>
+              </Skeleton>
             </Card>
             <Card radius="xl" p="lg" withBorder>
-              <Stack gap={6}>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Selecionados
-                </Text>
-                <Title order={3}>
-                  {formatCurrency(summary?.selected.total)}
-                </Title>
-                <Text size="sm" c="dimmed">
-                  {summary?.selected.count || 0} parcelas visíveis
-                </Text>
-              </Stack>
+              <Skeleton visible={loading} radius="lg">
+                <Stack gap={6}>
+                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
+                    Selecionados
+                  </Text>
+                  <Title order={3}>
+                    {formatCurrency(summary?.selected.total)}
+                  </Title>
+                  <Text size="sm" c="dimmed">
+                    {summary?.selected.count || 0} parcelas visíveis
+                  </Text>
+                </Stack>
+              </Skeleton>
             </Card>
             <Card radius="xl" p="lg" withBorder>
-              <Stack gap={6}>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Valor total
-                </Text>
-                <Title order={3}>
-                  {summary?.total_contracted != null
-                    ? formatCurrency(summary.total_contracted)
-                    : "-"}
-                </Title>
-                <Text size="sm" c="dimmed">
-                  Valor contratado
-                </Text>
-              </Stack>
+              <Skeleton visible={loading} radius="lg">
+                <Stack gap={6}>
+                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
+                    Valor total
+                  </Text>
+                  <Title order={3}>
+                    {summary?.total_contracted != null
+                      ? formatCurrency(summary.total_contracted)
+                      : "-"}
+                  </Title>
+                  <Text size="sm" c="dimmed">
+                    Valor contratado
+                  </Text>
+                </Stack>
+              </Skeleton>
             </Card>
           </Stack>
         ) : (
           <Group grow align="stretch" wrap="wrap">
             <Card radius="xl" p="lg" withBorder>
-              <Stack gap={6}>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  A vencer (7 dias)
-                </Text>
-                <Title order={3}>
-                  {formatCurrency(summary?.upcoming_7_days.total)}
-                </Title>
-                <Text size="sm" c="dimmed">
-                  {summary?.upcoming_7_days.count || 0} parcelas
-                </Text>
-              </Stack>
+              <Skeleton visible={loading} radius="lg">
+                <Stack gap={6}>
+                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
+                    A vencer (7 dias)
+                  </Text>
+                  <Title order={3}>
+                    {formatCurrency(summary?.upcoming_7_days.total)}
+                  </Title>
+                  <Text size="sm" c="dimmed">
+                    {summary?.upcoming_7_days.count || 0} parcelas
+                  </Text>
+                </Stack>
+              </Skeleton>
             </Card>
             <Card radius="xl" p="lg" withBorder>
-              <Stack gap={6}>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Em atraso
-                </Text>
-                <Title order={3}>
-                  {formatCurrency(summary?.overdue.total)}
-                </Title>
-                <Text size="sm" c="dimmed">
-                  {summary?.overdue.count || 0} parcelas
-                </Text>
-              </Stack>
+              <Skeleton visible={loading} radius="lg">
+                <Stack gap={6}>
+                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
+                    Em atraso
+                  </Text>
+                  <Title order={3}>
+                    {formatCurrency(summary?.overdue.total)}
+                  </Title>
+                  <Text size="sm" c="dimmed">
+                    {summary?.overdue.count || 0} parcelas
+                  </Text>
+                </Stack>
+              </Skeleton>
             </Card>
             <Card radius="xl" p="lg" withBorder>
-              <Stack gap={6}>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Selecionados
-                </Text>
-                <Title order={3}>
-                  {formatCurrency(summary?.selected.total)}
-                </Title>
-                <Text size="sm" c="dimmed">
-                  {summary?.selected.count || 0} parcelas visíveis
-                </Text>
-              </Stack>
+              <Skeleton visible={loading} radius="lg">
+                <Stack gap={6}>
+                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
+                    Selecionados
+                  </Text>
+                  <Title order={3}>
+                    {formatCurrency(summary?.selected.total)}
+                  </Title>
+                  <Text size="sm" c="dimmed">
+                    {summary?.selected.count || 0} parcelas visíveis
+                  </Text>
+                </Stack>
+              </Skeleton>
             </Card>
             <Card radius="xl" p="lg" withBorder>
-              <Stack gap={6}>
-                <Text size="xs" tt="uppercase" fw={700} c="dimmed">
-                  Valor total
-                </Text>
-                <Title order={3}>
-                  {summary?.total_contracted != null
-                    ? formatCurrency(summary.total_contracted)
-                    : "-"}
-                </Title>
-                <Text size="sm" c="dimmed">
-                  Valor contratado
-                </Text>
-              </Stack>
+              <Skeleton visible={loading} radius="lg">
+                <Stack gap={6}>
+                  <Text size="xs" tt="uppercase" fw={700} c="dimmed">
+                    Valor total
+                  </Text>
+                  <Title order={3}>
+                    {summary?.total_contracted != null
+                      ? formatCurrency(summary.total_contracted)
+                      : "-"}
+                  </Title>
+                  <Text size="sm" c="dimmed">
+                    Valor contratado
+                  </Text>
+                </Stack>
+              </Skeleton>
             </Card>
           </Group>
         )}

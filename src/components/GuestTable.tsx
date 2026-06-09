@@ -35,6 +35,7 @@ import {
   SegmentedControl,
   Select,
   SimpleGrid,
+  Skeleton,
   Stack,
   Text,
   TextInput,
@@ -794,41 +795,43 @@ export default function GuestTable() {
                 const Icon = card.icon;
 
                 return (
-                  <Group
-                    key={card.key}
-                    justify="space-between"
-                    align="center"
-                    gap="md"
-                    p="sm"
-                    style={{
-                      border: "1px solid var(--marriplan-border)",
-                      borderRadius: 14,
-                      background: "var(--marriplan-surface-muted)",
-                    }}
-                  >
-                    <Group gap="sm" align="center" style={{ minWidth: 0 }}>
-                      <ThemeIcon
-                        size={34}
-                        radius="xl"
-                        variant="light"
-                        color={card.color}
-                      >
-                        <Icon size={18} />
-                      </ThemeIcon>
-                      <Stack gap={1} style={{ minWidth: 0 }}>
-                        <Text fw={700} size="sm" c="var(--marriplan-text)">
-                          {card.label}
-                        </Text>
-                        <Text size="xs" c="dimmed" lineClamp={2}>
-                          {card.helper}
-                        </Text>
-                      </Stack>
-                    </Group>
+                  <Skeleton visible={loading} radius="xl" key={card.key}>
+                    <Group
+                      key={card.key}
+                      justify="space-between"
+                      align="center"
+                      gap="md"
+                      p="sm"
+                      style={{
+                        border: "1px solid var(--marriplan-border)",
+                        borderRadius: 14,
+                        background: "var(--marriplan-surface-muted)",
+                      }}
+                    >
+                      <Group gap="sm" align="center" style={{ minWidth: 0 }}>
+                        <ThemeIcon
+                          size={34}
+                          radius="xl"
+                          variant="light"
+                          color={card.color}
+                        >
+                          <Icon size={18} />
+                        </ThemeIcon>
+                        <Stack gap={1} style={{ minWidth: 0 }}>
+                          <Text fw={700} size="sm" c="var(--marriplan-text)">
+                            {card.label}
+                          </Text>
+                          <Text size="xs" c="dimmed" lineClamp={2}>
+                            {card.helper}
+                          </Text>
+                        </Stack>
+                      </Group>
 
-                    <Text fw={700} size="xl" c="var(--marriplan-text)">
-                      {card.value}
-                    </Text>
-                  </Group>
+                      <Text fw={700} size="xl" c="var(--marriplan-text)">
+                        {card.value}
+                      </Text>
+                    </Group>
+                  </Skeleton>
                 );
               })}
             </Stack>
@@ -847,268 +850,276 @@ export default function GuestTable() {
                 className="marriplan-card"
                 style={{ background: "var(--marriplan-surface)" }}
               >
-                <Group justify="space-between" align="flex-start" gap="md">
-                  <Stack gap={6} style={{ minWidth: 0 }}>
-                    <Text
-                      size="xs"
-                      c="dimmed"
-                      tt="uppercase"
-                      fw={700}
-                      style={{ letterSpacing: 1.1 }}
+                <Skeleton visible={loading} radius="xl">
+                  <Group justify="space-between" align="flex-start" gap="md">
+                    <Stack gap={6} style={{ minWidth: 0 }}>
+                      <Text
+                        size="xs"
+                        c="dimmed"
+                        tt="uppercase"
+                        fw={700}
+                        style={{ letterSpacing: 1.1 }}
+                      >
+                        {card.label}
+                      </Text>
+                      <Text fw={700} size="2xl" c="var(--marriplan-text)">
+                        {card.value}
+                      </Text>
+                      <Text size="sm" c="dimmed">
+                        {card.helper}
+                      </Text>
+                    </Stack>
+                    <ThemeIcon
+                      size={44}
+                      radius="xl"
+                      variant="light"
+                      color={card.color}
                     >
-                      {card.label}
-                    </Text>
-                    <Text fw={700} size="2xl" c="var(--marriplan-text)">
-                      {card.value}
-                    </Text>
-                    <Text size="sm" c="dimmed">
-                      {card.helper}
-                    </Text>
-                  </Stack>
-                  <ThemeIcon
-                    size={44}
-                    radius="xl"
-                    variant="light"
-                    color={card.color}
-                  >
-                    <Icon size={22} />
-                  </ThemeIcon>
-                </Group>
+                      <Icon size={22} />
+                    </ThemeIcon>
+                  </Group>
+                </Skeleton>
               </Card>
             );
           })}
         </SimpleGrid>
       )}
       {!isCompactLayout && viewMode === "table" && (
-        <DataTable<Guest>
-          className="guest-table"
-          withTableBorder
-          borderRadius="xl"
-          highlightOnHover
-          verticalSpacing="sm"
-          horizontalSpacing="md"
-          minHeight={200}
-          noRecordsText="Nenhum convidado cadastrado."
-          columns={[
-            {
-              accessor: "name",
-              title: "Nome",
-              width: 180,
-              sortable: true,
-              render: (g) => {
-                return (
-                  // Adicionamos style={{ flexWrap: 'nowrap', minWidth: 0 }} para forçar o flex container a aceitar o truncamento dos filhos
-                  <Group gap={4} style={{ flexWrap: "nowrap", minWidth: 0 }}>
-                    {g.image ? (
-                      <Avatar src={g.photo_url} alt={g.name} />
-                    ) : (
-                      <Avatar
-                        name={g.name}
-                        size={38}
-                        color="var(--mantine-color-gray-5)"
-                        allowedInitialsColors={[
-                          "var(--mantine-color-gray-5), var(--mantine-color-gray-6), var(--mantine-color-gray-7)",
-                        ]}
-                      />
-                    )}
-                    <Tooltip label={g.name} withArrow>
-                      <Text size="sm" truncate="end">
-                        {g.name}
-                      </Text>
-                    </Tooltip>
-                  </Group>
-                );
-              },
-            },
-            {
-              accessor: "whatsapp",
-              title: "WhatsApp",
-              width: 110,
-              render: (g) =>
-                (g as Guest).whatsapp ? (g as Guest).whatsapp : "-",
-              textAlign: "center",
-              sortable: true,
-            },
-            {
-              accessor: "acompanhantes",
-              title: "Acompanhantes",
-              width: 80,
-              render: (g) => (g as Guest).acompanhantes ?? "-",
-              sortable: true,
-            },
-            {
-              accessor: "status_presenca",
-              title: "Status",
-              width: 120,
-              render: (guest: Guest) => {
-                const statusColors: Record<string, string> = {
-                  Pending: "yellow",
-                  Confirmed: "green",
-                  Refused: "red",
-                };
-                const statusLabels: Record<string, string> = {
-                  Pending: "Pendente",
-                  Confirmed: "Confirmado",
-                  Refused: "Recusado",
-                };
-                return (
-                  <Badge
-                    size="sm"
-                    variant="light"
-                    color={statusColors[guest.status_presenca || ""] || "gray"}
-                  >
-                    {statusLabels[guest.status_presenca || ""] ||
-                      "Desconhecido"}
-                  </Badge>
-                );
-              },
-            },
-            {
-              accessor: "actions",
-              title: "",
-              width: 130,
-              render: (guest: Guest) => {
-                return (
-                  <Group gap={4}>
-                    {guest.status_presenca === "Pending" && (
-                      <Tooltip label="Confirmar Presença">
-                        <ActionIcon
-                          size="sm"
-                          variant="light"
-                          color="blue"
-                          onClick={() => {
-                            setSelectedGuest(guest);
-                            setPresencaModalOpen(true);
-                          }}
-                        >
-                          <IconCheck size={16} />
-                        </ActionIcon>
+        <Skeleton visible={loading} radius="xl">
+          <DataTable<Guest>
+            className="guest-table"
+            withTableBorder
+            borderRadius="xl"
+            highlightOnHover
+            verticalSpacing="sm"
+            horizontalSpacing="md"
+            minHeight={200}
+            noRecordsText="Nenhum convidado cadastrado."
+            columns={[
+              {
+                accessor: "name",
+                title: "Nome",
+                width: 180,
+                sortable: true,
+                render: (g) => {
+                  return (
+                    // Adicionamos style={{ flexWrap: 'nowrap', minWidth: 0 }} para forçar o flex container a aceitar o truncamento dos filhos
+                    <Group gap={4} style={{ flexWrap: "nowrap", minWidth: 0 }}>
+                      {g.image ? (
+                        <Avatar src={g.photo_url} alt={g.name} />
+                      ) : (
+                        <Avatar
+                          name={g.name}
+                          size={38}
+                          color="var(--mantine-color-gray-5)"
+                          allowedInitialsColors={[
+                            "var(--mantine-color-gray-5), var(--mantine-color-gray-6), var(--mantine-color-gray-7)",
+                          ]}
+                        />
+                      )}
+                      <Tooltip label={g.name} withArrow>
+                        <Text size="sm" truncate="end">
+                          {g.name}
+                        </Text>
                       </Tooltip>
-                    )}
-                    {guest.whatsapp && guest.status_presenca === "Pending" && (
-                      <Tooltip label="Enviar RSVP por WhatsApp">
+                    </Group>
+                  );
+                },
+              },
+              {
+                accessor: "whatsapp",
+                title: "WhatsApp",
+                width: 110,
+                render: (g) =>
+                  (g as Guest).whatsapp ? (g as Guest).whatsapp : "-",
+                textAlign: "center",
+                sortable: true,
+              },
+              {
+                accessor: "acompanhantes",
+                title: "Acompanhantes",
+                width: 80,
+                render: (g) => (g as Guest).acompanhantes ?? "-",
+                sortable: true,
+              },
+              {
+                accessor: "status_presenca",
+                title: "Status",
+                width: 120,
+                render: (guest: Guest) => {
+                  const statusColors: Record<string, string> = {
+                    Pending: "yellow",
+                    Confirmed: "green",
+                    Refused: "red",
+                  };
+                  const statusLabels: Record<string, string> = {
+                    Pending: "Pendente",
+                    Confirmed: "Confirmado",
+                    Refused: "Recusado",
+                  };
+                  return (
+                    <Badge
+                      size="sm"
+                      variant="light"
+                      color={
+                        statusColors[guest.status_presenca || ""] || "gray"
+                      }
+                    >
+                      {statusLabels[guest.status_presenca || ""] ||
+                        "Desconhecido"}
+                    </Badge>
+                  );
+                },
+              },
+              {
+                accessor: "actions",
+                title: "",
+                width: 130,
+                render: (guest: Guest) => {
+                  return (
+                    <Group gap={4}>
+                      {guest.status_presenca === "Pending" && (
+                        <Tooltip label="Confirmar Presença">
+                          <ActionIcon
+                            size="sm"
+                            variant="light"
+                            color="blue"
+                            onClick={() => {
+                              setSelectedGuest(guest);
+                              setPresencaModalOpen(true);
+                            }}
+                          >
+                            <IconCheck size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                      {guest.whatsapp &&
+                        guest.status_presenca === "Pending" && (
+                          <Tooltip label="Enviar RSVP por WhatsApp">
+                            <ActionIcon
+                              variant="subtle"
+                              color="green"
+                              component="a"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Enviar RSVP por WhatsApp"
+                              onClick={async () => {
+                                try {
+                                  const res =
+                                    await guests_generate_confirmation_link(
+                                      guest.id,
+                                    );
+                                  setConfirmationData({
+                                    confirmation_url: res.confirmation_url,
+                                    whatsapp_link: res.whatsapp_link,
+                                    token: res.token,
+                                  });
+                                  setConfirmationModalOpen(true);
+                                } catch {
+                                  notifications.show({
+                                    color: "red",
+                                    message:
+                                      "Erro ao gerar link de confirmação.",
+                                  });
+                                }
+                              }}
+                            >
+                              <IconBrandWhatsapp size={18} />
+                            </ActionIcon>
+                          </Tooltip>
+                        )}
+                      {guest.status_presenca !== "Pending" && (
+                        <Tooltip label="Gerar link de confirmação">
+                          <ActionIcon
+                            size="sm"
+                            variant="light"
+                            color="blue"
+                            onClick={async () => {
+                              try {
+                                const res =
+                                  await guests_generate_confirmation_link(
+                                    guest.id,
+                                  );
+                                setConfirmationData({
+                                  confirmation_url: res.confirmation_url,
+                                  whatsapp_link: res.whatsapp_link,
+                                  token: res.token,
+                                });
+                                setConfirmationModalOpen(true);
+                              } catch {
+                                notifications.show({
+                                  color: "red",
+                                  message: "Erro ao gerar link de confirmação.",
+                                });
+                              }
+                            }}
+                          >
+                            <IconLink size={16} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                      {guest.email && (
+                        <Tooltip label="Enviar RSVP por Email">
+                          <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            component="a"
+                            href={`mailto:${
+                              guest.email
+                            }?subject=${encodeURIComponent(
+                              "Confirmação de Presença - Casamento",
+                            )}&body=${encodeURIComponent(
+                              "Olá! Por gentileza, confirme sua presença no nosso casamento respondendo este e-mail ou pelo site. O convite formal será enviado via papelaria. Obrigado!",
+                            )}`}
+                            title="Enviar RSVP por Email"
+                          >
+                            <IconMail size={18} />
+                          </ActionIcon>
+                        </Tooltip>
+                      )}
+                      <Tooltip label="Editar Convidado">
                         <ActionIcon
                           variant="subtle"
-                          color="green"
-                          component="a"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          title="Enviar RSVP por WhatsApp"
-                          onClick={async () => {
-                            try {
-                              const res =
-                                await guests_generate_confirmation_link(
-                                  guest.id,
-                                );
-                              setConfirmationData({
-                                confirmation_url: res.confirmation_url,
-                                whatsapp_link: res.whatsapp_link,
-                                token: res.token,
-                              });
-                              setConfirmationModalOpen(true);
-                            } catch {
-                              notifications.show({
-                                color: "red",
-                                message: "Erro ao gerar link de confirmação.",
-                              });
-                            }
-                          }}
+                          styles={actionIconEditStyles}
+                          onClick={() => handleEdit(guest)}
                         >
-                          <IconBrandWhatsapp size={18} />
+                          <IconEdit size={18} />
                         </ActionIcon>
                       </Tooltip>
-                    )}
-                    {guest.status_presenca !== "Pending" && (
-                      <Tooltip label="Gerar link de confirmação">
-                        <ActionIcon
-                          size="sm"
-                          variant="light"
-                          color="blue"
-                          onClick={async () => {
-                            try {
-                              const res =
-                                await guests_generate_confirmation_link(
-                                  guest.id,
-                                );
-                              setConfirmationData({
-                                confirmation_url: res.confirmation_url,
-                                whatsapp_link: res.whatsapp_link,
-                                token: res.token,
-                              });
-                              setConfirmationModalOpen(true);
-                            } catch {
-                              notifications.show({
-                                color: "red",
-                                message: "Erro ao gerar link de confirmação.",
-                              });
-                            }
-                          }}
-                        >
-                          <IconLink size={16} />
-                        </ActionIcon>
-                      </Tooltip>
-                    )}
-                    {guest.email && (
-                      <Tooltip label="Enviar RSVP por Email">
+                      <Tooltip label="Excluir Convidado">
                         <ActionIcon
                           variant="subtle"
-                          color="gray"
-                          component="a"
-                          href={`mailto:${
-                            guest.email
-                          }?subject=${encodeURIComponent(
-                            "Confirmação de Presença - Casamento",
-                          )}&body=${encodeURIComponent(
-                            "Olá! Por gentileza, confirme sua presença no nosso casamento respondendo este e-mail ou pelo site. O convite formal será enviado via papelaria. Obrigado!",
-                          )}`}
-                          title="Enviar RSVP por Email"
+                          styles={actionIconDangerStyles}
+                          onClick={() => openDeleteConfirm(guest)}
                         >
-                          <IconMail size={18} />
+                          <IconTrash size={18} />
                         </ActionIcon>
                       </Tooltip>
-                    )}
-                    <Tooltip label="Editar Convidado">
-                      <ActionIcon
-                        variant="subtle"
-                        styles={actionIconEditStyles}
-                        onClick={() => handleEdit(guest)}
-                      >
-                        <IconEdit size={18} />
-                      </ActionIcon>
-                    </Tooltip>
-                    <Tooltip label="Excluir Convidado">
-                      <ActionIcon
-                        variant="subtle"
-                        styles={actionIconDangerStyles}
-                        onClick={() => openDeleteConfirm(guest)}
-                      >
-                        <IconTrash size={18} />
-                      </ActionIcon>
-                    </Tooltip>
-                  </Group>
-                );
+                    </Group>
+                  );
+                },
               },
-            },
-          ]}
-          records={paginatedGuests}
-          totalRecords={derivedTotalRecords}
-          page={page}
-          onPageChange={setPage}
-          recordsPerPage={recordsPerPage}
-          onRecordsPerPageChange={setRecordsPerPage}
-          recordsPerPageOptions={[10, 20, 50]}
-          sortStatus={sortStatus}
-          onSortStatusChange={setSortStatus}
-          rowStyle={() => ({ background: "#f8f9fa" })}
-          styles={{
-            table: { fontSize: rem(15) },
-          }}
-          striped
-          fetching={loading}
-          paginationText={({ from, to, totalRecords }) =>
-            `${from}–${to} de ${totalRecords}`
-          }
-        />
+            ]}
+            records={paginatedGuests}
+            totalRecords={derivedTotalRecords}
+            page={page}
+            onPageChange={setPage}
+            recordsPerPage={recordsPerPage}
+            onRecordsPerPageChange={setRecordsPerPage}
+            recordsPerPageOptions={[10, 20, 50]}
+            sortStatus={sortStatus}
+            onSortStatusChange={setSortStatus}
+            rowStyle={() => ({ background: "#f8f9fa" })}
+            styles={{
+              table: { fontSize: rem(15) },
+            }}
+            striped
+            fetching={loading}
+            paginationText={({ from, to, totalRecords }) =>
+              `${from}–${to} de ${totalRecords}`
+            }
+          />
+        </Skeleton>
       )}
       <Modal
         opened={confirmationModalOpen}
@@ -1211,7 +1222,7 @@ export default function GuestTable() {
       </Modal>
       {viewMode === "cards" && (
         <>
-          {allGuests.length === 0 && (
+          {allGuests.length === 0 && !loading && (
             <Card
               radius="xl"
               withBorder
